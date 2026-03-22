@@ -40,6 +40,7 @@ class SettingsCubit extends Cubit<SettingsState> {
     SoundConfig? soundConfig,
     AudioFormatConfig? audioFormatConfig,
     AccessibilityStatus? accessibilityStatus,
+    String? Function()? selectedInputDeviceId,
   }) {
     final currentState = state;
     return SettingsLoaded(
@@ -71,6 +72,11 @@ class SettingsCubit extends Cubit<SettingsState> {
           (currentState is SettingsLoaded
               ? currentState.accessibilityStatus
               : AccessibilityStatus.unknown),
+      selectedInputDeviceId: selectedInputDeviceId != null
+          ? selectedInputDeviceId()
+          : (currentState is SettingsLoaded
+              ? currentState.selectedInputDeviceId
+              : null),
     );
   }
 
@@ -83,6 +89,7 @@ class SettingsCubit extends Cubit<SettingsState> {
       final hotkeyConfig = await _repository.loadHotkeyConfig();
       final soundConfig = await _repository.loadSoundConfig();
       final audioFormatConfig = await _repository.loadAudioFormatConfig();
+      final selectedDevice = await _repository.loadSelectedInputDevice();
       final axStatus = await _accessibilityService.checkPermission();
       emit(SettingsLoaded(
         sttConfig: config ?? _kDefaultConfig,
@@ -92,6 +99,7 @@ class SettingsCubit extends Cubit<SettingsState> {
         soundConfig: soundConfig,
         audioFormatConfig: audioFormatConfig,
         accessibilityStatus: axStatus,
+        selectedInputDeviceId: selectedDevice,
       ));
     } on Exception catch (e) {
       emit(SettingsError(message: e.toString()));
@@ -166,6 +174,16 @@ class SettingsCubit extends Cubit<SettingsState> {
     try {
       await _repository.saveAudioFormatConfig(audioFormatConfig);
       emit(_currentOrDefault(audioFormatConfig: audioFormatConfig));
+    } on Exception catch (e) {
+      emit(SettingsError(message: e.toString()));
+    }
+  }
+
+  /// Save the selected input device ID and emit the updated state.
+  Future<void> saveSelectedInputDevice(String? deviceId) async {
+    try {
+      await _repository.saveSelectedInputDevice(deviceId);
+      emit(_currentOrDefault(selectedInputDeviceId: () => deviceId));
     } on Exception catch (e) {
       emit(SettingsError(message: e.toString()));
     }

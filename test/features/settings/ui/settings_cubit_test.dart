@@ -42,6 +42,8 @@ void main() {
     mockAccessibility = MockAccessibilityService();
     when(() => mockAccessibility.checkPermission())
         .thenAnswer((_) async => AccessibilityStatus.unknown);
+    when(() => mockRepo.loadSelectedInputDevice())
+        .thenAnswer((_) async => null);
   });
 
   const defaultConfig = ApiConfig(
@@ -533,6 +535,28 @@ void main() {
       verify: (_) {
         verify(() => mockAccessibility.requestPermission()).called(1);
         verify(() => mockAccessibility.checkPermission()).called(1);
+      },
+    );
+
+    blocTest<SettingsCubit, SettingsState>(
+      'saveSelectedInputDevice persists and emits updated state',
+      build: () {
+        when(() => mockRepo.saveSelectedInputDevice(any()))
+            .thenAnswer((_) async {});
+        return SettingsCubit(repository: mockRepo, accessibilityService: mockAccessibility);
+      },
+      seed: () => const SettingsLoaded(sttConfig: defaultConfig),
+      act: (cubit) => cubit.saveSelectedInputDevice('mic-42'),
+      expect: () => [
+        const SettingsLoaded(
+          sttConfig: defaultConfig,
+          postProcessingConfig: defaultPpConfig,
+          hotkeyConfig: defaultHotkeyConfig,
+          selectedInputDeviceId: 'mic-42',
+        ),
+      ],
+      verify: (_) {
+        verify(() => mockRepo.saveSelectedInputDevice('mic-42')).called(1);
       },
     );
   });

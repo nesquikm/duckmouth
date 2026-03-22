@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:record/record.dart';
+import 'package:record/record.dart' show AudioRecorder, InputDevice, RecordConfig;
 
 import '../domain/audio_format_config.dart';
 import '../domain/recording_repository.dart';
@@ -18,7 +18,7 @@ class RecordingRepositoryImpl implements RecordingRepository {
   DateTime? _recordingStartTime;
 
   @override
-  Future<void> start({AudioFormatConfig? formatConfig}) async {
+  Future<void> start({AudioFormatConfig? formatConfig, String? deviceId}) async {
     final hasPermission = await _recorder.hasPermission();
     if (!hasPermission) {
       throw RecordingPermissionException(
@@ -39,6 +39,7 @@ class RecordingRepositoryImpl implements RecordingRepository {
         sampleRate: config.effectiveSampleRate,
         bitRate: config.effectiveBitRate ?? 128000,
         numChannels: 1,
+        device: deviceId != null ? InputDevice(id: deviceId, label: '') : null,
       ),
       path: filePath,
     );
@@ -76,6 +77,9 @@ class RecordingRepositoryImpl implements RecordingRepository {
 
   @override
   Stream<Duration> get durationStream => _durationController.stream;
+
+  @override
+  Future<List<InputDevice>> listInputDevices() => _recorder.listInputDevices();
 
   @override
   Future<void> dispose() async {

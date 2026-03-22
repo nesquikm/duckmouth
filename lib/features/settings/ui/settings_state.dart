@@ -26,6 +26,7 @@ class SettingsLoaded extends SettingsState {
     this.soundConfig = const SoundConfig(),
     this.audioFormatConfig = const AudioFormatConfig(),
     this.accessibilityStatus = AccessibilityStatus.unknown,
+    this.selectedInputDeviceId,
   });
 
   final ApiConfig sttConfig;
@@ -35,6 +36,7 @@ class SettingsLoaded extends SettingsState {
   final SoundConfig soundConfig;
   final AudioFormatConfig audioFormatConfig;
   final AccessibilityStatus accessibilityStatus;
+  final String? selectedInputDeviceId;
 
   SettingsLoaded copyWith({
     ApiConfig? sttConfig,
@@ -44,6 +46,7 @@ class SettingsLoaded extends SettingsState {
     SoundConfig? soundConfig,
     AudioFormatConfig? audioFormatConfig,
     AccessibilityStatus? accessibilityStatus,
+    String? Function()? selectedInputDeviceId,
   }) {
     return SettingsLoaded(
       sttConfig: sttConfig ?? this.sttConfig,
@@ -53,6 +56,9 @@ class SettingsLoaded extends SettingsState {
       soundConfig: soundConfig ?? this.soundConfig,
       audioFormatConfig: audioFormatConfig ?? this.audioFormatConfig,
       accessibilityStatus: accessibilityStatus ?? this.accessibilityStatus,
+      selectedInputDeviceId: selectedInputDeviceId != null
+          ? selectedInputDeviceId()
+          : this.selectedInputDeviceId,
     );
   }
 
@@ -67,7 +73,8 @@ class SettingsLoaded extends SettingsState {
           hotkeyConfig == other.hotkeyConfig &&
           soundConfig == other.soundConfig &&
           audioFormatConfig == other.audioFormatConfig &&
-          accessibilityStatus == other.accessibilityStatus;
+          accessibilityStatus == other.accessibilityStatus &&
+          selectedInputDeviceId == other.selectedInputDeviceId;
 
   @override
   int get hashCode => Object.hash(
@@ -78,6 +85,7 @@ class SettingsLoaded extends SettingsState {
         soundConfig,
         audioFormatConfig,
         accessibilityStatus,
+        selectedInputDeviceId,
       );
 }
 

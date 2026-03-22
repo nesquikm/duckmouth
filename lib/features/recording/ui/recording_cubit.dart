@@ -16,10 +16,16 @@ class RecordingCubit extends Cubit<RecordingState> {
   final RecordingRepository _repository;
   StreamSubscription<Duration>? _durationSubscription;
   AudioFormatConfig _formatConfig = const AudioFormatConfig();
+  String? _selectedDeviceId;
 
   /// Update the audio format configuration for future recordings.
   void updateFormatConfig(AudioFormatConfig config) {
     _formatConfig = config;
+  }
+
+  /// Update the selected input device for future recordings.
+  void updateSelectedDevice(String? deviceId) {
+    _selectedDeviceId = deviceId;
   }
 
   /// Start recording audio from the microphone.
@@ -39,7 +45,10 @@ class RecordingCubit extends Cubit<RecordingState> {
         }
       }
 
-      await _repository.start(formatConfig: _formatConfig);
+      await _repository.start(
+        formatConfig: _formatConfig,
+        deviceId: _selectedDeviceId,
+      );
       _tryEmit(const RecordingInProgress(Duration.zero));
 
       _durationSubscription?.cancel();

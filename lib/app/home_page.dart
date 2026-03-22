@@ -85,10 +85,11 @@ class _SettingsButton extends StatelessWidget {
               .read<PostProcessingCubit>()
               .updateConfig(state.postProcessingConfig);
 
-          // Update recording format config.
+          // Update recording format config and input device.
           context
               .read<RecordingCubit>()
-              .updateFormatConfig(state.audioFormatConfig);
+              ..updateFormatConfig(state.audioFormatConfig)
+              ..updateSelectedDevice(state.selectedInputDeviceId);
 
           // Register the hotkey whenever settings are loaded/saved.
           context.read<HotkeyCubit>().registerHotkey(state.hotkeyConfig);

@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
+import 'package:record/record.dart' show AudioRecorder, InputDevice;
 
 import 'package:duckmouth/core/services/accessibility_service.dart';
 import 'package:duckmouth/core/services/output_mode.dart';
 import 'package:duckmouth/core/services/sound_config.dart';
 import 'package:duckmouth/features/hotkey/domain/hotkey_config.dart';
-import 'package:duckmouth/features/post_processing/domain/post_processing_config.dart';
+import 'package:duckmouth/features/post_processing/domain/post_processing_config.dart'
+    show PostProcessingConfig, PromptTemplate;
 import 'package:duckmouth/features/recording/domain/audio_format_config.dart';
 import 'package:duckmouth/features/settings/domain/api_config.dart';
 import 'package:duckmouth/features/settings/domain/provider_preset.dart';
@@ -37,6 +39,7 @@ class SettingsPage extends StatelessWidget {
               :final soundConfig,
               :final audioFormatConfig,
               :final accessibilityStatus,
+              :final selectedInputDeviceId,
             ) =>
               _SettingsForm(
                 config: sttConfig,
@@ -46,6 +49,7 @@ class SettingsPage extends StatelessWidget {
                 soundConfig: soundConfig,
                 audioFormatConfig: audioFormatConfig,
                 accessibilityStatus: accessibilityStatus,
+                selectedInputDeviceId: selectedInputDeviceId,
               ),
           };
         },
@@ -63,6 +67,7 @@ class _SettingsForm extends StatefulWidget {
     required this.soundConfig,
     required this.audioFormatConfig,
     required this.accessibilityStatus,
+    this.selectedInputDeviceId,
   });
 
   final ApiConfig config;
@@ -72,6 +77,7 @@ class _SettingsForm extends StatefulWidget {
   final SoundConfig soundConfig;
   final AudioFormatConfig audioFormatConfig;
   final AccessibilityStatus accessibilityStatus;
+  final String? selectedInputDeviceId;
 
   @override
   State<_SettingsForm> createState() => _SettingsFormState();
@@ -89,6 +95,7 @@ class _SettingsFormState extends State<_SettingsForm> {
 
   // Post-processing controllers
   late bool _ppEnabled;
+  late PromptTemplate _ppTemplate;
   late final TextEditingController _ppPromptController;
   late final TextEditingController _ppBaseUrlController;
   late final TextEditingController _ppApiKeyController;
@@ -106,6 +113,11 @@ class _SettingsFormState extends State<_SettingsForm> {
   late AudioFormatConfig _audioFormatConfig;
   late final TextEditingController _sampleRateController;
 
+  // Input device
+  String? _selectedDeviceId;
+  List<InputDevice> _inputDevices = [];
+  bool _devicesLoading = true;
+
   @override
   void initState() {
     super.initState();
@@ -117,6 +129,7 @@ class _SettingsFormState extends State<_SettingsForm> {
     _outputMode = widget.outputMode;
 
     _ppEnabled = widget.ppConfig.enabled;
+    _ppTemplate = _templateForPrompt(widget.ppConfig.prompt);
     _ppPromptController = TextEditingController(text: widget.ppConfig.prompt);
     _ppBaseUrlController =
         TextEditingController(text: widget.ppConfig.llmConfig.baseUrl);
@@ -135,6 +148,27 @@ class _SettingsFormState extends State<_SettingsForm> {
     _sampleRateController = TextEditingController(
       text: widget.audioFormatConfig.sampleRate.toString(),
     );
+
+    _selectedDeviceId = widget.selectedInputDeviceId;
+    _loadInputDevices();
+  }
+
+  Future<void> _loadInputDevices() async {
+    try {
+      final recorder = AudioRecorder();
+      final devices = await recorder.listInputDevices();
+      await recorder.dispose();
+      if (mounted) {
+        setState(() {
+          _inputDevices = devices;
+          _devicesLoading = false;
+        });
+      }
+    } on Exception {
+      if (mounted) {
+        setState(() => _devicesLoading = false);
+      }
+    }
   }
 
   @override
@@ -151,6 +185,7 @@ class _SettingsFormState extends State<_SettingsForm> {
     }
     if (oldWidget.ppConfig != widget.ppConfig) {
       _ppEnabled = widget.ppConfig.enabled;
+      _ppTemplate = _templateForPrompt(widget.ppConfig.prompt);
       _ppPromptController.text = widget.ppConfig.prompt;
       _ppBaseUrlController.text = widget.ppConfig.llmConfig.baseUrl;
       _ppApiKeyController.text = widget.ppConfig.llmConfig.apiKey;
@@ -168,6 +203,9 @@ class _SettingsFormState extends State<_SettingsForm> {
       _audioFormatConfig = widget.audioFormatConfig;
       _sampleRateController.text =
           widget.audioFormatConfig.sampleRate.toString();
+    }
+    if (oldWidget.selectedInputDeviceId != widget.selectedInputDeviceId) {
+      _selectedDeviceId = widget.selectedInputDeviceId;
     }
   }
 
@@ -231,12 +269,22 @@ class _SettingsFormState extends State<_SettingsForm> {
     await cubit.saveHotkeyConfig(_hotkeyConfig);
     await cubit.saveSoundConfig(_soundConfig);
     await cubit.saveAudioFormatConfig(_audioFormatConfig);
+    await cubit.saveSelectedInputDevice(_selectedDeviceId);
 
     if (mounted) {
       messenger.showSnackBar(
         const SnackBar(content: Text('Settings saved')),
       );
     }
+  }
+
+  /// Returns the matching [PromptTemplate] for the given prompt text,
+  /// or [PromptTemplate.custom] if no predefined template matches.
+  PromptTemplate _templateForPrompt(String prompt) {
+    for (final t in PromptTemplate.values) {
+      if (t != PromptTemplate.custom && t.prompt == prompt) return t;
+    }
+    return PromptTemplate.custom;
   }
 
   String _hotkeyDisplayLabel(HotkeyConfig config) {
@@ -427,6 +475,32 @@ class _SettingsFormState extends State<_SettingsForm> {
                   fontStyle: FontStyle.italic,
                 ),
           ),
+          const SizedBox(height: 16),
+          if (_devicesLoading)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 8),
+              child: LinearProgressIndicator(),
+            )
+          else
+            DropdownButtonFormField<String>(
+              initialValue: _inputDevices.any((d) => d.id == _selectedDeviceId)
+                  ? _selectedDeviceId
+                  : null,
+              decoration: const InputDecoration(
+                labelText: 'Input Device',
+                border: OutlineInputBorder(),
+              ),
+              items: [
+                const DropdownMenuItem<String>(
+                  value: null,
+                  child: Text('System Default'),
+                ),
+                ..._inputDevices.map(
+                  (d) => DropdownMenuItem(value: d.id, child: Text(d.label)),
+                ),
+              ],
+              onChanged: (value) => setState(() => _selectedDeviceId = value),
+            ),
 
           const SizedBox(height: 32),
           const Divider(),
@@ -585,6 +659,31 @@ class _SettingsFormState extends State<_SettingsForm> {
             onChanged: (value) => setState(() => _ppEnabled = value),
           ),
           const SizedBox(height: 16),
+          DropdownButtonFormField<PromptTemplate>(
+            initialValue: _ppTemplate,
+            decoration: const InputDecoration(
+              labelText: 'Prompt Template',
+              border: OutlineInputBorder(),
+            ),
+            items: PromptTemplate.values
+                .map(
+                  (t) => DropdownMenuItem(value: t, child: Text(t.label)),
+                )
+                .toList(),
+            onChanged: _ppEnabled
+                ? (value) {
+                    if (value != null) {
+                      setState(() {
+                        _ppTemplate = value;
+                        if (value != PromptTemplate.custom) {
+                          _ppPromptController.text = value.prompt;
+                        }
+                      });
+                    }
+                  }
+                : null,
+          ),
+          const SizedBox(height: 16),
           TextField(
             controller: _ppPromptController,
             decoration: const InputDecoration(
@@ -594,6 +693,12 @@ class _SettingsFormState extends State<_SettingsForm> {
             ),
             maxLines: 4,
             enabled: _ppEnabled,
+            onChanged: (_) {
+              // If user manually edits, switch to custom template.
+              if (_ppTemplate != PromptTemplate.custom) {
+                setState(() => _ppTemplate = PromptTemplate.custom);
+              }
+            },
           ),
           const SizedBox(height: 16),
           DropdownButtonFormField<ProviderPreset>(

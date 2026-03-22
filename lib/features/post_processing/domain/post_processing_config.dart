@@ -5,6 +5,36 @@ const kDefaultPostProcessingPrompt =
     'Fix any grammar or spelling errors in the following transcription. '
     'Keep the original meaning and tone.';
 
+/// Predefined prompt templates for common post-processing tasks.
+enum PromptTemplate {
+  fixGrammar(
+    'Fix Grammar',
+    'Fix any grammar or spelling errors in the following transcription. '
+        'Keep the original meaning and tone.',
+  ),
+  summarize(
+    'Summarize',
+    'Summarize the following transcription into a concise paragraph. '
+        'Capture the key points.',
+  ),
+  translate(
+    'Translate',
+    'Translate the following transcription into English. '
+        'Preserve the original meaning and tone.',
+  ),
+  reformat(
+    'Reformat',
+    'Reformat the following transcription into clean, well-structured text. '
+        'Add punctuation, paragraphs, and fix any run-on sentences.',
+  ),
+  custom('Custom', '');
+
+  const PromptTemplate(this.label, this.prompt);
+
+  final String label;
+  final String prompt;
+}
+
 /// Configuration for the LLM post-processing feature.
 class PostProcessingConfig {
   const PostProcessingConfig({

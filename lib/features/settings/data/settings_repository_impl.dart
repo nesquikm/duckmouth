@@ -43,6 +43,9 @@ const _kSoundStartVolume = 'sound_start_volume';
 const _kSoundStopVolume = 'sound_stop_volume';
 const _kSoundCompleteVolume = 'sound_complete_volume';
 
+/// Input device key in SharedPreferences.
+const _kSelectedInputDevice = 'selected_input_device';
+
 /// Audio format keys in SharedPreferences.
 const _kAudioPreset = 'audio_preset';
 const _kAudioFormat = 'audio_format';
@@ -238,5 +241,19 @@ class SettingsRepositoryImpl implements SettingsRepository {
       else
         _prefs.remove(_kAudioBitRate),
     ]);
+  }
+
+  @override
+  Future<String?> loadSelectedInputDevice() async {
+    return _prefs.getString(_kSelectedInputDevice);
+  }
+
+  @override
+  Future<void> saveSelectedInputDevice(String? deviceId) async {
+    if (deviceId != null) {
+      await _prefs.setString(_kSelectedInputDevice, deviceId);
+    } else {
+      await _prefs.remove(_kSelectedInputDevice);
+    }
   }
 }

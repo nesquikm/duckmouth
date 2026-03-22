@@ -92,6 +92,8 @@ void main() {
         .thenAnswer((_) async => const SoundConfig());
     when(() => mockSettingsRepo.loadAudioFormatConfig())
         .thenAnswer((_) async => const AudioFormatConfig());
+    when(() => mockSettingsRepo.loadSelectedInputDevice())
+        .thenAnswer((_) async => null);
     when(() => mockHotkeyService.unregisterAll()).thenAnswer((_) async {});
     when(
       () => mockHotkeyService.register(
@@ -165,7 +167,7 @@ void main() {
         // Set up the recording to succeed
         when(() => mockRecordingRepo.hasPermission())
             .thenAnswer((_) async => true);
-        when(() => mockRecordingRepo.start(formatConfig: any(named: 'formatConfig'))).thenAnswer((_) async {});
+        when(() => mockRecordingRepo.start(formatConfig: any(named: 'formatConfig'), deviceId: any(named: 'deviceId'))).thenAnswer((_) async {});
         when(() => mockRecordingRepo.stop())
             .thenAnswer((_) async => '/tmp/test.m4a');
 
@@ -212,7 +214,7 @@ void main() {
       (tester) async {
         when(() => mockRecordingRepo.hasPermission())
             .thenAnswer((_) async => true);
-        when(() => mockRecordingRepo.start(formatConfig: any(named: 'formatConfig'))).thenAnswer((_) async {});
+        when(() => mockRecordingRepo.start(formatConfig: any(named: 'formatConfig'), deviceId: any(named: 'deviceId'))).thenAnswer((_) async {});
         when(() => mockRecordingRepo.stop())
             .thenAnswer((_) async => '/tmp/test.m4a');
         when(() => mockSttRepo.transcribe(any()))
@@ -279,7 +281,7 @@ void main() {
     testWidgets('New Recording button resets state', (tester) async {
       when(() => mockRecordingRepo.hasPermission())
           .thenAnswer((_) async => true);
-      when(() => mockRecordingRepo.start(formatConfig: any(named: 'formatConfig'))).thenAnswer((_) async {});
+      when(() => mockRecordingRepo.start(formatConfig: any(named: 'formatConfig'), deviceId: any(named: 'deviceId'))).thenAnswer((_) async {});
       when(() => mockRecordingRepo.stop())
           .thenAnswer((_) async => '/tmp/test.m4a');
       when(() => mockSttRepo.transcribe(any()))
@@ -317,7 +319,7 @@ void main() {
         (tester) async {
       when(() => mockRecordingRepo.hasPermission())
           .thenAnswer((_) async => true);
-      when(() => mockRecordingRepo.start(formatConfig: any(named: 'formatConfig'))).thenAnswer((_) async {});
+      when(() => mockRecordingRepo.start(formatConfig: any(named: 'formatConfig'), deviceId: any(named: 'deviceId'))).thenAnswer((_) async {});
       when(() => mockRecordingRepo.stop())
           .thenAnswer((_) async => '/tmp/test.m4a');
       when(() => mockSttRepo.transcribe(any()))

@@ -128,37 +128,37 @@ Duckmouth is a macOS desktop app that captures speech via microphone, transcribe
 
 | Requirement | Implementation | Tests |
 |-------------|---------------|-------|
-| AC-1.1      |               |       |
-| AC-1.2      |               |       |
-| AC-1.3      |               |       |
-| AC-2.1      |               |       |
-| AC-2.2      |               |       |
-| AC-2.3      |               |       |
-| AC-3.1      |               |       |
-| AC-3.2      |               |       |
-| AC-3.3      |               |       |
-| AC-4.1      |               |       |
-| AC-4.2      |               |       |
-| AC-4.3      |               |       |
-| AC-5.1      |               |       |
-| AC-5.2      |               |       |
-| AC-5.3      |               |       |
-| AC-6.1      |               |       |
-| AC-6.2      |               |       |
-| AC-6.3      |               |       |
-| AC-7.1      |               |       |
-| AC-7.2      |               |       |
-| AC-7.3      |               |       |
-| AC-8.1      |               |       |
-| AC-8.2      |               |       |
-| AC-8.3      |               |       |
-| AC-9.1      |               |       |
-| AC-9.2      |               |       |
-| AC-9.3      |               |       |
-| AC-9.4      |               |       |
-| AC-9.5      |               |       |
-| AC-9.6      |               |       |
-| AC-9.7      |               |       |
+| AC-1.1      | `lib/features/recording/data/recording_repository_impl.dart` | `test/features/recording/data/recording_repository_impl_test.dart` |
+| AC-1.2      | `lib/features/recording/ui/recording_controls.dart`, `lib/features/hotkey/ui/hotkey_cubit.dart` | `test/features/recording/ui/recording_controls_test.dart`, `test/features/hotkey/ui/hotkey_cubit_test.dart` |
+| AC-1.3      | `lib/features/transcription/data/stt_repository_impl.dart`, `lib/core/api/openai_client.dart` | `test/core/api/openai_client_test.dart` |
+| AC-2.1      | `lib/core/api/openai_client.dart`, `lib/features/settings/domain/api_config.dart` | `test/core/api/openai_client_test.dart` |
+| AC-2.2      | `lib/features/transcription/ui/transcription_display.dart`, `lib/features/transcription/ui/transcription_cubit.dart` | `test/features/transcription/ui/transcription_cubit_test.dart` |
+| AC-2.3      | `lib/features/settings/domain/provider_preset.dart`, `lib/features/settings/ui/settings_page.dart` | `test/features/settings/data/settings_repository_impl_test.dart` |
+| AC-3.1      | `lib/features/post_processing/domain/post_processing_config.dart`, `lib/features/settings/ui/settings_page.dart` | `test/features/settings/ui/settings_cubit_test.dart` |
+| AC-3.2      | `lib/features/post_processing/domain/post_processing_config.dart` (`PromptTemplate` enum), `lib/features/settings/ui/settings_page.dart` | `test/features/settings/ui/settings_cubit_test.dart` |
+| AC-3.3      | `lib/core/api/llm_client.dart`, `lib/features/post_processing/data/post_processing_repository_impl.dart` | `test/core/api/llm_client_test.dart` |
+| AC-4.1      | `lib/core/services/clipboard_service.dart`, `lib/app/home_page.dart` | `test/core/services/clipboard_service_test.dart` |
+| AC-4.2      | `lib/core/services/accessibility_service.dart`, `macos/Runner/TextInsertionChannel.swift` | `test/core/services/accessibility_service_test.dart` |
+| AC-4.3      | `lib/core/services/output_mode.dart`, `lib/features/settings/ui/settings_page.dart` | `test/features/settings/data/settings_repository_impl_test.dart` |
+| AC-5.1      | `lib/core/services/sound_service.dart`, `macos/Runner/SoundChannel.swift` | `test/core/services/sound_service_test.dart` |
+| AC-5.2      | `lib/core/services/sound_config.dart`, `lib/features/settings/ui/settings_page.dart` | `test/core/services/sound_service_test.dart` |
+| AC-5.3      | `lib/core/services/sound_config.dart`, `lib/features/settings/ui/settings_page.dart` | `test/core/services/sound_service_test.dart` |
+| AC-6.1      | `lib/features/hotkey/domain/hotkey_config.dart`, `lib/features/hotkey/ui/hotkey_cubit.dart` | `test/features/hotkey/ui/hotkey_cubit_test.dart` |
+| AC-6.2      | `lib/features/hotkey/ui/hotkey_cubit.dart` | `test/features/hotkey/ui/hotkey_cubit_test.dart` |
+| AC-6.3      | `lib/features/hotkey/ui/hotkey_cubit.dart` | `test/features/hotkey/ui/hotkey_cubit_test.dart` |
+| AC-7.1      | `lib/app/system_tray_manager.dart` | `test/app/app_test.dart` |
+| AC-7.2      | `lib/app/home_page.dart` | `test/app/home_page_integration_test.dart` |
+| AC-7.3      | `lib/app/system_tray_manager.dart` | `test/app/app_test.dart` |
+| AC-8.1      | `lib/features/history/ui/history_page.dart` | `test/features/history/ui/history_cubit_test.dart` |
+| AC-8.2      | `lib/features/history/ui/history_page.dart` | `test/features/history/ui/history_cubit_test.dart` |
+| AC-8.3      | `lib/features/history/ui/history_page.dart` | `test/features/history/ui/history_cubit_test.dart` |
+| AC-9.1      | `lib/features/settings/domain/provider_preset.dart`, `lib/features/settings/ui/settings_page.dart` | `test/features/settings/data/settings_repository_impl_test.dart` |
+| AC-9.2      | `lib/features/settings/data/settings_repository_impl.dart` (FlutterSecureStorage) | `test/features/settings/data/settings_repository_impl_test.dart` |
+| AC-9.3      | `lib/features/settings/ui/settings_page.dart`, `lib/features/settings/domain/provider_preset.dart` | `test/features/settings/data/settings_repository_impl_test.dart` |
+| AC-9.4      | `lib/features/settings/ui/settings_page.dart`, `lib/features/recording/data/recording_repository_impl.dart` | `test/features/settings/data/settings_repository_impl_test.dart`, `test/features/settings/ui/settings_cubit_test.dart` |
+| AC-9.5      | `lib/features/settings/ui/settings_page.dart`, `lib/features/hotkey/domain/hotkey_config.dart` | `test/features/hotkey/domain/hotkey_config_test.dart` |
+| AC-9.6      | `lib/features/settings/ui/settings_page.dart`, `lib/core/services/sound_config.dart` | `test/core/services/sound_service_test.dart` |
+| AC-9.7      | `lib/features/settings/ui/settings_page.dart`, `lib/core/services/output_mode.dart` | `test/features/settings/data/settings_repository_impl_test.dart` |
 | AC-10.1     | `lib/core/services/accessibility_service.dart`, `macos/Runner/TextInsertionChannel.swift` | `test/core/services/accessibility_service_test.dart` |
 | AC-10.2     | `lib/core/services/accessibility_service.dart` | `test/core/services/accessibility_service_test.dart` |
 | AC-10.3     | `lib/core/services/accessibility_service.dart` | `test/core/services/accessibility_service_test.dart` |

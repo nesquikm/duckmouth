@@ -44,4 +44,10 @@ abstract class SettingsRepository {
 
   /// Persist the given audio format configuration.
   Future<void> saveAudioFormatConfig(AudioFormatConfig config);
+
+  /// Load the saved input device ID.
+  Future<String?> loadSelectedInputDevice();
+
+  /// Persist the given input device ID.
+  Future<void> saveSelectedInputDevice(String? deviceId);
 }

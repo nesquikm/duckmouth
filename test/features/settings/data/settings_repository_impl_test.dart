@@ -314,4 +314,25 @@ void main() {
       expect(result.bitRate, isNull);
     });
   });
+
+  group('Input device persistence', () {
+    test('loadSelectedInputDevice returns null when nothing saved', () async {
+      final result = await repo.loadSelectedInputDevice();
+      expect(result, isNull);
+    });
+
+    test('saveSelectedInputDevice/loadSelectedInputDevice round-trips',
+        () async {
+      await repo.saveSelectedInputDevice('device-123');
+      final result = await repo.loadSelectedInputDevice();
+      expect(result, 'device-123');
+    });
+
+    test('saveSelectedInputDevice with null clears value', () async {
+      await repo.saveSelectedInputDevice('device-123');
+      await repo.saveSelectedInputDevice(null);
+      final result = await repo.loadSelectedInputDevice();
+      expect(result, isNull);
+    });
+  });
 }

@@ -100,6 +100,13 @@ specs/                            # SDD spec files
 - `balanced`: AAC 64kbps 16kHz mono — 8x smaller, no accuracy loss on cloud APIs
 - `smallest`: AAC 32kbps 16kHz mono — minimum viable quality for transcription
 
+### PromptTemplate
+- `fixGrammar`: Fix grammar and spelling errors
+- `summarize`: Condense into key points
+- `translate`: Translate to English
+- `reformat`: Clean up structure and punctuation
+- `custom`: User-defined prompt
+
 ### AccessibilityPermission
 - `status`: AccessibilityStatus (granted, denied, unknown)
 

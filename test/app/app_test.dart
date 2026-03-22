@@ -78,6 +78,8 @@ void main() {
         .thenAnswer((_) async => const SoundConfig());
     when(() => mockSettingsRepo.loadAudioFormatConfig())
         .thenAnswer((_) async => const AudioFormatConfig());
+    when(() => mockSettingsRepo.loadSelectedInputDevice())
+        .thenAnswer((_) async => null);
 
     final mockHotkeyService = MockHotkeyService();
     when(() => mockHotkeyService.unregisterAll()).thenAnswer((_) async {});

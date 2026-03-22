@@ -54,7 +54,7 @@ void main() {
   testWidgets('shows Recording... and stop icon when recording',
       (tester) async {
     when(() => mockRepo.hasPermission()).thenAnswer((_) async => true);
-    when(() => mockRepo.start(formatConfig: any(named: 'formatConfig'))).thenAnswer((_) async {});
+    when(() => mockRepo.start(formatConfig: any(named: 'formatConfig'), deviceId: any(named: 'deviceId'))).thenAnswer((_) async {});
 
     await tester.pumpWidget(buildTestWidget());
     await cubit.startRecording();
@@ -88,13 +88,13 @@ void main() {
 
   testWidgets('tapping mic button calls startRecording', (tester) async {
     when(() => mockRepo.hasPermission()).thenAnswer((_) async => true);
-    when(() => mockRepo.start(formatConfig: any(named: 'formatConfig'))).thenAnswer((_) async {});
+    when(() => mockRepo.start(formatConfig: any(named: 'formatConfig'), deviceId: any(named: 'deviceId'))).thenAnswer((_) async {});
 
     await tester.pumpWidget(buildTestWidget());
     await tester.tap(find.byIcon(Icons.mic));
     await tester.pump();
 
-    verify(() => mockRepo.start(formatConfig: any(named: 'formatConfig'))).called(1);
+    verify(() => mockRepo.start(formatConfig: any(named: 'formatConfig'), deviceId: any(named: 'deviceId'))).called(1);
   });
 
   testWidgets('tapping stop button calls stopRecording', (tester) async {

@@ -4,6 +4,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:duckmouth/core/services/output_mode.dart';
+import 'package:duckmouth/core/services/sound_config.dart';
 import 'package:duckmouth/features/hotkey/domain/hotkey_config.dart';
 import 'package:duckmouth/features/post_processing/domain/post_processing_config.dart';
 import 'package:duckmouth/features/settings/data/settings_repository_impl.dart';
@@ -221,6 +222,46 @@ void main() {
       expect(prefs.getInt('hotkey_key_code'), 0x00070004);
       expect(prefs.getString('hotkey_modifiers'), '["alt","meta"]');
       expect(prefs.getString('hotkey_mode'), 'pushToTalk');
+    });
+  });
+
+  group('SoundConfig persistence', () {
+    test('loadSoundConfig returns defaults when nothing saved', () async {
+      final result = await repo.loadSoundConfig();
+      expect(result.enabled, true);
+      expect(result.startVolume, 1.0);
+      expect(result.stopVolume, 1.0);
+      expect(result.completeVolume, 1.0);
+    });
+
+    test('loadSoundConfig returns saved values', () async {
+      await prefs.setBool('sound_enabled', false);
+      await prefs.setDouble('sound_start_volume', 0.3);
+      await prefs.setDouble('sound_stop_volume', 0.7);
+      await prefs.setDouble('sound_complete_volume', 0.5);
+
+      final result = await repo.loadSoundConfig();
+
+      expect(result.enabled, false);
+      expect(result.startVolume, 0.3);
+      expect(result.stopVolume, 0.7);
+      expect(result.completeVolume, 0.5);
+    });
+
+    test('saveSoundConfig persists all fields', () async {
+      const config = SoundConfig(
+        enabled: false,
+        startVolume: 0.4,
+        stopVolume: 0.6,
+        completeVolume: 0.8,
+      );
+
+      await repo.saveSoundConfig(config);
+
+      expect(prefs.getBool('sound_enabled'), false);
+      expect(prefs.getDouble('sound_start_volume'), 0.4);
+      expect(prefs.getDouble('sound_stop_volume'), 0.6);
+      expect(prefs.getDouble('sound_complete_volume'), 0.8);
     });
   });
 }

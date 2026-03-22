@@ -1,4 +1,5 @@
 import 'package:duckmouth/core/services/output_mode.dart';
+import 'package:duckmouth/core/services/sound_config.dart';
 import 'package:duckmouth/features/hotkey/domain/hotkey_config.dart';
 import 'package:duckmouth/features/post_processing/domain/post_processing_config.dart';
 import 'package:duckmouth/features/settings/domain/api_config.dart';
@@ -20,24 +21,28 @@ class SettingsLoaded extends SettingsState {
     this.postProcessingConfig = const PostProcessingConfig(),
     this.outputMode = OutputMode.copy,
     this.hotkeyConfig = HotkeyConfig.defaultConfig,
+    this.soundConfig = const SoundConfig(),
   });
 
   final ApiConfig sttConfig;
   final PostProcessingConfig postProcessingConfig;
   final OutputMode outputMode;
   final HotkeyConfig hotkeyConfig;
+  final SoundConfig soundConfig;
 
   SettingsLoaded copyWith({
     ApiConfig? sttConfig,
     PostProcessingConfig? postProcessingConfig,
     OutputMode? outputMode,
     HotkeyConfig? hotkeyConfig,
+    SoundConfig? soundConfig,
   }) {
     return SettingsLoaded(
       sttConfig: sttConfig ?? this.sttConfig,
       postProcessingConfig: postProcessingConfig ?? this.postProcessingConfig,
       outputMode: outputMode ?? this.outputMode,
       hotkeyConfig: hotkeyConfig ?? this.hotkeyConfig,
+      soundConfig: soundConfig ?? this.soundConfig,
     );
   }
 
@@ -49,11 +54,17 @@ class SettingsLoaded extends SettingsState {
           sttConfig == other.sttConfig &&
           postProcessingConfig == other.postProcessingConfig &&
           outputMode == other.outputMode &&
-          hotkeyConfig == other.hotkeyConfig;
+          hotkeyConfig == other.hotkeyConfig &&
+          soundConfig == other.soundConfig;
 
   @override
-  int get hashCode =>
-      Object.hash(sttConfig, postProcessingConfig, outputMode, hotkeyConfig);
+  int get hashCode => Object.hash(
+        sttConfig,
+        postProcessingConfig,
+        outputMode,
+        hotkeyConfig,
+        soundConfig,
+      );
 }
 
 /// An error occurred while loading or saving settings.

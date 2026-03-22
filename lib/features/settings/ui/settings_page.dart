@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
 
 import 'package:duckmouth/core/services/output_mode.dart';
+import 'package:duckmouth/core/services/sound_config.dart';
 import 'package:duckmouth/features/hotkey/domain/hotkey_config.dart';
 import 'package:duckmouth/features/post_processing/domain/post_processing_config.dart';
 import 'package:duckmouth/features/settings/domain/api_config.dart';
@@ -31,12 +32,14 @@ class SettingsPage extends StatelessWidget {
               :final postProcessingConfig,
               :final outputMode,
               :final hotkeyConfig,
+              :final soundConfig,
             ) =>
               _SettingsForm(
                 config: sttConfig,
                 ppConfig: postProcessingConfig,
                 outputMode: outputMode,
                 hotkeyConfig: hotkeyConfig,
+                soundConfig: soundConfig,
               ),
           };
         },
@@ -51,12 +54,14 @@ class _SettingsForm extends StatefulWidget {
     required this.ppConfig,
     required this.outputMode,
     required this.hotkeyConfig,
+    required this.soundConfig,
   });
 
   final ApiConfig config;
   final PostProcessingConfig ppConfig;
   final OutputMode outputMode;
   final HotkeyConfig hotkeyConfig;
+  final SoundConfig soundConfig;
 
   @override
   State<_SettingsForm> createState() => _SettingsFormState();
@@ -84,6 +89,9 @@ class _SettingsFormState extends State<_SettingsForm> {
   late HotkeyConfig _hotkeyConfig;
   HotKey? _recordedHotKey;
 
+  // Sound
+  late SoundConfig _soundConfig;
+
   @override
   void initState() {
     super.initState();
@@ -106,6 +114,8 @@ class _SettingsFormState extends State<_SettingsForm> {
         ProviderPreset.fromName(widget.ppConfig.llmConfig.providerName);
 
     _hotkeyConfig = widget.hotkeyConfig;
+
+    _soundConfig = widget.soundConfig;
   }
 
   @override
@@ -131,6 +141,9 @@ class _SettingsFormState extends State<_SettingsForm> {
     }
     if (oldWidget.hotkeyConfig != widget.hotkeyConfig) {
       _hotkeyConfig = widget.hotkeyConfig;
+    }
+    if (oldWidget.soundConfig != widget.soundConfig) {
+      _soundConfig = widget.soundConfig;
     }
   }
 
@@ -191,6 +204,7 @@ class _SettingsFormState extends State<_SettingsForm> {
     await cubit.savePostProcessingConfig(ppConfig);
     await cubit.saveOutputMode(_outputMode);
     await cubit.saveHotkeyConfig(_hotkeyConfig);
+    await cubit.saveSoundConfig(_soundConfig);
 
     if (mounted) {
       messenger.showSnackBar(
@@ -394,6 +408,50 @@ class _SettingsFormState extends State<_SettingsForm> {
           const Divider(),
           const SizedBox(height: 16),
 
+          // ── Sound Feedback Section ──
+          Text(
+            'Sound Feedback',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 12),
+          SwitchListTile(
+            title: const Text('Enable sound feedback'),
+            subtitle: const Text(
+              'Play sounds for recording and transcription events',
+            ),
+            value: _soundConfig.enabled,
+            onChanged: (value) =>
+                setState(() => _soundConfig = _soundConfig.copyWith(enabled: value)),
+          ),
+          const SizedBox(height: 12),
+          _VolumeSlider(
+            label: 'Recording start volume',
+            value: _soundConfig.startVolume,
+            enabled: _soundConfig.enabled,
+            onChanged: (v) =>
+                setState(() => _soundConfig = _soundConfig.copyWith(startVolume: v)),
+          ),
+          const SizedBox(height: 8),
+          _VolumeSlider(
+            label: 'Recording stop volume',
+            value: _soundConfig.stopVolume,
+            enabled: _soundConfig.enabled,
+            onChanged: (v) =>
+                setState(() => _soundConfig = _soundConfig.copyWith(stopVolume: v)),
+          ),
+          const SizedBox(height: 8),
+          _VolumeSlider(
+            label: 'Transcription complete volume',
+            value: _soundConfig.completeVolume,
+            enabled: _soundConfig.enabled,
+            onChanged: (v) =>
+                setState(() => _soundConfig = _soundConfig.copyWith(completeVolume: v)),
+          ),
+
+          const SizedBox(height: 32),
+          const Divider(),
+          const SizedBox(height: 16),
+
           // ── Post-Processing Section ──
           Text(
             'Post-Processing (LLM)',
@@ -507,6 +565,41 @@ class _SettingsFormState extends State<_SettingsForm> {
           ],
         );
       },
+    );
+  }
+}
+
+class _VolumeSlider extends StatelessWidget {
+  const _VolumeSlider({
+    required this.label,
+    required this.value,
+    required this.enabled,
+    required this.onChanged,
+  });
+
+  final String label;
+  final double value;
+  final bool enabled;
+  final ValueChanged<double> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          flex: 2,
+          child: Text(label),
+        ),
+        Expanded(
+          flex: 3,
+          child: Slider(
+            value: value,
+            onChanged: enabled ? onChanged : null,
+            divisions: 10,
+            label: '${(value * 100).round()}%',
+          ),
+        ),
+      ],
     );
   }
 }

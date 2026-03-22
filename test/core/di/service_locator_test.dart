@@ -7,6 +7,7 @@ import 'package:duckmouth/core/api/llm_client.dart';
 import 'package:duckmouth/core/api/openai_client.dart';
 import 'package:duckmouth/core/di/service_locator.dart';
 import 'package:duckmouth/core/services/clipboard_service.dart';
+import 'package:duckmouth/core/services/sound_service.dart';
 import 'package:duckmouth/features/hotkey/domain/hotkey_service.dart';
 import 'package:duckmouth/features/hotkey/ui/hotkey_cubit.dart';
 import 'package:duckmouth/features/post_processing/domain/post_processing_repository.dart';
@@ -110,6 +111,11 @@ void main() {
   test('registers HotkeyCubit', () async {
     await setupServiceLocator();
     expect(sl.isRegistered<HotkeyCubit>(), isTrue);
+  });
+
+  test('registers SoundService', () async {
+    await setupServiceLocator();
+    expect(sl.isRegistered<SoundService>(), isTrue);
   });
 
   group('updateOpenAiClient', () {

@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:duckmouth/core/api/llm_client.dart';
 import 'package:duckmouth/core/api/openai_client.dart';
 import 'package:duckmouth/core/services/clipboard_service.dart';
+import 'package:duckmouth/core/services/sound_service.dart';
 import 'package:duckmouth/features/hotkey/data/hotkey_service_impl.dart';
 import 'package:duckmouth/features/hotkey/domain/hotkey_service.dart';
 import 'package:duckmouth/features/hotkey/ui/hotkey_cubit.dart';
@@ -33,6 +34,9 @@ Future<void> setupServiceLocator() async {
 
   // Clipboard
   sl.registerLazySingleton<ClipboardService>(ClipboardServiceImpl.new);
+
+  // Sound
+  sl.registerLazySingleton<SoundService>(SoundServiceImpl.new);
 
   // Settings
   sl.registerLazySingleton<SettingsRepository>(

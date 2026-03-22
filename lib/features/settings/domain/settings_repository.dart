@@ -1,4 +1,5 @@
 import 'package:duckmouth/core/services/output_mode.dart';
+import 'package:duckmouth/core/services/sound_config.dart';
 import 'package:duckmouth/features/hotkey/domain/hotkey_config.dart';
 import 'package:duckmouth/features/post_processing/domain/post_processing_config.dart';
 import 'package:duckmouth/features/settings/domain/api_config.dart';
@@ -30,4 +31,10 @@ abstract class SettingsRepository {
 
   /// Persist the given hotkey configuration.
   Future<void> saveHotkeyConfig(HotkeyConfig config);
+
+  /// Load the saved sound configuration.
+  Future<SoundConfig> loadSoundConfig();
+
+  /// Persist the given sound configuration.
+  Future<void> saveSoundConfig(SoundConfig config);
 }

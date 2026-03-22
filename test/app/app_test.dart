@@ -6,6 +6,8 @@ import 'package:mocktail/mocktail.dart';
 import 'package:duckmouth/app/app.dart';
 import 'package:duckmouth/core/services/clipboard_service.dart';
 import 'package:duckmouth/core/services/output_mode.dart';
+import 'package:duckmouth/core/services/sound_config.dart';
+import 'package:duckmouth/core/services/sound_service.dart';
 import 'package:duckmouth/features/hotkey/domain/hotkey_config.dart';
 import 'package:duckmouth/features/hotkey/domain/hotkey_service.dart';
 import 'package:duckmouth/features/hotkey/ui/hotkey_cubit.dart';
@@ -31,6 +33,8 @@ class MockPostProcessingRepository extends Mock
 class MockClipboardService extends Mock implements ClipboardService {}
 
 class MockHotkeyService extends Mock implements HotkeyService {}
+
+class MockSoundService extends Mock implements SoundService {}
 
 class FakeHotKey extends Fake implements HotKey {}
 
@@ -60,6 +64,8 @@ void main() {
         .thenAnswer((_) async => OutputMode.copy);
     when(() => mockSettingsRepo.loadHotkeyConfig())
         .thenAnswer((_) async => HotkeyConfig.defaultConfig);
+    when(() => mockSettingsRepo.loadSoundConfig())
+        .thenAnswer((_) async => const SoundConfig());
 
     final mockHotkeyService = MockHotkeyService();
     when(() => mockHotkeyService.unregisterAll()).thenAnswer((_) async {});
@@ -73,6 +79,7 @@ void main() {
 
     final sl = GetIt.instance;
     sl.registerLazySingleton<ClipboardService>(MockClipboardService.new);
+    sl.registerLazySingleton<SoundService>(MockSoundService.new);
     sl.registerFactory<RecordingCubit>(
       () => RecordingCubit(repository: mockRepo),
     );

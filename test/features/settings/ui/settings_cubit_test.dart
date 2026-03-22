@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
 import 'package:duckmouth/core/services/output_mode.dart';
+import 'package:duckmouth/core/services/sound_config.dart';
 import 'package:duckmouth/features/hotkey/domain/hotkey_config.dart';
 import 'package:duckmouth/features/post_processing/domain/post_processing_config.dart';
 import 'package:duckmouth/features/settings/domain/api_config.dart';
@@ -27,6 +28,7 @@ void main() {
     registerFallbackValue(FakePostProcessingConfig());
     registerFallbackValue(OutputMode.copy);
     registerFallbackValue(HotkeyConfig.defaultConfig);
+    registerFallbackValue(const SoundConfig());
   });
 
   setUp(() {
@@ -67,6 +69,8 @@ void main() {
             .thenAnswer((_) async => OutputMode.copy);
         when(() => mockRepo.loadHotkeyConfig())
             .thenAnswer((_) async => defaultHotkeyConfig);
+        when(() => mockRepo.loadSoundConfig())
+            .thenAnswer((_) async => const SoundConfig());
         return SettingsCubit(repository: mockRepo);
       },
       act: (cubit) => cubit.loadSettings(),
@@ -90,6 +94,8 @@ void main() {
             .thenAnswer((_) async => OutputMode.copy);
         when(() => mockRepo.loadHotkeyConfig())
             .thenAnswer((_) async => defaultHotkeyConfig);
+        when(() => mockRepo.loadSoundConfig())
+            .thenAnswer((_) async => const SoundConfig());
         return SettingsCubit(repository: mockRepo);
       },
       act: (cubit) => cubit.loadSettings(),
@@ -237,6 +243,8 @@ void main() {
             .thenAnswer((_) async => OutputMode.paste);
         when(() => mockRepo.loadHotkeyConfig())
             .thenAnswer((_) async => defaultHotkeyConfig);
+        when(() => mockRepo.loadSoundConfig())
+            .thenAnswer((_) async => const SoundConfig());
         return SettingsCubit(repository: mockRepo);
       },
       act: (cubit) => cubit.loadSettings(),
@@ -324,6 +332,43 @@ void main() {
         return SettingsCubit(repository: mockRepo);
       },
       act: (cubit) => cubit.saveHotkeyConfig(defaultHotkeyConfig),
+      expect: () => [
+        const SettingsError(message: 'Exception: write error'),
+      ],
+    );
+
+    blocTest<SettingsCubit, SettingsState>(
+      'saveSoundConfig persists and emits updated state',
+      build: () {
+        when(() => mockRepo.saveSoundConfig(any()))
+            .thenAnswer((_) async {});
+        return SettingsCubit(repository: mockRepo);
+      },
+      seed: () => const SettingsLoaded(sttConfig: defaultConfig),
+      act: (cubit) => cubit.saveSoundConfig(
+        const SoundConfig(enabled: false, startVolume: 0.5),
+      ),
+      expect: () => [
+        const SettingsLoaded(
+          sttConfig: defaultConfig,
+          postProcessingConfig: defaultPpConfig,
+          hotkeyConfig: defaultHotkeyConfig,
+          soundConfig: SoundConfig(enabled: false, startVolume: 0.5),
+        ),
+      ],
+      verify: (_) {
+        verify(() => mockRepo.saveSoundConfig(any())).called(1);
+      },
+    );
+
+    blocTest<SettingsCubit, SettingsState>(
+      'saveSoundConfig emits SettingsError on exception',
+      build: () {
+        when(() => mockRepo.saveSoundConfig(any()))
+            .thenThrow(Exception('write error'));
+        return SettingsCubit(repository: mockRepo);
+      },
+      act: (cubit) => cubit.saveSoundConfig(const SoundConfig()),
       expect: () => [
         const SettingsError(message: 'Exception: write error'),
       ],

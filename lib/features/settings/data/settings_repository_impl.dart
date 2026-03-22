@@ -4,6 +4,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:duckmouth/core/services/output_mode.dart';
+import 'package:duckmouth/core/services/sound_config.dart';
 import 'package:duckmouth/features/hotkey/domain/hotkey_config.dart';
 import 'package:duckmouth/features/post_processing/domain/post_processing_config.dart';
 import 'package:duckmouth/features/settings/domain/api_config.dart';
@@ -34,6 +35,12 @@ const _kOutputMode = 'output_mode';
 const _kHotkeyKeyCode = 'hotkey_key_code';
 const _kHotkeyModifiers = 'hotkey_modifiers';
 const _kHotkeyMode = 'hotkey_mode';
+
+/// Sound keys in SharedPreferences.
+const _kSoundEnabled = 'sound_enabled';
+const _kSoundStartVolume = 'sound_start_volume';
+const _kSoundStopVolume = 'sound_stop_volume';
+const _kSoundCompleteVolume = 'sound_complete_volume';
 
 /// [SettingsRepository] backed by SharedPreferences (non-sensitive values)
 /// and FlutterSecureStorage (API keys).
@@ -156,6 +163,31 @@ class SettingsRepositoryImpl implements SettingsRepository {
       _prefs.setInt(_kHotkeyKeyCode, config.keyCode),
       _prefs.setString(_kHotkeyModifiers, jsonEncode(config.modifiers)),
       _prefs.setString(_kHotkeyMode, config.mode.name),
+    ]);
+  }
+
+  @override
+  Future<SoundConfig> loadSoundConfig() async {
+    final enabled = _prefs.getBool(_kSoundEnabled) ?? true;
+    final startVolume = _prefs.getDouble(_kSoundStartVolume) ?? 1.0;
+    final stopVolume = _prefs.getDouble(_kSoundStopVolume) ?? 1.0;
+    final completeVolume = _prefs.getDouble(_kSoundCompleteVolume) ?? 1.0;
+
+    return SoundConfig(
+      enabled: enabled,
+      startVolume: startVolume,
+      stopVolume: stopVolume,
+      completeVolume: completeVolume,
+    );
+  }
+
+  @override
+  Future<void> saveSoundConfig(SoundConfig config) async {
+    await Future.wait([
+      _prefs.setBool(_kSoundEnabled, config.enabled),
+      _prefs.setDouble(_kSoundStartVolume, config.startVolume),
+      _prefs.setDouble(_kSoundStopVolume, config.stopVolume),
+      _prefs.setDouble(_kSoundCompleteVolume, config.completeVolume),
     ]);
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:duckmouth/core/services/output_mode.dart';
+import 'package:duckmouth/core/services/sound_config.dart';
 import 'package:duckmouth/features/hotkey/domain/hotkey_config.dart';
 import 'package:duckmouth/features/post_processing/domain/post_processing_config.dart';
 import 'package:duckmouth/features/settings/domain/api_config.dart';
@@ -30,6 +31,7 @@ class SettingsCubit extends Cubit<SettingsState> {
     PostProcessingConfig? postProcessingConfig,
     OutputMode? outputMode,
     HotkeyConfig? hotkeyConfig,
+    SoundConfig? soundConfig,
   }) {
     final currentState = state;
     return SettingsLoaded(
@@ -49,6 +51,10 @@ class SettingsCubit extends Cubit<SettingsState> {
           (currentState is SettingsLoaded
               ? currentState.hotkeyConfig
               : HotkeyConfig.defaultConfig),
+      soundConfig: soundConfig ??
+          (currentState is SettingsLoaded
+              ? currentState.soundConfig
+              : const SoundConfig()),
     );
   }
 
@@ -59,11 +65,13 @@ class SettingsCubit extends Cubit<SettingsState> {
       final ppConfig = await _repository.loadPostProcessingConfig();
       final outputMode = await _repository.loadOutputMode();
       final hotkeyConfig = await _repository.loadHotkeyConfig();
+      final soundConfig = await _repository.loadSoundConfig();
       emit(SettingsLoaded(
         sttConfig: config ?? _kDefaultConfig,
         postProcessingConfig: ppConfig,
         outputMode: outputMode,
         hotkeyConfig: hotkeyConfig,
+        soundConfig: soundConfig,
       ));
     } on Exception catch (e) {
       emit(SettingsError(message: e.toString()));
@@ -105,6 +113,16 @@ class SettingsCubit extends Cubit<SettingsState> {
     try {
       await _repository.saveHotkeyConfig(hotkeyConfig);
       emit(_currentOrDefault(hotkeyConfig: hotkeyConfig));
+    } on Exception catch (e) {
+      emit(SettingsError(message: e.toString()));
+    }
+  }
+
+  /// Save the given [soundConfig] and emit the updated state.
+  Future<void> saveSoundConfig(SoundConfig soundConfig) async {
+    try {
+      await _repository.saveSoundConfig(soundConfig);
+      emit(_currentOrDefault(soundConfig: soundConfig));
     } on Exception catch (e) {
       emit(SettingsError(message: e.toString()));
     }

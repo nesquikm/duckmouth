@@ -4,6 +4,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:duckmouth/core/di/service_locator.dart';
 import 'package:duckmouth/core/services/clipboard_service.dart';
 import 'package:duckmouth/core/services/output_mode.dart';
+import 'package:duckmouth/core/services/sound_config.dart';
+import 'package:duckmouth/core/services/sound_service.dart';
 import 'package:duckmouth/features/hotkey/ui/hotkey_cubit.dart';
 import 'package:duckmouth/features/hotkey/ui/hotkey_state.dart';
 import 'package:duckmouth/features/post_processing/ui/post_processing_cubit.dart';
@@ -78,6 +80,13 @@ class _SettingsButton extends StatelessWidget {
   }
 }
 
+SoundConfig _currentSoundConfig(BuildContext context) {
+  final settingsState = context.read<SettingsCubit>().state;
+  return settingsState is SettingsLoaded
+      ? settingsState.soundConfig
+      : const SoundConfig();
+}
+
 void _handleOutput(BuildContext context, String text) {
   final settingsState = context.read<SettingsCubit>().state;
   final outputMode = settingsState is SettingsLoaded
@@ -104,7 +113,20 @@ class _HomeBody extends StatelessWidget {
       listeners: [
         BlocListener<RecordingCubit, RecordingState>(
           listener: (context, state) {
+            if (state is RecordingInProgress &&
+                state.duration == Duration.zero) {
+              final sc = _currentSoundConfig(context);
+              if (sc.enabled) {
+                sl<SoundService>()
+                    .playRecordingStart(volume: sc.startVolume);
+              }
+            }
             if (state is RecordingComplete) {
+              final sc = _currentSoundConfig(context);
+              if (sc.enabled) {
+                sl<SoundService>()
+                    .playRecordingStop(volume: sc.stopVolume);
+              }
               context.read<TranscriptionCubit>().transcribe(state.filePath);
             }
             // Reset hotkey recording state when recording stops externally.
@@ -137,6 +159,12 @@ class _HomeBody extends StatelessWidget {
             }
 
             if (textToOutput != null) {
+              final sc = _currentSoundConfig(context);
+              if (sc.enabled) {
+                sl<SoundService>().playTranscriptionComplete(
+                  volume: sc.completeVolume,
+                );
+              }
               _handleOutput(context, textToOutput);
             }
           },

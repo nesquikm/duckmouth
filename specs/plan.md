@@ -507,13 +507,13 @@ The hotkey_manager plugin's native Swift layer expects Carbon key codes (e.g. `4
 - Free-text fallback works when API doesn't support `/v1/models`
 
 **Acceptance Criteria:**
-- [ ] STT model field is a dropdown populated from `/v1/models` (AC-13.1, AC-13.2)
-- [ ] LLM model field is a dropdown populated from `/v1/models` (AC-13.1, AC-13.3)
-- [ ] Model list refreshes when base URL or API key changes (AC-13.4)
-- [ ] Falls back to free-text on API error without blocking user (AC-13.5)
-- [ ] Loading indicator while fetching (AC-13.6)
-- [ ] Works with OpenAI, Groq, and custom endpoints (AC-13.7)
-- [ ] Gate passes: `fvm flutter analyze && fvm flutter test`
+- [x] STT model field is a dropdown populated from `/v1/models` (AC-13.1, AC-13.2)
+- [x] LLM model field is a dropdown populated from `/v1/models` (AC-13.1, AC-13.3)
+- [x] Model list refreshes when base URL or API key changes (AC-13.4)
+- [x] Falls back to free-text on API error without blocking user (AC-13.5)
+- [x] Loading indicator while fetching (AC-13.6)
+- [x] Works with OpenAI, Groq, and custom endpoints (AC-13.7)
+- [x] Gate passes: `fvm flutter analyze && fvm flutter test`
 
 **Gate:** `fvm flutter analyze && fvm flutter test`
 

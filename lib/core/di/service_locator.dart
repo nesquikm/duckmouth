@@ -2,6 +2,7 @@ import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:duckmouth/core/api/llm_client.dart';
+import 'package:duckmouth/core/api/models_client.dart';
 import 'package:duckmouth/core/api/openai_client.dart';
 import 'package:duckmouth/core/services/accessibility_service.dart';
 import 'package:duckmouth/core/services/clipboard_service.dart';
@@ -59,6 +60,9 @@ Future<void> setupServiceLocator() async {
       accessibilityService: sl<AccessibilityService>(),
     ),
   );
+
+  // Models client
+  sl.registerLazySingleton<ModelsClient>(ModelsClientImpl.new);
 
   // Recording
   sl.registerLazySingleton<RecordingRepository>(

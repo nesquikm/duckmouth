@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:record/record.dart' show AudioRecorder, InputDevice;
 
+import 'package:duckmouth/core/api/models_client.dart';
+import 'package:duckmouth/core/di/service_locator.dart';
 import 'package:duckmouth/core/services/accessibility_service.dart';
 import 'package:duckmouth/core/services/output_mode.dart';
 import 'package:duckmouth/core/services/sound_config.dart';
@@ -12,6 +14,7 @@ import 'package:duckmouth/features/post_processing/domain/post_processing_config
 import 'package:duckmouth/features/recording/domain/audio_format_config.dart';
 import 'package:duckmouth/features/settings/domain/api_config.dart';
 import 'package:duckmouth/features/settings/domain/provider_preset.dart';
+import 'package:duckmouth/features/settings/ui/model_dropdown.dart';
 import 'package:duckmouth/features/settings/ui/settings_cubit.dart';
 import 'package:duckmouth/features/settings/ui/settings_state.dart';
 
@@ -332,12 +335,12 @@ class _SettingsFormState extends State<_SettingsForm> {
             obscureText: true,
           ),
           const SizedBox(height: 16),
-          TextField(
+          ModelDropdown(
+            modelsClient: sl<ModelsClient>(),
+            baseUrl: _baseUrlController.text,
+            apiKey: _apiKeyController.text,
+            modelType: ModelType.stt,
             controller: _modelController,
-            decoration: const InputDecoration(
-              labelText: 'Model',
-              border: OutlineInputBorder(),
-            ),
             enabled: isCustom,
           ),
 
@@ -678,12 +681,13 @@ class _SettingsFormState extends State<_SettingsForm> {
             enabled: _ppEnabled,
           ),
           const SizedBox(height: 16),
-          TextField(
+          ModelDropdown(
+            modelsClient: sl<ModelsClient>(),
+            baseUrl: _ppBaseUrlController.text,
+            apiKey: _ppApiKeyController.text,
+            modelType: ModelType.llm,
             controller: _ppModelController,
-            decoration: const InputDecoration(
-              labelText: 'LLM Model',
-              border: OutlineInputBorder(),
-            ),
+            label: 'LLM Model',
             enabled: _ppEnabled && isPpCustom,
           ),
 

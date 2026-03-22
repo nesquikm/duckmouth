@@ -68,6 +68,7 @@ fvm flutter analyze && fvm flutter test
 - **File naming:** `*_test.dart`
 - **Structure:** `test/` mirrors `lib/`
 - **Coverage target:** >=80% for services/domain, >=60% overall
+- **Every code change must include corresponding test updates** — new features need new tests, modified behavior needs updated assertions, removed code needs pruned tests. This includes integration/E2E tests when user-facing flows change.
 
 ## Specs
 

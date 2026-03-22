@@ -61,6 +61,9 @@ Duckmouth is a macOS desktop app that captures speech via microphone, transcribe
 - AC-6.1: Configurable global shortcut to start/stop recording
 - AC-6.2: Push-to-talk mode (hold to record, release to stop)
 - AC-6.3: Toggle mode (press to start, press again to stop)
+- AC-6.4: Custom hotkey recorder that waits for modifier+key combo (not bare modifiers)
+- AC-6.5: Human-readable hotkey display (e.g. "Ctrl + Shift + Space", not hex codes)
+- AC-6.6: Correct key code translation between USB HID, Carbon, and display formats
 
 ### FR-7: Menu Bar
 
@@ -129,6 +132,30 @@ Duckmouth is a macOS desktop app that captures speech via microphone, transcribe
 - AC-11.5: Settings round-trip — change config, save, reload, verify persisted
 - AC-11.6: History CRUD — create, view, delete, clear all
 
+### FR-12: Structured Logging
+
+**Description:** Integrate the_logger library for structured, level-based logging throughout the app. Console output only — no log viewer or export UI for now.
+
+**Acceptance Criteria:**
+- AC-12.1: All key services use Dart `Logger` instances with meaningful logger names
+- AC-12.2: API keys and sensitive data are masked in console output via `MaskingString`
+- AC-12.3: Existing `print()`/`debugPrint()` calls replaced with appropriate log levels
+- AC-12.4: Session starts are logged with app version info
+- AC-12.5: Errors and exceptions use `Logger.severe()` with error objects attached
+
+### FR-13: Dynamic Model Discovery
+
+**Description:** Fetch available models from the configured API provider via `GET /v1/models` and present them in a dropdown, replacing the current free-text model field. Applies to both STT and LLM (post-processing) provider sections.
+
+**Acceptance Criteria:**
+- AC-13.1: App calls `GET {baseUrl}/v1/models` to fetch model list when a provider is configured with a valid base URL and API key
+- AC-13.2: STT model selector shows a filtered dropdown (models matching `whisper*` or other STT heuristics) with a fallback to free-text input
+- AC-13.3: LLM model selector shows a filtered dropdown (chat/completion models) with a fallback to free-text input
+- AC-13.4: Model list is refreshed when provider base URL or API key changes
+- AC-13.5: Graceful degradation — if `/v1/models` fails (network error, 404, auth error), fall back to the current free-text field with no error blocking the user
+- AC-13.6: Loading state shown while fetching models
+- AC-13.7: Works with OpenAI, Groq, and custom OpenAI-compatible endpoints (Ollama, LM Studio, vLLM, OpenRouter)
+
 ## 4. Out of Scope
 
 - Local Whisper inference (API-only for now)
@@ -158,6 +185,9 @@ Duckmouth is a macOS desktop app that captures speech via microphone, transcribe
 | AC-6.1      | `lib/features/hotkey/domain/hotkey_config.dart`, `lib/features/hotkey/ui/hotkey_cubit.dart` | `test/features/hotkey/ui/hotkey_cubit_test.dart` |
 | AC-6.2      | `lib/features/hotkey/ui/hotkey_cubit.dart` | `test/features/hotkey/ui/hotkey_cubit_test.dart` |
 | AC-6.3      | `lib/features/hotkey/ui/hotkey_cubit.dart` | `test/features/hotkey/ui/hotkey_cubit_test.dart` |
+| AC-6.4      | `lib/features/hotkey/ui/hotkey_recorder_dialog.dart` | `test/features/hotkey/ui/hotkey_recorder_dialog_test.dart` |
+| AC-6.5      | `lib/features/hotkey/domain/hotkey_config.dart` | `test/features/hotkey/domain/hotkey_config_test.dart` |
+| AC-6.6      | `lib/features/hotkey/domain/key_code_translator.dart` | `test/features/hotkey/domain/key_code_translator_test.dart` |
 | AC-7.1      | `lib/app/system_tray_manager.dart` | `test/app/app_test.dart` |
 | AC-7.2      | `lib/app/home_page.dart` | `test/app/home_page_integration_test.dart` |
 | AC-7.3      | `lib/app/system_tray_manager.dart` | `test/app/app_test.dart` |
@@ -165,7 +195,7 @@ Duckmouth is a macOS desktop app that captures speech via microphone, transcribe
 | AC-8.2      | `lib/features/history/ui/history_page.dart` | `test/features/history/ui/history_cubit_test.dart` |
 | AC-8.3      | `lib/features/history/ui/history_page.dart` | `test/features/history/ui/history_cubit_test.dart` |
 | AC-9.1      | `lib/features/settings/domain/provider_preset.dart`, `lib/features/settings/ui/settings_page.dart` | `test/features/settings/data/settings_repository_impl_test.dart` |
-| AC-9.2      | `lib/features/settings/data/settings_repository_impl.dart` (FlutterSecureStorage) | `test/features/settings/data/settings_repository_impl_test.dart` |
+| AC-9.2      | `lib/features/settings/data/settings_repository_impl.dart` (SharedPreferences) | `test/features/settings/data/settings_repository_impl_test.dart` |
 | AC-9.3      | `lib/features/settings/ui/settings_page.dart`, `lib/features/settings/domain/provider_preset.dart` | `test/features/settings/data/settings_repository_impl_test.dart` |
 | AC-9.4      | `lib/features/settings/ui/settings_page.dart`, `lib/features/recording/data/recording_repository_impl.dart` | `test/features/settings/data/settings_repository_impl_test.dart`, `test/features/settings/ui/settings_cubit_test.dart` |
 | AC-9.5      | `lib/features/settings/ui/settings_page.dart`, `lib/features/hotkey/domain/hotkey_config.dart` | `test/features/hotkey/domain/hotkey_config_test.dart` |
@@ -182,3 +212,15 @@ Duckmouth is a macOS desktop app that captures speech via microphone, transcribe
 | AC-11.4     | `integration_test/app_test.dart` | `integration_test/app_test.dart` |
 | AC-11.5     | `integration_test/settings_test.dart` | `integration_test/settings_test.dart` |
 | AC-11.6     | `integration_test/history_test.dart` | `integration_test/history_test.dart` |
+| AC-12.1     | `lib/` (Logger instances in services, cubits, repositories) | `test/core/logging/logging_setup_test.dart` |
+| AC-12.2     | `lib/core/logging/logging_setup.dart` (masking config) | `test/core/logging/logging_setup_test.dart` |
+| AC-12.3     | `lib/` (replacement of print/debugPrint calls) | `test/core/logging/logging_setup_test.dart` |
+| AC-12.4     | `lib/core/logging/logging_setup.dart` (sessionStartExtra) | `test/core/logging/logging_setup_test.dart` |
+| AC-12.5     | `lib/` (Logger.severe calls in catch blocks) | `test/core/logging/logging_setup_test.dart` |
+| AC-13.1     | `lib/core/api/models_client.dart` | `test/core/api/models_client_test.dart` |
+| AC-13.2     | `lib/features/settings/ui/settings_page.dart`, `lib/features/settings/ui/model_dropdown.dart` | `test/features/settings/ui/model_dropdown_test.dart` |
+| AC-13.3     | `lib/features/settings/ui/settings_page.dart`, `lib/features/settings/ui/model_dropdown.dart` | `test/features/settings/ui/model_dropdown_test.dart` |
+| AC-13.4     | `lib/features/settings/ui/settings_cubit.dart` | `test/features/settings/ui/settings_cubit_test.dart` |
+| AC-13.5     | `lib/features/settings/ui/model_dropdown.dart` | `test/features/settings/ui/model_dropdown_test.dart` |
+| AC-13.6     | `lib/features/settings/ui/model_dropdown.dart` | `test/features/settings/ui/model_dropdown_test.dart` |
+| AC-13.7     | `lib/core/api/models_client.dart` | `test/core/api/models_client_test.dart` |

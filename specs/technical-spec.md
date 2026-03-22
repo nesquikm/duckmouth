@@ -45,6 +45,7 @@ lib/
 │   ├── audio/                    # Audio format utilities
 │   ├── di/                       # Dependency injection setup
 │   ├── extensions/               # Dart extensions
+│   ├── logging/                  # TheLogger setup and masking config
 │   └── constants.dart
 └── main.dart
 test/                             # Mirrors lib/ structure
@@ -61,10 +62,10 @@ specs/                            # SDD spec files
 | API abstraction | OpenAI-compatible | Single client for multiple providers (OpenAI, Groq, custom) |
 | Directory structure | Feature-first | Scales well, clear module boundaries |
 | Menu bar | system_tray or tray_manager plugin | Native macOS system tray integration |
-| Global hotkeys | hotkey_manager plugin | Cross-platform hotkey registration |
+| Global hotkeys | hotkey_manager plugin + custom recorder | Native registration via hotkey_manager; custom recorder dialog replaces broken HotKeyRecorder widget |
 | Audio recording | record plugin | Mature, supports macOS audio capture; encodes WAV, FLAC, AAC, Opus natively |
 | Audio default format | WAV 16kHz 16-bit mono | Maximum compatibility — works with all backends including whisper.cpp. Whisper resamples to 16kHz mono internally, so higher quality is wasted |
-| Secure storage | flutter_secure_storage | macOS Keychain for API keys |
+| Secure storage | SharedPreferences | API keys stored locally (Keychain requires code signing entitlements) |
 | Text insertion | Native Swift platform channel | AX API direct insert with CGEvent fallback — avoids clipboard sandwich when possible |
 
 ## 2. Data Model
@@ -134,6 +135,14 @@ specs/                            # SDD spec files
 - Body: messages array with system prompt + transcription
 - Response: standard chat completions response
 
+### Models API (OpenAI-compatible)
+- `GET /v1/models`
+- Response: `{ "object": "list", "data": [{ "id": "model-name", "object": "model", "created": 1686935002, "owned_by": "owner" }, ...] }`
+- No server-side filtering — client filters by model ID heuristics:
+  - **STT models:** ID contains `whisper` (case-insensitive)
+  - **LLM models:** all models not matching STT/embedding/tts/image patterns
+- Endpoint is widely supported: OpenAI, Groq, Ollama, vLLM, LM Studio, OpenRouter
+
 ### Sound Platform Channel (macOS native)
 
 **Channel name:** `com.duckmouth/sound`
@@ -166,6 +175,27 @@ specs/                            # SDD spec files
 2. `pasteViaCGEvent` — clipboard sandwich but no subprocess
 3. `Process.run('osascript', ...)` — legacy Dart fallback
 
+### Hotkey Key Code Translation
+
+The hotkey system involves three different key code formats that must be translated between each other:
+
+| Format | Example (Space) | Used By |
+|--------|----------------|---------|
+| USB HID usage code | `0x0007002C` | Flutter `PhysicalKeyboardKey`, duckmouth persistence |
+| Carbon key code | `49` (`kVK_Space`) | macOS native `HotKey` Swift library, `hotkey_manager_macos` plugin |
+| Display label | `"Space"` | Settings UI |
+
+**Key code translator** (`lib/features/hotkey/domain/key_code_translator.dart`):
+- `usbHidToCarbon(int usbHid) → int?` — converts USB HID to Carbon for native registration
+- `usbHidToLabel(int usbHid) → String` — converts USB HID to human-readable label
+- Uses `kMacOsToPhysicalKey` map from `uni_platform` extension for USB HID ↔ Carbon mapping
+
+**Custom hotkey recorder** (`lib/features/hotkey/ui/hotkey_recorder_dialog.dart`):
+- Replaces `hotkey_manager`'s broken `HotKeyRecorder` widget
+- Uses `RawKeyboardListener` / `HardwareKeyboard` to capture key events
+- Waits for a non-modifier key after modifiers are pressed (doesn't fire on bare modifiers)
+- Displays the combo as it's built (e.g., "Ctrl + ..." → "Ctrl + Shift + Space")
+
 ## 4. Key Patterns
 
 ### State Management
@@ -193,7 +223,70 @@ specs/                            # SDD spec files
 - Platform services (sound, accessibility, hotkeys) replaced with no-op fakes
 - Run via `fvm flutter test integration_test/`
 
-## 5. Dependencies
+## 5. Logging
+
+### Library
+
+[the_logger](https://pub.dev/packages/the_logger) — a wrapper around Dart's `logging` package that adds colorful console output, sensitive data masking, and session-based organization.
+
+**Path dependency:** `~/workspace/the/the_logger` (local development)
+
+### Initialization
+
+```dart
+// lib/core/logging/logging_setup.dart
+import 'package:the_logger/the_logger.dart';
+import 'package:logging/logging.dart';
+
+Future<void> setupLogging() async {
+  await TheLogger.i().init(
+    dbLogger: false,           // no SQLite — console only
+    consoleLogger: true,       // ANSI-colored console output
+    consoleFormatJson: true,   // pretty-print JSON in log messages
+    sessionStartExtra: appVersion,  // include app version in session start
+  );
+}
+```
+
+Called in `main()` before `runApp()`.
+
+### Logger Usage
+
+Each class creates its own named `Logger` instance:
+
+```dart
+final _log = Logger('RecordingRepositoryImpl');
+
+// Levels:
+_log.fine('Starting recording with device: $deviceId');   // debug detail
+_log.info('Recording started');                           // normal operation
+_log.warning('Fallback to default input device');         // recoverable issue
+_log.severe('Recording failed', error, stackTrace);       // error
+```
+
+### Sensitive Data Masking
+
+API keys are masked before they reach the console:
+
+```dart
+TheLogger.i().addMaskingString(
+  MaskingString(apiKey, maskedString: '***API_KEY***'),
+);
+```
+
+Masking strings are added/removed in `SettingsCubit` when API keys change.
+
+### Log Levels by Context
+
+| Context | Level | Example |
+|---------|-------|---------|
+| State transitions | `fine` | "RecordingState: idle → recording" |
+| Normal operations | `info` | "Transcription complete, 42 words" |
+| Recoverable issues | `warning` | "AX insert failed, falling back to CGEvent" |
+| Errors | `severe` | "STT API returned 401" (with error object) |
+| Detailed debugging | `finest` | HTTP request/response bodies |
+
+## 6. Dependencies
 
 | Package | Version | Purpose |
 |---------|---------|---------|
@@ -204,9 +297,11 @@ specs/                            # SDD spec files
 | record | latest | Audio recording |
 | system_tray | latest | Menu bar integration |
 | hotkey_manager | latest | Global hotkey registration |
-| flutter_secure_storage | latest | Secure API key storage (Keychain) |
+| flutter_secure_storage | latest | (deprecated — replaced by SharedPreferences for API keys) |
 | shared_preferences | latest | Non-sensitive settings persistence |
 | uuid | latest | Unique IDs for history entries |
 | path_provider | latest | App data directory |
+| the_logger | path | Structured logging with console output, masking, sessions |
+| logging | latest | Dart standard logging (peer dependency of the_logger) |
 | mocktail | 1.0.4 | Test mocking (dev) |
 | bloc_test | 10.0.0 | BLoC testing (dev) |

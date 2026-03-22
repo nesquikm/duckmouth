@@ -51,6 +51,11 @@ integration_test/
 - Files: `*_test.dart`
 - Test names: describe expected behavior (`'emits [recording] when start is called'`)
 
+### When to Update Tests
+- **Every code change must include corresponding test updates.** New features need new tests, modified behavior needs updated assertions, removed code needs pruned tests.
+- Integration/E2E tests must be updated when user-facing flows change (new UI, new settings fields, new error paths).
+- The gate (`fvm flutter analyze && fvm flutter test`) enforces this — no merge without green tests.
+
 ### What to Test
 - Cubit state transitions (using bloc_test `blocTest()`)
 - Repository methods with mocked data sources
@@ -174,7 +179,34 @@ blocTest<TranscriptionCubit, TranscriptionState>(
 - Clipboard contents unchanged after successful AX direct insert
 - Clipboard restored after CGEvent/osascript fallback
 
-## 9. End-to-End Integration Tests
+## 9. Hotkey Recorder & Key Code Translation Tests
+
+### Key code translator
+- USB HID `0x0007002C` (Space) maps to Carbon `49`
+- USB HID `0x00070004` (A) maps to Carbon `0`
+- All letter/number/function/special keys have correct Carbon mappings
+- Unknown USB HID code returns `null`
+- `usbHidToLabel` returns human-readable names ("Space", "A", "F1", etc.)
+- `usbHidToLabel` for unknown code returns formatted hex fallback
+
+### Custom hotkey recorder dialog
+- Pressing bare modifier (e.g., Control alone) does NOT fire `onHotKeyRecorded`
+- Pressing modifier+key combo (e.g., Ctrl+Space) fires with correct config
+- Multiple modifiers work (e.g., Ctrl+Shift+Space)
+- Display updates live as modifiers are pressed ("Ctrl + ...")
+- Releasing all keys without a non-modifier key resets the state
+- Escape key cancels recording
+
+### Hotkey display in settings
+- Default hotkey shows "Ctrl + Shift + Space" (not hex codes)
+- Custom hotkey combo displays all modifier names + key label
+- Recorded hotkey round-trips: record → save → reload → display matches
+
+### Hotkey registration (native)
+- HotkeyConfig with USB HID code is translated to Carbon before native registration
+- Invalid key codes are handled gracefully (error state, not crash)
+
+## 10. End-to-End Integration Tests
 
 ### Overview
 Full-app integration tests using `IntegrationTestWidgetsFlutterBinding` that launch the real app with fake backends. All fakes implement production interfaces — no HTTP calls, no platform channels.
@@ -230,6 +262,13 @@ All fakes implement existing abstract interfaces (type-safe, no `when()` setup):
 3. Save → navigate back → reopen settings
 4. Verify config persisted
 
+#### Model discovery in settings
+1. Navigate to settings with a configured provider (FakeModelsClient returns model list)
+2. STT model dropdown shows filtered STT models
+3. LLM model dropdown shows filtered LLM models
+4. Change provider base URL → model list refreshes
+5. FakeModelsClient returns error → dropdown falls back to free-text field
+
 #### History CRUD
 1. Complete a transcription
 2. Navigate to history → verify entry with timestamp
@@ -240,3 +279,42 @@ All fakes implement existing abstract interfaces (type-safe, no `when()` setup):
 ```bash
 fvm flutter test integration_test/
 ```
+
+## 11. Structured Logging Tests
+
+### Logging setup (`test/core/logging/logging_setup_test.dart`)
+- `setupLogging()` initializes TheLogger with `dbLogger: false` and `consoleLogger: true`
+- Session start message includes app version string
+- Calling `setupLogging()` twice does not crash (idempotent — disposes first if needed)
+
+### Masking
+- API key added via `addMaskingString` is redacted in log output
+- Removing/changing an API key updates masking strings (old key removed, new key added)
+- Empty API key string is not added as a masking string
+
+### Logger instances in services
+- Key services (recording repo, STT repo, post-processing repo, clipboard service, sound service, hotkey cubit, settings cubit) have Logger instances with correct names
+- Errors logged with `Logger.severe()` include the error object and stack trace
+- No remaining `print()` or `debugPrint()` calls in `lib/` (verified by grep, not test)
+
+## 12. Dynamic Model Discovery Tests
+
+### ModelsClient (`test/core/api/models_client_test.dart`)
+- Fetches and parses `/v1/models` response correctly
+- Returns empty list on HTTP error (4xx, 5xx)
+- Returns empty list on network/timeout error
+- Handles malformed JSON gracefully
+
+### Model filtering (`test/core/api/model_filter_test.dart`)
+- Filters STT models: includes `whisper-1`, `whisper-large-v3-turbo`, excludes `gpt-4o`
+- Filters LLM models: includes `gpt-4o`, `llama-3`, excludes `whisper-1`, `text-embedding-*`, `tts-*`, `dall-e-*`
+- Case-insensitive matching
+
+### Model dropdown widget (`test/features/settings/ui/model_dropdown_test.dart`)
+- Shows loading indicator while fetching
+- Shows dropdown with fetched models on success
+- Falls back to text field on fetch failure
+- Refreshes when base URL changes
+- Refreshes when API key changes
+- Selected model preserved if still in list after refresh
+- Free-text fallback allows typing arbitrary model name

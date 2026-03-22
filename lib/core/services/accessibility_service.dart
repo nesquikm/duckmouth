@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/services.dart';
 import 'package:logging/logging.dart';
 
@@ -17,9 +15,6 @@ enum InsertionMethod {
 
   /// CGEvent Cmd+V with clipboard sandwich (native, no subprocess).
   cgEventPaste,
-
-  /// osascript Cmd+V — legacy Dart fallback.
-  osascript,
 }
 
 /// Interface for macOS Accessibility API text insertion.
@@ -38,28 +33,21 @@ abstract class AccessibilityService {
   /// Returns true if successful.
   Future<bool> pasteViaCGEvent(String text);
 
-  /// Insert text using the full fallback chain:
-  /// AX direct insert → CGEvent Cmd+V → osascript.
-  /// Returns which method was used.
+  /// Insert text using the fallback chain:
+  /// AX direct insert → CGEvent Cmd+V.
+  /// Returns which method was used. Throws if both methods fail.
   Future<InsertionMethod> insertTextWithFallback(String text);
 }
-
-/// Signature for the legacy osascript paste fallback.
-typedef OsascriptPasteFn = Future<void> Function(String text);
 
 /// Implementation backed by the `com.duckmouth/text_insertion` platform channel.
 class AccessibilityServiceImpl implements AccessibilityService {
   static final _log = Logger('AccessibilityService');
 
-  AccessibilityServiceImpl({
-    MethodChannel? channel,
-    OsascriptPasteFn? osascriptPaste,
-  })  : _channel = channel ??
-            const MethodChannel('com.duckmouth/text_insertion'),
-        _osascriptPaste = osascriptPaste ?? _defaultOsascriptPaste;
+  AccessibilityServiceImpl({MethodChannel? channel})
+      : _channel = channel ??
+            const MethodChannel('com.duckmouth/text_insertion');
 
   final MethodChannel _channel;
-  final OsascriptPasteFn _osascriptPaste;
 
   @override
   Future<AccessibilityStatus> checkPermission() async {
@@ -123,32 +111,20 @@ class AccessibilityServiceImpl implements AccessibilityService {
       return InsertionMethod.cgEventPaste;
     }
 
-    // 3. Legacy osascript fallback.
-    _log.fine('Text inserted via osascript fallback');
-    await _osascriptPaste(text);
-    return InsertionMethod.osascript;
+    // Both methods failed.
+    _log.warning('All text insertion methods failed');
+    throw const AccessibilityInsertionException(
+      'Could not insert text — both AX and CGEvent methods failed.',
+    );
   }
 }
 
-/// Default osascript clipboard sandwich paste implementation.
-Future<void> _defaultOsascriptPaste(String text) async {
-  // Save current clipboard.
-  final previous = await Clipboard.getData(Clipboard.kTextPlain);
+/// Exception thrown when all text insertion methods fail.
+class AccessibilityInsertionException implements Exception {
+  const AccessibilityInsertionException(this.message);
 
-  // Set clipboard to new text.
-  await Clipboard.setData(ClipboardData(text: text));
+  final String message;
 
-  // Simulate Cmd+V via AppleScript.
-  await Process.run('osascript', [
-    '-e',
-    'tell application "System Events" to keystroke "v" using command down',
-  ]);
-
-  // Wait for paste to be processed.
-  await Future<void>.delayed(const Duration(milliseconds: 200));
-
-  // Restore previous clipboard.
-  if (previous?.text != null) {
-    await Clipboard.setData(ClipboardData(text: previous!.text!));
-  }
+  @override
+  String toString() => 'AccessibilityInsertionException: $message';
 }

@@ -12,7 +12,7 @@ abstract class ClipboardService {
   Future<String?> getClipboard();
 
   /// Insert [text] at the cursor position using the Accessibility API
-  /// fallback chain: AX direct insert → CGEvent Cmd+V → osascript.
+  /// fallback chain: AX direct insert → CGEvent Cmd+V.
   Future<void> pasteAtCursor(String text);
 }
 

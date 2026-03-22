@@ -9,16 +9,10 @@ void main() {
   const channel = MethodChannel('com.duckmouth/text_insertion');
   late AccessibilityServiceImpl service;
   late List<MethodCall> log;
-  late List<String> osascriptCalls;
 
   setUp(() {
     log = [];
-    osascriptCalls = [];
-    service = AccessibilityServiceImpl(
-      osascriptPaste: (text) async {
-        osascriptCalls.add(text);
-      },
-    );
+    service = AccessibilityServiceImpl();
   });
 
   void setUpMockChannel(
@@ -180,19 +174,17 @@ void main() {
       expect(log[1].method, 'pasteViaCGEvent');
     });
 
-    testWidgets('falls back to osascript when both AX and CGEvent fail',
-        (tester) async {
+    testWidgets('throws when both AX and CGEvent fail', (tester) async {
       setUpMockChannel(
         tester.binding,
         insertResult: {'success': false, 'error': 'nope'},
         pasteResult: {'success': false, 'error': 'also nope'},
       );
 
-      final method = await service.insertTextWithFallback('hi');
-      expect(method, InsertionMethod.osascript);
-      // AX + CGEvent = 2 platform calls; osascript is handled in Dart
-      expect(log.length, 2);
-      expect(osascriptCalls, ['hi']);
+      expect(
+        () => service.insertTextWithFallback('hi'),
+        throwsA(isA<AccessibilityInsertionException>()),
+      );
     });
   });
 }

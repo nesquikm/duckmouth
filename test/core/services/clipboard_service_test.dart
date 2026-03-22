@@ -107,15 +107,17 @@ void main() {
           .called(1);
     });
 
-    testWidgets('pasteAtCursor works when fallback reaches osascript',
+    testWidgets('pasteAtCursor propagates exception when all methods fail',
         (tester) async {
       when(() => mockAccessibility.insertTextWithFallback('test text'))
-          .thenAnswer((_) async => InsertionMethod.osascript);
+          .thenThrow(
+        const AccessibilityInsertionException('all methods failed'),
+      );
 
-      await service.pasteAtCursor('test text');
-
-      verify(() => mockAccessibility.insertTextWithFallback('test text'))
-          .called(1);
+      expect(
+        () => service.pasteAtCursor('test text'),
+        throwsA(isA<AccessibilityInsertionException>()),
+      );
     });
   });
 }

@@ -534,9 +534,45 @@ The hotkey_manager plugin's native Swift layer expects Carbon key codes (e.g. `4
 - Error in paste path falls back to copy gracefully
 
 **Acceptance Criteria:**
-- [ ] `OutputMode.both` copies AND pastes
-- [ ] Paste errors fall back to copy gracefully
-- [ ] Osascript fallback removed
+- [x] `OutputMode.both` copies AND pastes
+- [x] Paste errors fall back to copy gracefully
+- [x] Osascript fallback removed
+- [x] Gate passes: `fvm flutter analyze && fvm flutter test`
+
+**Gate:** `fvm flutter analyze && fvm flutter test`
+
+---
+
+## M19: DMG Distribution & Homebrew Tap
+
+**Goal:** Package the app as a distributable DMG and create a Homebrew tap for easy installation. No Apple Developer account — uses ad-hoc signing only.
+**Prerequisites:** M1 (working app build)
+
+**Tasks:**
+1. Install `create-dmg` build dependency (`brew install create-dmg`)
+2. Create `scripts/build_dmg.sh` — builds release, ad-hoc signs with `codesign -s -`, packages DMG with app icon + Applications shortcut via `create-dmg`
+3. Extract version from `pubspec.yaml` automatically in build script
+4. Test DMG: mount, drag-install to Applications, launch app
+5. Create GitHub Release with DMG artifact (manual first, automate later)
+6. Create `homebrew-duckmouth` repository with cask formula (`Casks/duckmouth.rb`)
+7. Cask formula points to GitHub Release download URL, includes SHA256
+8. Test `brew install --cask` flow — verify quarantine stripped, app launches without Gatekeeper warning
+9. Add distribution instructions to project README
+
+**Tests:**
+- Build script runs without errors and produces DMG in `build/dmg/`
+- DMG contains `.app` bundle with Applications symlink
+- App inside DMG is ad-hoc signed (`codesign -v` passes)
+- `brew audit --cask duckmouth` passes
+- Installed via Homebrew — app launches without Gatekeeper prompt
+
+**Acceptance Criteria:**
+- [ ] `scripts/build_dmg.sh` produces a working DMG in one command (AC-14.1, AC-14.7)
+- [ ] DMG has drag-to-install UX with Applications shortcut (AC-14.2)
+- [ ] App is ad-hoc signed inside the DMG (AC-14.3)
+- [ ] DMG hosted on GitHub Releases (AC-14.4)
+- [ ] Homebrew tap repo with valid cask formula (AC-14.5)
+- [ ] `brew install --cask` works and strips quarantine (AC-14.6)
 - [ ] Gate passes: `fvm flutter analyze && fvm flutter test`
 
 **Gate:** `fvm flutter analyze && fvm flutter test`
@@ -558,4 +594,5 @@ M10 → M14
 M4 → M16
 M4 → M17
 M6 + M12 + M16 → M18
+M1 → M19
 ```

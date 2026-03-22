@@ -124,7 +124,7 @@ SoundConfig _currentSoundConfig(BuildContext context) {
 
 final _log = Logger('HomePage');
 
-void _handleOutput(BuildContext context, String text) {
+Future<void> _handleOutput(BuildContext context, String text) async {
   final settingsState = context.read<SettingsCubit>().state;
   final outputMode = settingsState is SettingsLoaded
       ? settingsState.outputMode
@@ -135,10 +135,21 @@ void _handleOutput(BuildContext context, String text) {
 
   switch (outputMode) {
     case OutputMode.copy:
-      clipboard.copyToClipboard(text);
+      await clipboard.copyToClipboard(text);
     case OutputMode.paste:
+      try {
+        await clipboard.pasteAtCursor(text);
+      } on Exception catch (e, st) {
+        _log.warning('Paste failed, falling back to copy', e, st);
+        await clipboard.copyToClipboard(text);
+      }
     case OutputMode.both:
-      clipboard.pasteAtCursor(text);
+      await clipboard.copyToClipboard(text);
+      try {
+        await clipboard.pasteAtCursor(text);
+      } on Exception catch (e, st) {
+        _log.warning('Paste failed (copy already done)', e, st);
+      }
   }
 }
 

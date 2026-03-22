@@ -37,6 +37,7 @@ dependencies:
   flutter_bloc: ^9.1.1
   get_it: ^9.2.1
   system_tray: ^2.0.3
+  record: ^6.2.0
 
 dev_dependencies:
   flutter_test:

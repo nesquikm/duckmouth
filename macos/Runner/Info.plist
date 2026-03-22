@@ -28,5 +28,7 @@
 	<string>MainMenu</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Duckmouth needs microphone access to record audio for speech-to-text transcription.</string>
 </dict>
 </plist>

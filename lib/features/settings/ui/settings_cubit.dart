@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'package:duckmouth/features/post_processing/domain/post_processing_config.dart';
 import 'package:duckmouth/features/settings/domain/api_config.dart';
 import 'package:duckmouth/features/settings/domain/provider_preset.dart';
 import 'package:duckmouth/features/settings/domain/settings_repository.dart';
@@ -25,17 +26,45 @@ class SettingsCubit extends Cubit<SettingsState> {
   Future<void> loadSettings() async {
     try {
       final config = await _repository.loadSttConfig();
-      emit(SettingsLoaded(sttConfig: config ?? _kDefaultConfig));
+      final ppConfig = await _repository.loadPostProcessingConfig();
+      emit(SettingsLoaded(
+        sttConfig: config ?? _kDefaultConfig,
+        postProcessingConfig: ppConfig,
+      ));
     } on Exception catch (e) {
       emit(SettingsError(message: e.toString()));
     }
   }
 
-  /// Save the given [config] and emit the updated state.
+  /// Save the given STT [config] and emit the updated state.
   Future<void> saveSettings(ApiConfig config) async {
     try {
       await _repository.saveSttConfig(config);
-      emit(SettingsLoaded(sttConfig: config));
+      final currentState = state;
+      final ppConfig = currentState is SettingsLoaded
+          ? currentState.postProcessingConfig
+          : const PostProcessingConfig();
+      emit(SettingsLoaded(
+        sttConfig: config,
+        postProcessingConfig: ppConfig,
+      ));
+    } on Exception catch (e) {
+      emit(SettingsError(message: e.toString()));
+    }
+  }
+
+  /// Save the given post-processing [config] and emit the updated state.
+  Future<void> savePostProcessingConfig(PostProcessingConfig config) async {
+    try {
+      await _repository.savePostProcessingConfig(config);
+      final currentState = state;
+      final sttConfig = currentState is SettingsLoaded
+          ? currentState.sttConfig
+          : _kDefaultConfig;
+      emit(SettingsLoaded(
+        sttConfig: sttConfig,
+        postProcessingConfig: config,
+      ));
     } on Exception catch (e) {
       emit(SettingsError(message: e.toString()));
     }
@@ -46,8 +75,11 @@ class SettingsCubit extends Cubit<SettingsState> {
     final currentState = state;
     final currentKey =
         currentState is SettingsLoaded ? currentState.sttConfig.apiKey : '';
+    final ppConfig = currentState is SettingsLoaded
+        ? currentState.postProcessingConfig
+        : const PostProcessingConfig();
 
     final config = preset.toApiConfig(apiKey: currentKey);
-    emit(SettingsLoaded(sttConfig: config));
+    emit(SettingsLoaded(sttConfig: config, postProcessingConfig: ppConfig));
   }
 }

@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:duckmouth/features/post_processing/domain/post_processing_config.dart';
 import 'package:duckmouth/features/settings/data/settings_repository_impl.dart';
 import 'package:duckmouth/features/settings/domain/api_config.dart';
 
@@ -86,6 +87,72 @@ void main() {
     test('OpenAI preset has correct defaults', () {
       // Verified through API config constants in provider_preset.dart
       expect(true, isTrue);
+    });
+  });
+
+  group('PostProcessingConfig persistence', () {
+    test('loadPostProcessingConfig returns defaults when nothing saved',
+        () async {
+      when(() => mockSecure.read(key: any(named: 'key')))
+          .thenAnswer((_) async => null);
+
+      final result = await repo.loadPostProcessingConfig();
+
+      expect(result.enabled, false);
+      expect(result.prompt, contains('Fix any grammar'));
+      expect(result.llmConfig.baseUrl, 'https://api.openai.com');
+      expect(result.llmConfig.model, 'gpt-4o-mini');
+      expect(result.llmConfig.apiKey, '');
+    });
+
+    test('loadPostProcessingConfig returns saved values', () async {
+      await prefs.setBool('pp_enabled', true);
+      await prefs.setString('pp_prompt', 'Custom prompt');
+      await prefs.setString('pp_base_url', 'https://custom.api.com');
+      await prefs.setString('pp_model', 'gpt-4');
+      await prefs.setString('pp_provider_name', 'custom');
+      when(() => mockSecure.read(key: 'pp_api_key'))
+          .thenAnswer((_) async => 'llm-key');
+
+      final result = await repo.loadPostProcessingConfig();
+
+      expect(result.enabled, true);
+      expect(result.prompt, 'Custom prompt');
+      expect(result.llmConfig.baseUrl, 'https://custom.api.com');
+      expect(result.llmConfig.model, 'gpt-4');
+      expect(result.llmConfig.apiKey, 'llm-key');
+      expect(result.llmConfig.providerName, 'custom');
+    });
+
+    test('savePostProcessingConfig persists all fields', () async {
+      when(
+        () => mockSecure.write(
+          key: any(named: 'key'),
+          value: any(named: 'value'),
+        ),
+      ).thenAnswer((_) async {});
+
+      const config = PostProcessingConfig(
+        enabled: true,
+        prompt: 'My prompt',
+        llmConfig: ApiConfig(
+          baseUrl: 'https://api.example.com',
+          apiKey: 'secret',
+          model: 'gpt-4o',
+          providerName: 'custom',
+        ),
+      );
+
+      await repo.savePostProcessingConfig(config);
+
+      expect(prefs.getBool('pp_enabled'), true);
+      expect(prefs.getString('pp_prompt'), 'My prompt');
+      expect(prefs.getString('pp_base_url'), 'https://api.example.com');
+      expect(prefs.getString('pp_model'), 'gpt-4o');
+      expect(prefs.getString('pp_provider_name'), 'custom');
+      verify(
+        () => mockSecure.write(key: 'pp_api_key', value: 'secret'),
+      ).called(1);
     });
   });
 }

@@ -2,7 +2,12 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:duckmouth/core/api/llm_client.dart';
 import 'package:duckmouth/core/api/openai_client.dart';
+import 'package:duckmouth/features/post_processing/data/post_processing_repository_impl.dart';
+import 'package:duckmouth/features/post_processing/domain/post_processing_config.dart';
+import 'package:duckmouth/features/post_processing/domain/post_processing_repository.dart';
+import 'package:duckmouth/features/post_processing/ui/post_processing_cubit.dart';
 import 'package:duckmouth/features/recording/data/recording_repository_impl.dart';
 import 'package:duckmouth/features/recording/domain/recording_repository.dart';
 import 'package:duckmouth/features/recording/ui/recording_cubit.dart';
@@ -58,6 +63,27 @@ Future<void> setupServiceLocator() async {
   sl.registerFactory<TranscriptionCubit>(
     () => TranscriptionCubit(repository: sl<SttRepository>()),
   );
+
+  // LLM client — default (re-registered when settings change).
+  sl.registerFactory<LlmClient>(
+    () => LlmClientImpl(
+      apiKey: '',
+      baseUrl: 'https://api.openai.com',
+      model: 'gpt-4o-mini',
+    ),
+  );
+
+  // Post-processing
+  sl.registerFactory<PostProcessingRepository>(
+    () => PostProcessingRepositoryImpl(client: sl<LlmClient>()),
+  );
+
+  sl.registerFactory<PostProcessingCubit>(
+    () => PostProcessingCubit(
+      repository: sl<PostProcessingRepository>(),
+      config: const PostProcessingConfig(),
+    ),
+  );
 }
 
 /// Re-register the [OpenAiClient] with the given [config].
@@ -80,5 +106,28 @@ void updateOpenAiClient(ApiConfig config) {
   }
   sl.registerFactory<SttRepository>(
     () => SttRepositoryImpl(client: sl<OpenAiClient>()),
+  );
+}
+
+/// Re-register the [LlmClient] with the given [config].
+///
+/// Also re-registers [PostProcessingRepository] so it picks up the new client.
+void updateLlmClient(ApiConfig config) {
+  if (sl.isRegistered<LlmClient>()) {
+    sl.unregister<LlmClient>();
+  }
+  sl.registerFactory<LlmClient>(
+    () => LlmClientImpl(
+      apiKey: config.apiKey,
+      baseUrl: config.baseUrl,
+      model: config.model,
+    ),
+  );
+
+  if (sl.isRegistered<PostProcessingRepository>()) {
+    sl.unregister<PostProcessingRepository>();
+  }
+  sl.registerFactory<PostProcessingRepository>(
+    () => PostProcessingRepositoryImpl(client: sl<LlmClient>()),
   );
 }

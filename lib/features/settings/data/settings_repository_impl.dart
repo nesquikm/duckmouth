@@ -1,6 +1,7 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:duckmouth/features/post_processing/domain/post_processing_config.dart';
 import 'package:duckmouth/features/settings/domain/api_config.dart';
 import 'package:duckmouth/features/settings/domain/settings_repository.dart';
 
@@ -11,6 +12,16 @@ const _kProviderName = 'stt_provider_name';
 
 /// Key used in FlutterSecureStorage.
 const _kApiKey = 'stt_api_key';
+
+/// Post-processing keys in SharedPreferences.
+const _kPpEnabled = 'pp_enabled';
+const _kPpPrompt = 'pp_prompt';
+const _kPpBaseUrl = 'pp_base_url';
+const _kPpModel = 'pp_model';
+const _kPpProviderName = 'pp_provider_name';
+
+/// Post-processing key in FlutterSecureStorage.
+const _kPpApiKey = 'pp_api_key';
 
 /// [SettingsRepository] backed by SharedPreferences (non-sensitive values)
 /// and FlutterSecureStorage (API keys).
@@ -50,6 +61,39 @@ class SettingsRepositoryImpl implements SettingsRepository {
       _prefs.setString(_kModel, config.model),
       _prefs.setString(_kProviderName, config.providerName),
       _secureStorage.write(key: _kApiKey, value: config.apiKey),
+    ]);
+  }
+
+  @override
+  Future<PostProcessingConfig> loadPostProcessingConfig() async {
+    final enabled = _prefs.getBool(_kPpEnabled) ?? false;
+    final prompt = _prefs.getString(_kPpPrompt) ?? kDefaultPostProcessingPrompt;
+    final baseUrl = _prefs.getString(_kPpBaseUrl) ?? 'https://api.openai.com';
+    final model = _prefs.getString(_kPpModel) ?? 'gpt-4o-mini';
+    final providerName = _prefs.getString(_kPpProviderName) ?? 'openAi';
+    final apiKey = await _secureStorage.read(key: _kPpApiKey) ?? '';
+
+    return PostProcessingConfig(
+      enabled: enabled,
+      prompt: prompt,
+      llmConfig: ApiConfig(
+        baseUrl: baseUrl,
+        apiKey: apiKey,
+        model: model,
+        providerName: providerName,
+      ),
+    );
+  }
+
+  @override
+  Future<void> savePostProcessingConfig(PostProcessingConfig config) async {
+    await Future.wait([
+      _prefs.setBool(_kPpEnabled, config.enabled),
+      _prefs.setString(_kPpPrompt, config.prompt),
+      _prefs.setString(_kPpBaseUrl, config.llmConfig.baseUrl),
+      _prefs.setString(_kPpModel, config.llmConfig.model),
+      _prefs.setString(_kPpProviderName, config.llmConfig.providerName),
+      _secureStorage.write(key: _kPpApiKey, value: config.llmConfig.apiKey),
     ]);
   }
 }

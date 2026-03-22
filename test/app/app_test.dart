@@ -3,6 +3,9 @@ import 'package:get_it/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 
 import 'package:duckmouth/app/app.dart';
+import 'package:duckmouth/features/post_processing/domain/post_processing_config.dart';
+import 'package:duckmouth/features/post_processing/domain/post_processing_repository.dart';
+import 'package:duckmouth/features/post_processing/ui/post_processing_cubit.dart';
 import 'package:duckmouth/features/recording/domain/recording_repository.dart';
 import 'package:duckmouth/features/recording/ui/recording_cubit.dart';
 import 'package:duckmouth/features/settings/domain/settings_repository.dart';
@@ -16,20 +19,27 @@ class MockSttRepository extends Mock implements SttRepository {}
 
 class MockSettingsRepository extends Mock implements SettingsRepository {}
 
+class MockPostProcessingRepository extends Mock
+    implements PostProcessingRepository {}
+
 void main() {
   late MockRecordingRepository mockRepo;
   late MockSttRepository mockSttRepo;
   late MockSettingsRepository mockSettingsRepo;
+  late MockPostProcessingRepository mockPpRepo;
 
   setUp(() {
     mockRepo = MockRecordingRepository();
     mockSttRepo = MockSttRepository();
     mockSettingsRepo = MockSettingsRepository();
+    mockPpRepo = MockPostProcessingRepository();
     when(() => mockRepo.dispose()).thenAnswer((_) async {});
     when(() => mockRepo.durationStream)
         .thenAnswer((_) => const Stream<Duration>.empty());
     when(() => mockSettingsRepo.loadSttConfig())
         .thenAnswer((_) async => null);
+    when(() => mockSettingsRepo.loadPostProcessingConfig())
+        .thenAnswer((_) async => const PostProcessingConfig());
 
     final sl = GetIt.instance;
     sl.registerFactory<RecordingCubit>(
@@ -40,6 +50,12 @@ void main() {
     );
     sl.registerFactory<SettingsCubit>(
       () => SettingsCubit(repository: mockSettingsRepo),
+    );
+    sl.registerFactory<PostProcessingCubit>(
+      () => PostProcessingCubit(
+        repository: mockPpRepo,
+        config: const PostProcessingConfig(),
+      ),
     );
   });
 

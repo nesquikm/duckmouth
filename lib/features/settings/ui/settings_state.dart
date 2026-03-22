@@ -1,3 +1,4 @@
+import 'package:duckmouth/features/post_processing/domain/post_processing_config.dart';
 import 'package:duckmouth/features/settings/domain/api_config.dart';
 
 /// States for the settings feature.
@@ -12,19 +13,34 @@ class SettingsLoading extends SettingsState {
 
 /// Settings have been loaded successfully.
 class SettingsLoaded extends SettingsState {
-  const SettingsLoaded({required this.sttConfig});
+  const SettingsLoaded({
+    required this.sttConfig,
+    this.postProcessingConfig = const PostProcessingConfig(),
+  });
 
   final ApiConfig sttConfig;
+  final PostProcessingConfig postProcessingConfig;
+
+  SettingsLoaded copyWith({
+    ApiConfig? sttConfig,
+    PostProcessingConfig? postProcessingConfig,
+  }) {
+    return SettingsLoaded(
+      sttConfig: sttConfig ?? this.sttConfig,
+      postProcessingConfig: postProcessingConfig ?? this.postProcessingConfig,
+    );
+  }
 
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is SettingsLoaded &&
           runtimeType == other.runtimeType &&
-          sttConfig == other.sttConfig;
+          sttConfig == other.sttConfig &&
+          postProcessingConfig == other.postProcessingConfig;
 
   @override
-  int get hashCode => sttConfig.hashCode;
+  int get hashCode => Object.hash(sttConfig, postProcessingConfig);
 }
 
 /// An error occurred while loading or saving settings.

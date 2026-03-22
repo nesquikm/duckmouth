@@ -3,8 +3,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:duckmouth/core/api/llm_client.dart';
 import 'package:duckmouth/core/api/openai_client.dart';
 import 'package:duckmouth/core/di/service_locator.dart';
+import 'package:duckmouth/features/post_processing/domain/post_processing_repository.dart';
+import 'package:duckmouth/features/post_processing/ui/post_processing_cubit.dart';
 import 'package:duckmouth/features/recording/domain/recording_repository.dart';
 import 'package:duckmouth/features/recording/ui/recording_cubit.dart';
 import 'package:duckmouth/features/settings/domain/api_config.dart';
@@ -76,6 +79,21 @@ void main() {
     expect(sl.isRegistered<FlutterSecureStorage>(), isTrue);
   });
 
+  test('registers LlmClient', () async {
+    await setupServiceLocator();
+    expect(sl.isRegistered<LlmClient>(), isTrue);
+  });
+
+  test('registers PostProcessingRepository', () async {
+    await setupServiceLocator();
+    expect(sl.isRegistered<PostProcessingRepository>(), isTrue);
+  });
+
+  test('registers PostProcessingCubit', () async {
+    await setupServiceLocator();
+    expect(sl.isRegistered<PostProcessingCubit>(), isTrue);
+  });
+
   group('updateOpenAiClient', () {
     test('re-registers OpenAiClient with new config', () async {
       await setupServiceLocator();
@@ -91,6 +109,24 @@ void main() {
 
       expect(sl.isRegistered<OpenAiClient>(), isTrue);
       expect(sl.isRegistered<SttRepository>(), isTrue);
+    });
+  });
+
+  group('updateLlmClient', () {
+    test('re-registers LlmClient with new config', () async {
+      await setupServiceLocator();
+
+      const config = ApiConfig(
+        baseUrl: 'https://api.openai.com',
+        apiKey: 'llm-key',
+        model: 'gpt-4o',
+        providerName: 'openAi',
+      );
+
+      updateLlmClient(config);
+
+      expect(sl.isRegistered<LlmClient>(), isTrue);
+      expect(sl.isRegistered<PostProcessingRepository>(), isTrue);
     });
   });
 }

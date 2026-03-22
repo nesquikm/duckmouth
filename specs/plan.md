@@ -484,6 +484,75 @@ The hotkey_manager plugin's native Swift layer expects Carbon key codes (e.g. `4
 
 ---
 
+## M17: Dynamic Model Discovery
+
+**Goal:** Replace free-text model fields with dropdowns that fetch available models from the provider's `/v1/models` endpoint. Applies to both STT and LLM (post-processing) sections in Settings.
+**Prerequisites:** M4 (Settings & API Configuration)
+
+**Tasks:**
+1. Create `lib/core/api/models_client.dart` — HTTP client that calls `GET {baseUrl}/v1/models` and returns `List<String>` of model IDs
+2. Create `lib/core/api/model_filter.dart` — heuristic filters to classify models as STT (contains `whisper`) vs LLM (excludes embedding/tts/image patterns)
+3. Create `lib/features/settings/ui/model_dropdown.dart` — reusable widget: dropdown when models loaded, free-text fallback on error, loading spinner while fetching
+4. Replace STT model `TextField` in `settings_page.dart` with `ModelDropdown` using STT filter
+5. Replace LLM model `TextField` in `settings_page.dart` with `ModelDropdown` using LLM filter
+6. Trigger model list refresh when base URL or API key changes in `SettingsCubit`
+7. Add `ModelsClient` to service locator
+8. Write unit tests for `ModelsClient`, `ModelFilter`, and `ModelDropdown`
+
+**Tests:**
+- `ModelsClient` parses response, handles errors gracefully
+- `ModelFilter` correctly classifies STT vs LLM models
+- `ModelDropdown` shows loading → dropdown on success, loading → text field on failure
+- Model list refreshes on provider config change
+- Free-text fallback works when API doesn't support `/v1/models`
+
+**Acceptance Criteria:**
+- [ ] STT model field is a dropdown populated from `/v1/models` (AC-13.1, AC-13.2)
+- [ ] LLM model field is a dropdown populated from `/v1/models` (AC-13.1, AC-13.3)
+- [ ] Model list refreshes when base URL or API key changes (AC-13.4)
+- [ ] Falls back to free-text on API error without blocking user (AC-13.5)
+- [ ] Loading indicator while fetching (AC-13.6)
+- [ ] Works with OpenAI, Groq, and custom endpoints (AC-13.7)
+- [ ] Gate passes: `fvm flutter analyze && fvm flutter test`
+
+**Gate:** `fvm flutter analyze && fvm flutter test`
+
+---
+
+## M18: Fix Paste-at-Cursor Pipeline
+
+**Goal:** Diagnose and fix the text output pipeline so paste-at-cursor reliably inserts transcription text into the previously-focused app. Add full observability logging to the output path.
+**Prerequisites:** M6 (Text Output), M12 (Accessibility API), M16 (Logging)
+
+**Background:**
+After transcription completes, the output pipeline (PostProcessingCubit → _handleOutput → ClipboardService → AccessibilityService) may silently fail or use the wrong output mode. The app runs sandboxed (`~/Library/Containers/com.duckmouth.duckmouth/`), which affects `Process.run('osascript', ...)` in the legacy fallback. Additionally, when recording is triggered from the Duckmouth window (not via hotkey), the Duckmouth window is frontmost — paste-at-cursor would insert into the Duckmouth window itself, not the user's target app.
+
+**Tasks:**
+1. Add logging to every step in the output pipeline: PostProcessingCubit state transition → `_handleOutput` → `ClipboardService` → `AccessibilityService` fallback chain results
+2. Fix `OutputMode.both`: currently only calls `pasteAtCursor`, should also call `copyToClipboard` so the clipboard has the text even when AX insert is used
+3. Add focused-app detection: before paste-at-cursor, check if the focused app is Duckmouth itself; if so, fall back to copy-only and log a warning
+4. Fix the osascript legacy fallback for sandboxed apps: use `CGEvent` key simulation instead of `Process.run('osascript', ...)`, or remove the osascript path entirely since it can't work in a sandbox
+5. Add error handling + logging to `_handleOutput` — currently fire-and-forget with no try/catch
+6. Verify Accessibility permission check runs on app start and prompts correctly
+
+**Tests:**
+- `_handleOutput` logs output mode and text length
+- `OutputMode.both` calls both `copyToClipboard` and `pasteAtCursor`
+- `ClipboardService.pasteAtCursor` logs the insertion method used
+- Error in paste path doesn't crash the app (graceful fallback to copy)
+- AccessibilityService fallback chain is fully logged
+
+**Acceptance Criteria:**
+- [ ] Full output pipeline is logged (mode, method, success/failure)
+- [ ] `OutputMode.both` copies AND pastes
+- [ ] Paste errors fall back to copy gracefully
+- [ ] Osascript fallback replaced with sandbox-compatible approach
+- [ ] Gate passes: `fvm flutter analyze && fvm flutter test`
+
+**Gate:** `fvm flutter analyze && fvm flutter test`
+
+---
+
 ## Milestone Dependency Graph
 
 ```
@@ -497,4 +566,6 @@ M2 + M4 → M11
 M1–M9 → M10
 M10 → M14
 M4 → M16
+M4 → M17
+M6 + M12 + M16 → M18
 ```

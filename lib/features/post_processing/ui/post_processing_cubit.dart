@@ -30,9 +30,11 @@ class PostProcessingCubit extends Cubit<PostProcessingState> {
   /// Process the given [rawText] if post-processing is enabled.
   Future<void> process(String rawText) async {
     if (!_config.enabled) {
+      _log.info('Post-processing disabled, passing through raw text');
       _tryEmit(const PostProcessingDisabled());
       return;
     }
+    _log.info('Post-processing raw text (${rawText.length} chars)');
 
     _tryEmit(PostProcessingLoading(rawText: rawText));
     try {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:logging/logging.dart';
 
 import 'package:duckmouth/app/system_tray_manager.dart';
 import 'package:duckmouth/core/di/service_locator.dart';
@@ -121,12 +122,15 @@ SoundConfig _currentSoundConfig(BuildContext context) {
       : const SoundConfig();
 }
 
+final _log = Logger('HomePage');
+
 void _handleOutput(BuildContext context, String text) {
   final settingsState = context.read<SettingsCubit>().state;
   final outputMode = settingsState is SettingsLoaded
       ? settingsState.outputMode
       : OutputMode.copy;
 
+  _log.info('Output: mode=$outputMode, ${text.length} chars');
   final clipboard = sl<ClipboardService>();
 
   switch (outputMode) {

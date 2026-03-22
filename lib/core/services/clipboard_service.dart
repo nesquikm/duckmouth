@@ -29,6 +29,7 @@ class ClipboardServiceImpl implements ClipboardService {
 
   @override
   Future<void> copyToClipboard(String text) async {
+    _log.fine('Copy to clipboard (${text.length} chars)');
     await Clipboard.setData(ClipboardData(text: text));
   }
 

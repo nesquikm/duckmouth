@@ -519,34 +519,24 @@ The hotkey_manager plugin's native Swift layer expects Carbon key codes (e.g. `4
 
 ---
 
-## M18: Fix Paste-at-Cursor Pipeline
+## M18: Output Pipeline Hardening
 
-**Goal:** Diagnose and fix the text output pipeline so paste-at-cursor reliably inserts transcription text into the previously-focused app. Add full observability logging to the output path.
-**Prerequisites:** M6 (Text Output), M12 (Accessibility API), M16 (Logging)
-
-**Background:**
-After transcription completes, the output pipeline (PostProcessingCubit → _handleOutput → ClipboardService → AccessibilityService) may silently fail or use the wrong output mode. The app runs sandboxed (`~/Library/Containers/com.duckmouth.duckmouth/`), which affects `Process.run('osascript', ...)` in the legacy fallback. Additionally, when recording is triggered from the Duckmouth window (not via hotkey), the Duckmouth window is frontmost — paste-at-cursor would insert into the Duckmouth window itself, not the user's target app.
+**Goal:** Fix remaining edge cases in the text output path.
+**Prerequisites:** M6 (Text Output), M12 (Accessibility API)
 
 **Tasks:**
-1. Add logging to every step in the output pipeline: PostProcessingCubit state transition → `_handleOutput` → `ClipboardService` → `AccessibilityService` fallback chain results
-2. Fix `OutputMode.both`: currently only calls `pasteAtCursor`, should also call `copyToClipboard` so the clipboard has the text even when AX insert is used
-3. Add focused-app detection: before paste-at-cursor, check if the focused app is Duckmouth itself; if so, fall back to copy-only and log a warning
-4. Fix the osascript legacy fallback for sandboxed apps: use `CGEvent` key simulation instead of `Process.run('osascript', ...)`, or remove the osascript path entirely since it can't work in a sandbox
-5. Add error handling + logging to `_handleOutput` — currently fire-and-forget with no try/catch
-6. Verify Accessibility permission check runs on app start and prompts correctly
+1. Fix `OutputMode.both`: currently only calls `pasteAtCursor`, should also call `copyToClipboard`
+2. Add try/catch to `_handleOutput` — currently fire-and-forget; paste failure should fall back to copy
+3. Remove osascript legacy fallback from `AccessibilityService` — can't work in a sandbox, and CGEvent paste covers the same path
 
 **Tests:**
-- `_handleOutput` logs output mode and text length
 - `OutputMode.both` calls both `copyToClipboard` and `pasteAtCursor`
-- `ClipboardService.pasteAtCursor` logs the insertion method used
-- Error in paste path doesn't crash the app (graceful fallback to copy)
-- AccessibilityService fallback chain is fully logged
+- Error in paste path falls back to copy gracefully
 
 **Acceptance Criteria:**
-- [ ] Full output pipeline is logged (mode, method, success/failure)
 - [ ] `OutputMode.both` copies AND pastes
 - [ ] Paste errors fall back to copy gracefully
-- [ ] Osascript fallback replaced with sandbox-compatible approach
+- [ ] Osascript fallback removed
 - [ ] Gate passes: `fvm flutter analyze && fvm flutter test`
 
 **Gate:** `fvm flutter analyze && fvm flutter test`

@@ -5,6 +5,8 @@ import 'package:mocktail/mocktail.dart';
 import 'package:duckmouth/app/app.dart';
 import 'package:duckmouth/features/recording/domain/recording_repository.dart';
 import 'package:duckmouth/features/recording/ui/recording_cubit.dart';
+import 'package:duckmouth/features/settings/domain/settings_repository.dart';
+import 'package:duckmouth/features/settings/ui/settings_cubit.dart';
 import 'package:duckmouth/features/transcription/domain/stt_repository.dart';
 import 'package:duckmouth/features/transcription/ui/transcription_cubit.dart';
 
@@ -12,16 +14,22 @@ class MockRecordingRepository extends Mock implements RecordingRepository {}
 
 class MockSttRepository extends Mock implements SttRepository {}
 
+class MockSettingsRepository extends Mock implements SettingsRepository {}
+
 void main() {
   late MockRecordingRepository mockRepo;
   late MockSttRepository mockSttRepo;
+  late MockSettingsRepository mockSettingsRepo;
 
   setUp(() {
     mockRepo = MockRecordingRepository();
     mockSttRepo = MockSttRepository();
+    mockSettingsRepo = MockSettingsRepository();
     when(() => mockRepo.dispose()).thenAnswer((_) async {});
     when(() => mockRepo.durationStream)
         .thenAnswer((_) => const Stream<Duration>.empty());
+    when(() => mockSettingsRepo.loadSttConfig())
+        .thenAnswer((_) async => null);
 
     final sl = GetIt.instance;
     sl.registerFactory<RecordingCubit>(
@@ -29,6 +37,9 @@ void main() {
     );
     sl.registerFactory<TranscriptionCubit>(
       () => TranscriptionCubit(repository: mockSttRepo),
+    );
+    sl.registerFactory<SettingsCubit>(
+      () => SettingsCubit(repository: mockSettingsRepo),
     );
   });
 

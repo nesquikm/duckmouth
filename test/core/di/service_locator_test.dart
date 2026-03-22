@@ -1,13 +1,23 @@
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 import 'package:duckmouth/core/api/openai_client.dart';
 import 'package:duckmouth/core/di/service_locator.dart';
 import 'package:duckmouth/features/recording/domain/recording_repository.dart';
 import 'package:duckmouth/features/recording/ui/recording_cubit.dart';
+import 'package:duckmouth/features/settings/domain/api_config.dart';
+import 'package:duckmouth/features/settings/domain/settings_repository.dart';
+import 'package:duckmouth/features/settings/ui/settings_cubit.dart';
 import 'package:duckmouth/features/transcription/domain/stt_repository.dart';
 import 'package:duckmouth/features/transcription/ui/transcription_cubit.dart';
 
 void main() {
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+  });
+
   tearDown(() {
     GetIt.instance.reset();
   });
@@ -44,5 +54,43 @@ void main() {
   test('registers TranscriptionCubit', () async {
     await setupServiceLocator();
     expect(sl.isRegistered<TranscriptionCubit>(), isTrue);
+  });
+
+  test('registers SettingsRepository', () async {
+    await setupServiceLocator();
+    expect(sl.isRegistered<SettingsRepository>(), isTrue);
+  });
+
+  test('registers SettingsCubit', () async {
+    await setupServiceLocator();
+    expect(sl.isRegistered<SettingsCubit>(), isTrue);
+  });
+
+  test('registers SharedPreferences', () async {
+    await setupServiceLocator();
+    expect(sl.isRegistered<SharedPreferences>(), isTrue);
+  });
+
+  test('registers FlutterSecureStorage', () async {
+    await setupServiceLocator();
+    expect(sl.isRegistered<FlutterSecureStorage>(), isTrue);
+  });
+
+  group('updateOpenAiClient', () {
+    test('re-registers OpenAiClient with new config', () async {
+      await setupServiceLocator();
+
+      const config = ApiConfig(
+        baseUrl: 'https://api.groq.com/openai',
+        apiKey: 'test-key',
+        model: 'whisper-large-v3-turbo',
+        providerName: 'groq',
+      );
+
+      updateOpenAiClient(config);
+
+      expect(sl.isRegistered<OpenAiClient>(), isTrue);
+      expect(sl.isRegistered<SttRepository>(), isTrue);
+    });
   });
 }

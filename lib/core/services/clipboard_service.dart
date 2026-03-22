@@ -1,6 +1,6 @@
-import 'dart:io';
-
 import 'package:flutter/services.dart';
+
+import 'package:duckmouth/core/services/accessibility_service.dart';
 
 /// Abstract interface for clipboard operations.
 abstract class ClipboardService {
@@ -10,16 +10,20 @@ abstract class ClipboardService {
   /// Read the current clipboard contents, if any.
   Future<String?> getClipboard();
 
-  /// Copy [text] to clipboard and simulate Cmd+V to paste at the cursor
-  /// position. Uses AppleScript via osascript, which requires macOS
-  /// accessibility permissions.
-  ///
-  /// After pasting, the original clipboard contents are restored.
+  /// Insert [text] at the cursor position using the Accessibility API
+  /// fallback chain: AX direct insert → CGEvent Cmd+V → osascript.
   Future<void> pasteAtCursor(String text);
 }
 
-/// Default implementation backed by Flutter's [Clipboard] and macOS osascript.
+/// Default implementation backed by Flutter's [Clipboard] and
+/// [AccessibilityService] for paste-at-cursor.
 class ClipboardServiceImpl implements ClipboardService {
+  ClipboardServiceImpl({
+    required AccessibilityService accessibilityService,
+  }) : _accessibilityService = accessibilityService;
+
+  final AccessibilityService _accessibilityService;
+
   @override
   Future<void> copyToClipboard(String text) async {
     await Clipboard.setData(ClipboardData(text: text));
@@ -33,24 +37,6 @@ class ClipboardServiceImpl implements ClipboardService {
 
   @override
   Future<void> pasteAtCursor(String text) async {
-    // Clipboard sandwich: save → set → paste → restore.
-    final previous = await getClipboard();
-    await copyToClipboard(text);
-
-    // Simulate Cmd+V via AppleScript. This requires the app (or Terminal)
-    // to have accessibility permissions in System Settings → Privacy &
-    // Security → Accessibility.
-    await Process.run('osascript', [
-      '-e',
-      'tell application "System Events" to keystroke "v" using command down',
-    ]);
-
-    // Give the target app a moment to process the paste event.
-    await Future<void>.delayed(const Duration(milliseconds: 200));
-
-    // Restore the previous clipboard contents.
-    if (previous != null) {
-      await copyToClipboard(previous);
-    }
+    await _accessibilityService.insertTextWithFallback(text);
   }
 }

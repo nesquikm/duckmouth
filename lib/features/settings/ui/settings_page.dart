@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
 
+import 'package:duckmouth/core/services/accessibility_service.dart';
 import 'package:duckmouth/core/services/output_mode.dart';
 import 'package:duckmouth/core/services/sound_config.dart';
 import 'package:duckmouth/features/hotkey/domain/hotkey_config.dart';
 import 'package:duckmouth/features/post_processing/domain/post_processing_config.dart';
+import 'package:duckmouth/features/recording/domain/audio_format_config.dart';
 import 'package:duckmouth/features/settings/domain/api_config.dart';
 import 'package:duckmouth/features/settings/domain/provider_preset.dart';
 import 'package:duckmouth/features/settings/ui/settings_cubit.dart';
@@ -33,6 +35,8 @@ class SettingsPage extends StatelessWidget {
               :final outputMode,
               :final hotkeyConfig,
               :final soundConfig,
+              :final audioFormatConfig,
+              :final accessibilityStatus,
             ) =>
               _SettingsForm(
                 config: sttConfig,
@@ -40,6 +44,8 @@ class SettingsPage extends StatelessWidget {
                 outputMode: outputMode,
                 hotkeyConfig: hotkeyConfig,
                 soundConfig: soundConfig,
+                audioFormatConfig: audioFormatConfig,
+                accessibilityStatus: accessibilityStatus,
               ),
           };
         },
@@ -55,6 +61,8 @@ class _SettingsForm extends StatefulWidget {
     required this.outputMode,
     required this.hotkeyConfig,
     required this.soundConfig,
+    required this.audioFormatConfig,
+    required this.accessibilityStatus,
   });
 
   final ApiConfig config;
@@ -62,6 +70,8 @@ class _SettingsForm extends StatefulWidget {
   final OutputMode outputMode;
   final HotkeyConfig hotkeyConfig;
   final SoundConfig soundConfig;
+  final AudioFormatConfig audioFormatConfig;
+  final AccessibilityStatus accessibilityStatus;
 
   @override
   State<_SettingsForm> createState() => _SettingsFormState();
@@ -92,6 +102,10 @@ class _SettingsFormState extends State<_SettingsForm> {
   // Sound
   late SoundConfig _soundConfig;
 
+  // Audio format
+  late AudioFormatConfig _audioFormatConfig;
+  late final TextEditingController _sampleRateController;
+
   @override
   void initState() {
     super.initState();
@@ -116,6 +130,11 @@ class _SettingsFormState extends State<_SettingsForm> {
     _hotkeyConfig = widget.hotkeyConfig;
 
     _soundConfig = widget.soundConfig;
+
+    _audioFormatConfig = widget.audioFormatConfig;
+    _sampleRateController = TextEditingController(
+      text: widget.audioFormatConfig.sampleRate.toString(),
+    );
   }
 
   @override
@@ -145,6 +164,11 @@ class _SettingsFormState extends State<_SettingsForm> {
     if (oldWidget.soundConfig != widget.soundConfig) {
       _soundConfig = widget.soundConfig;
     }
+    if (oldWidget.audioFormatConfig != widget.audioFormatConfig) {
+      _audioFormatConfig = widget.audioFormatConfig;
+      _sampleRateController.text =
+          widget.audioFormatConfig.sampleRate.toString();
+    }
   }
 
   @override
@@ -156,6 +180,7 @@ class _SettingsFormState extends State<_SettingsForm> {
     _ppBaseUrlController.dispose();
     _ppApiKeyController.dispose();
     _ppModelController.dispose();
+    _sampleRateController.dispose();
     super.dispose();
   }
 
@@ -205,6 +230,7 @@ class _SettingsFormState extends State<_SettingsForm> {
     await cubit.saveOutputMode(_outputMode);
     await cubit.saveHotkeyConfig(_hotkeyConfig);
     await cubit.saveSoundConfig(_soundConfig);
+    await cubit.saveAudioFormatConfig(_audioFormatConfig);
 
     if (mounted) {
       messenger.showSnackBar(
@@ -318,6 +344,94 @@ class _SettingsFormState extends State<_SettingsForm> {
           const Divider(),
           const SizedBox(height: 16),
 
+          // ── Audio Format Section ──
+          Text(
+            'Audio Format',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<QualityPreset>(
+            initialValue: _audioFormatConfig.preset,
+            decoration: const InputDecoration(
+              labelText: 'Quality Preset',
+              border: OutlineInputBorder(),
+            ),
+            items: QualityPreset.values
+                .map(
+                  (p) => DropdownMenuItem(
+                    value: p,
+                    child: Text(p.label),
+                  ),
+                )
+                .toList(),
+            onChanged: (value) {
+              if (value != null) {
+                setState(() {
+                  _audioFormatConfig =
+                      _audioFormatConfig.copyWith(preset: value);
+                });
+              }
+            },
+          ),
+          const SizedBox(height: 8),
+          Text(
+            _audioFormatConfig.preset.description,
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          if (_audioFormatConfig.preset == QualityPreset.custom) ...[
+            const SizedBox(height: 16),
+            DropdownButtonFormField<AudioFormat>(
+              initialValue: _audioFormatConfig.format,
+              decoration: const InputDecoration(
+                labelText: 'Format',
+                border: OutlineInputBorder(),
+              ),
+              items: AudioFormat.values
+                  .map(
+                    (f) => DropdownMenuItem(
+                      value: f,
+                      child: Text(f.label),
+                    ),
+                  )
+                  .toList(),
+              onChanged: (value) {
+                if (value != null) {
+                  setState(() {
+                    _audioFormatConfig =
+                        _audioFormatConfig.copyWith(format: value);
+                  });
+                }
+              },
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _sampleRateController,
+              decoration: const InputDecoration(
+                labelText: 'Sample Rate (Hz)',
+                border: OutlineInputBorder(),
+              ),
+              keyboardType: TextInputType.number,
+              onChanged: (value) {
+                final rate = int.tryParse(value);
+                if (rate != null && rate > 0) {
+                  _audioFormatConfig =
+                      _audioFormatConfig.copyWith(sampleRate: rate);
+                }
+              },
+            ),
+          ],
+          const SizedBox(height: 8),
+          Text(
+            'Tip: WAV 16kHz is recommended for whisper.cpp and most STT APIs.',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  fontStyle: FontStyle.italic,
+                ),
+          ),
+
+          const SizedBox(height: 32),
+          const Divider(),
+          const SizedBox(height: 16),
+
           // ── Output Mode Section ──
           Text(
             'Output Mode',
@@ -340,6 +454,10 @@ class _SettingsFormState extends State<_SettingsForm> {
                 setState(() => _outputMode = value);
               }
             },
+          ),
+          const SizedBox(height: 12),
+          _AccessibilityPermissionBanner(
+            status: widget.accessibilityStatus,
           ),
 
           const SizedBox(height: 32),
@@ -565,6 +683,65 @@ class _SettingsFormState extends State<_SettingsForm> {
           ],
         );
       },
+    );
+  }
+}
+
+class _AccessibilityPermissionBanner extends StatelessWidget {
+  const _AccessibilityPermissionBanner({required this.status});
+
+  final AccessibilityStatus status;
+
+  @override
+  Widget build(BuildContext context) {
+    final Color bgColor;
+    final IconData icon;
+    final String message;
+    final bool showButton;
+
+    switch (status) {
+      case AccessibilityStatus.granted:
+        bgColor = Colors.green.shade50;
+        icon = Icons.check_circle;
+        message = 'Accessibility permission granted — '
+            'direct text insertion enabled.';
+        showButton = false;
+      case AccessibilityStatus.denied:
+        bgColor = Colors.orange.shade50;
+        icon = Icons.warning_amber_rounded;
+        message = 'Accessibility permission required for paste-at-cursor. '
+            'Grant access in System Settings \u2192 Privacy & Security '
+            '\u2192 Accessibility.';
+        showButton = true;
+      case AccessibilityStatus.unknown:
+        bgColor = Colors.grey.shade100;
+        icon = Icons.help_outline;
+        message = 'Accessibility permission status unknown.';
+        showButton = true;
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 20),
+          const SizedBox(width: 8),
+          Expanded(child: Text(message, style: Theme.of(context).textTheme.bodySmall)),
+          if (showButton) ...[
+            const SizedBox(width: 8),
+            TextButton(
+              onPressed: () {
+                context.read<SettingsCubit>().requestAccessibilityPermission();
+              },
+              child: const Text('Open Settings'),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }

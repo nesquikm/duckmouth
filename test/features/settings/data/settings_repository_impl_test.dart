@@ -7,6 +7,7 @@ import 'package:duckmouth/core/services/output_mode.dart';
 import 'package:duckmouth/core/services/sound_config.dart';
 import 'package:duckmouth/features/hotkey/domain/hotkey_config.dart';
 import 'package:duckmouth/features/post_processing/domain/post_processing_config.dart';
+import 'package:duckmouth/features/recording/domain/audio_format_config.dart';
 import 'package:duckmouth/features/settings/data/settings_repository_impl.dart';
 import 'package:duckmouth/features/settings/domain/api_config.dart';
 
@@ -262,6 +263,55 @@ void main() {
       expect(prefs.getDouble('sound_start_volume'), 0.4);
       expect(prefs.getDouble('sound_stop_volume'), 0.6);
       expect(prefs.getDouble('sound_complete_volume'), 0.8);
+    });
+  });
+
+  group('AudioFormatConfig persistence', () {
+    test('loadAudioFormatConfig returns default when nothing saved', () async {
+      final result = await repo.loadAudioFormatConfig();
+      expect(result, const AudioFormatConfig());
+    });
+
+    test('saveAudioFormatConfig/loadAudioFormatConfig round-trips', () async {
+      const config = AudioFormatConfig(
+        preset: QualityPreset.balanced,
+        format: AudioFormat.aac,
+        sampleRate: 22050,
+        bitRate: 64000,
+      );
+
+      await repo.saveAudioFormatConfig(config);
+      final result = await repo.loadAudioFormatConfig();
+
+      expect(result.preset, QualityPreset.balanced);
+      expect(result.format, AudioFormat.aac);
+      expect(result.sampleRate, 22050);
+      expect(result.bitRate, 64000);
+    });
+
+    test('loadAudioFormatConfig returns default preset for unknown value',
+        () async {
+      await prefs.setString('audio_preset', 'nonexistent');
+      final result = await repo.loadAudioFormatConfig();
+      expect(result.preset, QualityPreset.bestCompatibility);
+    });
+
+    test('saveAudioFormatConfig with null bitRate removes key', () async {
+      // First save with bitRate
+      await repo.saveAudioFormatConfig(
+        const AudioFormatConfig(bitRate: 64000),
+      );
+      expect(prefs.getInt('audio_bit_rate'), 64000);
+
+      // Then save without bitRate
+      await repo.saveAudioFormatConfig(const AudioFormatConfig());
+      expect(prefs.getInt('audio_bit_rate'), isNull);
+    });
+
+    test('loadAudioFormatConfig returns null bitRate when not saved', () async {
+      await prefs.setString('audio_preset', 'bestCompatibility');
+      final result = await repo.loadAudioFormatConfig();
+      expect(result.bitRate, isNull);
     });
   });
 }

@@ -7,6 +7,7 @@ import 'package:duckmouth/core/services/output_mode.dart';
 import 'package:duckmouth/core/services/sound_config.dart';
 import 'package:duckmouth/features/hotkey/domain/hotkey_config.dart';
 import 'package:duckmouth/features/post_processing/domain/post_processing_config.dart';
+import 'package:duckmouth/features/recording/domain/audio_format_config.dart';
 import 'package:duckmouth/features/settings/domain/api_config.dart';
 import 'package:duckmouth/features/settings/domain/settings_repository.dart';
 
@@ -41,6 +42,12 @@ const _kSoundEnabled = 'sound_enabled';
 const _kSoundStartVolume = 'sound_start_volume';
 const _kSoundStopVolume = 'sound_stop_volume';
 const _kSoundCompleteVolume = 'sound_complete_volume';
+
+/// Audio format keys in SharedPreferences.
+const _kAudioPreset = 'audio_preset';
+const _kAudioFormat = 'audio_format';
+const _kAudioSampleRate = 'audio_sample_rate';
+const _kAudioBitRate = 'audio_bit_rate';
 
 /// [SettingsRepository] backed by SharedPreferences (non-sensitive values)
 /// and FlutterSecureStorage (API keys).
@@ -188,6 +195,48 @@ class SettingsRepositoryImpl implements SettingsRepository {
       _prefs.setDouble(_kSoundStartVolume, config.startVolume),
       _prefs.setDouble(_kSoundStopVolume, config.stopVolume),
       _prefs.setDouble(_kSoundCompleteVolume, config.completeVolume),
+    ]);
+  }
+
+  @override
+  Future<AudioFormatConfig> loadAudioFormatConfig() async {
+    final presetName = _prefs.getString(_kAudioPreset);
+    final formatName = _prefs.getString(_kAudioFormat);
+    final sampleRate = _prefs.getInt(_kAudioSampleRate);
+    final bitRate = _prefs.getInt(_kAudioBitRate);
+
+    if (presetName == null) return const AudioFormatConfig();
+
+    final preset = QualityPreset.values.firstWhere(
+      (p) => p.name == presetName,
+      orElse: () => QualityPreset.bestCompatibility,
+    );
+
+    final format = formatName != null
+        ? AudioFormat.values.firstWhere(
+            (f) => f.name == formatName,
+            orElse: () => AudioFormat.wav,
+          )
+        : AudioFormat.wav;
+
+    return AudioFormatConfig(
+      preset: preset,
+      format: format,
+      sampleRate: sampleRate ?? 16000,
+      bitRate: bitRate,
+    );
+  }
+
+  @override
+  Future<void> saveAudioFormatConfig(AudioFormatConfig config) async {
+    await Future.wait([
+      _prefs.setString(_kAudioPreset, config.preset.name),
+      _prefs.setString(_kAudioFormat, config.format.name),
+      _prefs.setInt(_kAudioSampleRate, config.sampleRate),
+      if (config.bitRate != null)
+        _prefs.setInt(_kAudioBitRate, config.bitRate!)
+      else
+        _prefs.remove(_kAudioBitRate),
     ]);
   }
 }

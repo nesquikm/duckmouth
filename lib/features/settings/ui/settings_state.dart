@@ -1,7 +1,9 @@
+import 'package:duckmouth/core/services/accessibility_service.dart';
 import 'package:duckmouth/core/services/output_mode.dart';
 import 'package:duckmouth/core/services/sound_config.dart';
 import 'package:duckmouth/features/hotkey/domain/hotkey_config.dart';
 import 'package:duckmouth/features/post_processing/domain/post_processing_config.dart';
+import 'package:duckmouth/features/recording/domain/audio_format_config.dart';
 import 'package:duckmouth/features/settings/domain/api_config.dart';
 
 /// States for the settings feature.
@@ -22,6 +24,8 @@ class SettingsLoaded extends SettingsState {
     this.outputMode = OutputMode.copy,
     this.hotkeyConfig = HotkeyConfig.defaultConfig,
     this.soundConfig = const SoundConfig(),
+    this.audioFormatConfig = const AudioFormatConfig(),
+    this.accessibilityStatus = AccessibilityStatus.unknown,
   });
 
   final ApiConfig sttConfig;
@@ -29,6 +33,8 @@ class SettingsLoaded extends SettingsState {
   final OutputMode outputMode;
   final HotkeyConfig hotkeyConfig;
   final SoundConfig soundConfig;
+  final AudioFormatConfig audioFormatConfig;
+  final AccessibilityStatus accessibilityStatus;
 
   SettingsLoaded copyWith({
     ApiConfig? sttConfig,
@@ -36,6 +42,8 @@ class SettingsLoaded extends SettingsState {
     OutputMode? outputMode,
     HotkeyConfig? hotkeyConfig,
     SoundConfig? soundConfig,
+    AudioFormatConfig? audioFormatConfig,
+    AccessibilityStatus? accessibilityStatus,
   }) {
     return SettingsLoaded(
       sttConfig: sttConfig ?? this.sttConfig,
@@ -43,6 +51,8 @@ class SettingsLoaded extends SettingsState {
       outputMode: outputMode ?? this.outputMode,
       hotkeyConfig: hotkeyConfig ?? this.hotkeyConfig,
       soundConfig: soundConfig ?? this.soundConfig,
+      audioFormatConfig: audioFormatConfig ?? this.audioFormatConfig,
+      accessibilityStatus: accessibilityStatus ?? this.accessibilityStatus,
     );
   }
 
@@ -55,7 +65,9 @@ class SettingsLoaded extends SettingsState {
           postProcessingConfig == other.postProcessingConfig &&
           outputMode == other.outputMode &&
           hotkeyConfig == other.hotkeyConfig &&
-          soundConfig == other.soundConfig;
+          soundConfig == other.soundConfig &&
+          audioFormatConfig == other.audioFormatConfig &&
+          accessibilityStatus == other.accessibilityStatus;
 
   @override
   int get hashCode => Object.hash(
@@ -64,6 +76,8 @@ class SettingsLoaded extends SettingsState {
         outputMode,
         hotkeyConfig,
         soundConfig,
+        audioFormatConfig,
+        accessibilityStatus,
       );
 }
 

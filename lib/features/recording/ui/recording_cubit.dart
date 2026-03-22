@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../data/recording_repository_impl.dart';
+import '../domain/audio_format_config.dart';
 import '../domain/recording_repository.dart';
 import 'recording_state.dart';
 
@@ -14,6 +15,12 @@ class RecordingCubit extends Cubit<RecordingState> {
 
   final RecordingRepository _repository;
   StreamSubscription<Duration>? _durationSubscription;
+  AudioFormatConfig _formatConfig = const AudioFormatConfig();
+
+  /// Update the audio format configuration for future recordings.
+  void updateFormatConfig(AudioFormatConfig config) {
+    _formatConfig = config;
+  }
 
   /// Start recording audio from the microphone.
   Future<void> startRecording() async {
@@ -32,7 +39,7 @@ class RecordingCubit extends Cubit<RecordingState> {
         }
       }
 
-      await _repository.start();
+      await _repository.start(formatConfig: _formatConfig);
       _tryEmit(const RecordingInProgress(Duration.zero));
 
       _durationSubscription?.cancel();

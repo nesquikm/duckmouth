@@ -2,10 +2,12 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
+import 'package:duckmouth/core/services/accessibility_service.dart';
 import 'package:duckmouth/core/services/output_mode.dart';
 import 'package:duckmouth/core/services/sound_config.dart';
 import 'package:duckmouth/features/hotkey/domain/hotkey_config.dart';
 import 'package:duckmouth/features/post_processing/domain/post_processing_config.dart';
+import 'package:duckmouth/features/recording/domain/audio_format_config.dart';
 import 'package:duckmouth/features/settings/domain/api_config.dart';
 import 'package:duckmouth/features/settings/domain/provider_preset.dart';
 import 'package:duckmouth/features/settings/domain/settings_repository.dart';
@@ -13,6 +15,8 @@ import 'package:duckmouth/features/settings/ui/settings_cubit.dart';
 import 'package:duckmouth/features/settings/ui/settings_state.dart';
 
 class MockSettingsRepository extends Mock implements SettingsRepository {}
+
+class MockAccessibilityService extends Mock implements AccessibilityService {}
 
 class FakeApiConfig extends Fake implements ApiConfig {}
 
@@ -22,6 +26,7 @@ class FakeHotkeyConfig extends Fake implements HotkeyConfig {}
 
 void main() {
   late MockSettingsRepository mockRepo;
+  late MockAccessibilityService mockAccessibility;
 
   setUpAll(() {
     registerFallbackValue(FakeApiConfig());
@@ -29,10 +34,14 @@ void main() {
     registerFallbackValue(OutputMode.copy);
     registerFallbackValue(HotkeyConfig.defaultConfig);
     registerFallbackValue(const SoundConfig());
+    registerFallbackValue(const AudioFormatConfig());
   });
 
   setUp(() {
     mockRepo = MockSettingsRepository();
+    mockAccessibility = MockAccessibilityService();
+    when(() => mockAccessibility.checkPermission())
+        .thenAnswer((_) async => AccessibilityStatus.unknown);
   });
 
   const defaultConfig = ApiConfig(
@@ -54,7 +63,7 @@ void main() {
 
   group('SettingsCubit', () {
     test('initial state is SettingsLoading', () {
-      final cubit = SettingsCubit(repository: mockRepo);
+      final cubit = SettingsCubit(repository: mockRepo, accessibilityService: mockAccessibility);
       expect(cubit.state, isA<SettingsLoading>());
       cubit.close();
     });
@@ -71,7 +80,9 @@ void main() {
             .thenAnswer((_) async => defaultHotkeyConfig);
         when(() => mockRepo.loadSoundConfig())
             .thenAnswer((_) async => const SoundConfig());
-        return SettingsCubit(repository: mockRepo);
+        when(() => mockRepo.loadAudioFormatConfig())
+            .thenAnswer((_) async => const AudioFormatConfig());
+        return SettingsCubit(repository: mockRepo, accessibilityService: mockAccessibility);
       },
       act: (cubit) => cubit.loadSettings(),
       expect: () => [
@@ -96,7 +107,9 @@ void main() {
             .thenAnswer((_) async => defaultHotkeyConfig);
         when(() => mockRepo.loadSoundConfig())
             .thenAnswer((_) async => const SoundConfig());
-        return SettingsCubit(repository: mockRepo);
+        when(() => mockRepo.loadAudioFormatConfig())
+            .thenAnswer((_) async => const AudioFormatConfig());
+        return SettingsCubit(repository: mockRepo, accessibilityService: mockAccessibility);
       },
       act: (cubit) => cubit.loadSettings(),
       expect: () => [
@@ -113,7 +126,7 @@ void main() {
       build: () {
         when(() => mockRepo.loadSttConfig())
             .thenThrow(Exception('storage failure'));
-        return SettingsCubit(repository: mockRepo);
+        return SettingsCubit(repository: mockRepo, accessibilityService: mockAccessibility);
       },
       act: (cubit) => cubit.loadSettings(),
       expect: () => [
@@ -126,7 +139,7 @@ void main() {
       build: () {
         when(() => mockRepo.saveSttConfig(savedConfig))
             .thenAnswer((_) async {});
-        return SettingsCubit(repository: mockRepo);
+        return SettingsCubit(repository: mockRepo, accessibilityService: mockAccessibility);
       },
       seed: () => const SettingsLoaded(sttConfig: defaultConfig),
       act: (cubit) => cubit.saveSettings(savedConfig),
@@ -147,7 +160,7 @@ void main() {
       build: () {
         when(() => mockRepo.saveSttConfig(any()))
             .thenThrow(Exception('write error'));
-        return SettingsCubit(repository: mockRepo);
+        return SettingsCubit(repository: mockRepo, accessibilityService: mockAccessibility);
       },
       act: (cubit) => cubit.saveSettings(savedConfig),
       expect: () => [
@@ -160,7 +173,7 @@ void main() {
       build: () {
         when(() => mockRepo.loadSttConfig())
             .thenAnswer((_) async => savedConfig);
-        return SettingsCubit(repository: mockRepo);
+        return SettingsCubit(repository: mockRepo, accessibilityService: mockAccessibility);
       },
       seed: () => const SettingsLoaded(sttConfig: savedConfig),
       act: (cubit) => cubit.selectPreset(ProviderPreset.openAi),
@@ -179,7 +192,7 @@ void main() {
 
     blocTest<SettingsCubit, SettingsState>(
       'selectPreset uses empty key when state is not SettingsLoaded',
-      build: () => SettingsCubit(repository: mockRepo),
+      build: () => SettingsCubit(repository: mockRepo, accessibilityService: mockAccessibility),
       act: (cubit) => cubit.selectPreset(ProviderPreset.groq),
       expect: () => [
         const SettingsLoaded(
@@ -199,7 +212,7 @@ void main() {
       build: () {
         when(() => mockRepo.savePostProcessingConfig(any()))
             .thenAnswer((_) async {});
-        return SettingsCubit(repository: mockRepo);
+        return SettingsCubit(repository: mockRepo, accessibilityService: mockAccessibility);
       },
       seed: () => const SettingsLoaded(sttConfig: defaultConfig),
       act: (cubit) => cubit.savePostProcessingConfig(
@@ -225,7 +238,7 @@ void main() {
       build: () {
         when(() => mockRepo.savePostProcessingConfig(any()))
             .thenThrow(Exception('write error'));
-        return SettingsCubit(repository: mockRepo);
+        return SettingsCubit(repository: mockRepo, accessibilityService: mockAccessibility);
       },
       act: (cubit) => cubit.savePostProcessingConfig(defaultPpConfig),
       expect: () => [
@@ -245,7 +258,9 @@ void main() {
             .thenAnswer((_) async => defaultHotkeyConfig);
         when(() => mockRepo.loadSoundConfig())
             .thenAnswer((_) async => const SoundConfig());
-        return SettingsCubit(repository: mockRepo);
+        when(() => mockRepo.loadAudioFormatConfig())
+            .thenAnswer((_) async => const AudioFormatConfig());
+        return SettingsCubit(repository: mockRepo, accessibilityService: mockAccessibility);
       },
       act: (cubit) => cubit.loadSettings(),
       expect: () => [
@@ -263,7 +278,7 @@ void main() {
       build: () {
         when(() => mockRepo.saveOutputMode(any()))
             .thenAnswer((_) async {});
-        return SettingsCubit(repository: mockRepo);
+        return SettingsCubit(repository: mockRepo, accessibilityService: mockAccessibility);
       },
       seed: () => const SettingsLoaded(sttConfig: defaultConfig),
       act: (cubit) => cubit.saveOutputMode(OutputMode.both),
@@ -285,7 +300,7 @@ void main() {
       build: () {
         when(() => mockRepo.saveOutputMode(any()))
             .thenThrow(Exception('write error'));
-        return SettingsCubit(repository: mockRepo);
+        return SettingsCubit(repository: mockRepo, accessibilityService: mockAccessibility);
       },
       act: (cubit) => cubit.saveOutputMode(OutputMode.paste),
       expect: () => [
@@ -298,7 +313,7 @@ void main() {
       build: () {
         when(() => mockRepo.saveHotkeyConfig(any()))
             .thenAnswer((_) async {});
-        return SettingsCubit(repository: mockRepo);
+        return SettingsCubit(repository: mockRepo, accessibilityService: mockAccessibility);
       },
       seed: () => const SettingsLoaded(sttConfig: defaultConfig),
       act: (cubit) => cubit.saveHotkeyConfig(
@@ -329,7 +344,7 @@ void main() {
       build: () {
         when(() => mockRepo.saveHotkeyConfig(any()))
             .thenThrow(Exception('write error'));
-        return SettingsCubit(repository: mockRepo);
+        return SettingsCubit(repository: mockRepo, accessibilityService: mockAccessibility);
       },
       act: (cubit) => cubit.saveHotkeyConfig(defaultHotkeyConfig),
       expect: () => [
@@ -342,7 +357,7 @@ void main() {
       build: () {
         when(() => mockRepo.saveSoundConfig(any()))
             .thenAnswer((_) async {});
-        return SettingsCubit(repository: mockRepo);
+        return SettingsCubit(repository: mockRepo, accessibilityService: mockAccessibility);
       },
       seed: () => const SettingsLoaded(sttConfig: defaultConfig),
       act: (cubit) => cubit.saveSoundConfig(
@@ -366,12 +381,159 @@ void main() {
       build: () {
         when(() => mockRepo.saveSoundConfig(any()))
             .thenThrow(Exception('write error'));
-        return SettingsCubit(repository: mockRepo);
+        return SettingsCubit(repository: mockRepo, accessibilityService: mockAccessibility);
       },
       act: (cubit) => cubit.saveSoundConfig(const SoundConfig()),
       expect: () => [
         const SettingsError(message: 'Exception: write error'),
       ],
+    );
+
+    blocTest<SettingsCubit, SettingsState>(
+      'loadSettings loads audioFormatConfig',
+      build: () {
+        when(() => mockRepo.loadSttConfig()).thenAnswer((_) async => null);
+        when(() => mockRepo.loadPostProcessingConfig())
+            .thenAnswer((_) async => defaultPpConfig);
+        when(() => mockRepo.loadOutputMode())
+            .thenAnswer((_) async => OutputMode.copy);
+        when(() => mockRepo.loadHotkeyConfig())
+            .thenAnswer((_) async => defaultHotkeyConfig);
+        when(() => mockRepo.loadSoundConfig())
+            .thenAnswer((_) async => const SoundConfig());
+        when(() => mockRepo.loadAudioFormatConfig()).thenAnswer(
+          (_) async => const AudioFormatConfig(
+            preset: QualityPreset.balanced,
+          ),
+        );
+        return SettingsCubit(repository: mockRepo, accessibilityService: mockAccessibility);
+      },
+      act: (cubit) => cubit.loadSettings(),
+      expect: () => [
+        const SettingsLoaded(
+          sttConfig: defaultConfig,
+          postProcessingConfig: defaultPpConfig,
+          hotkeyConfig: defaultHotkeyConfig,
+          audioFormatConfig: AudioFormatConfig(
+            preset: QualityPreset.balanced,
+          ),
+        ),
+      ],
+    );
+
+    blocTest<SettingsCubit, SettingsState>(
+      'saveAudioFormatConfig persists and emits updated state',
+      build: () {
+        when(() => mockRepo.saveAudioFormatConfig(any()))
+            .thenAnswer((_) async {});
+        return SettingsCubit(repository: mockRepo, accessibilityService: mockAccessibility);
+      },
+      seed: () => const SettingsLoaded(sttConfig: defaultConfig),
+      act: (cubit) => cubit.saveAudioFormatConfig(
+        const AudioFormatConfig(preset: QualityPreset.smallest),
+      ),
+      expect: () => [
+        const SettingsLoaded(
+          sttConfig: defaultConfig,
+          postProcessingConfig: defaultPpConfig,
+          hotkeyConfig: defaultHotkeyConfig,
+          audioFormatConfig: AudioFormatConfig(
+            preset: QualityPreset.smallest,
+          ),
+        ),
+      ],
+      verify: (_) {
+        verify(() => mockRepo.saveAudioFormatConfig(any())).called(1);
+      },
+    );
+
+    blocTest<SettingsCubit, SettingsState>(
+      'saveAudioFormatConfig emits SettingsError on exception',
+      build: () {
+        when(() => mockRepo.saveAudioFormatConfig(any()))
+            .thenThrow(Exception('write error'));
+        return SettingsCubit(repository: mockRepo, accessibilityService: mockAccessibility);
+      },
+      act: (cubit) => cubit.saveAudioFormatConfig(const AudioFormatConfig()),
+      expect: () => [
+        const SettingsError(message: 'Exception: write error'),
+      ],
+    );
+
+    blocTest<SettingsCubit, SettingsState>(
+      'loadSettings includes accessibility permission status',
+      build: () {
+        when(() => mockRepo.loadSttConfig()).thenAnswer((_) async => null);
+        when(() => mockRepo.loadPostProcessingConfig())
+            .thenAnswer((_) async => defaultPpConfig);
+        when(() => mockRepo.loadOutputMode())
+            .thenAnswer((_) async => OutputMode.copy);
+        when(() => mockRepo.loadHotkeyConfig())
+            .thenAnswer((_) async => defaultHotkeyConfig);
+        when(() => mockRepo.loadSoundConfig())
+            .thenAnswer((_) async => const SoundConfig());
+        when(() => mockRepo.loadAudioFormatConfig())
+            .thenAnswer((_) async => const AudioFormatConfig());
+        when(() => mockAccessibility.checkPermission())
+            .thenAnswer((_) async => AccessibilityStatus.granted);
+        return SettingsCubit(repository: mockRepo, accessibilityService: mockAccessibility);
+      },
+      act: (cubit) => cubit.loadSettings(),
+      expect: () => [
+        const SettingsLoaded(
+          sttConfig: defaultConfig,
+          postProcessingConfig: defaultPpConfig,
+          hotkeyConfig: defaultHotkeyConfig,
+          accessibilityStatus: AccessibilityStatus.granted,
+        ),
+      ],
+    );
+
+    blocTest<SettingsCubit, SettingsState>(
+      'checkAccessibilityPermission updates state',
+      build: () {
+        when(() => mockAccessibility.checkPermission())
+            .thenAnswer((_) async => AccessibilityStatus.denied);
+        return SettingsCubit(repository: mockRepo, accessibilityService: mockAccessibility);
+      },
+      seed: () => const SettingsLoaded(sttConfig: defaultConfig),
+      act: (cubit) => cubit.checkAccessibilityPermission(),
+      expect: () => [
+        const SettingsLoaded(
+          sttConfig: defaultConfig,
+          postProcessingConfig: defaultPpConfig,
+          hotkeyConfig: defaultHotkeyConfig,
+          accessibilityStatus: AccessibilityStatus.denied,
+        ),
+      ],
+    );
+
+    blocTest<SettingsCubit, SettingsState>(
+      'requestAccessibilityPermission calls service and re-checks',
+      build: () {
+        when(() => mockAccessibility.requestPermission())
+            .thenAnswer((_) async {});
+        when(() => mockAccessibility.checkPermission())
+            .thenAnswer((_) async => AccessibilityStatus.granted);
+        return SettingsCubit(repository: mockRepo, accessibilityService: mockAccessibility);
+      },
+      seed: () => const SettingsLoaded(
+        sttConfig: defaultConfig,
+        accessibilityStatus: AccessibilityStatus.denied,
+      ),
+      act: (cubit) => cubit.requestAccessibilityPermission(),
+      expect: () => [
+        const SettingsLoaded(
+          sttConfig: defaultConfig,
+          postProcessingConfig: defaultPpConfig,
+          hotkeyConfig: defaultHotkeyConfig,
+          accessibilityStatus: AccessibilityStatus.granted,
+        ),
+      ],
+      verify: (_) {
+        verify(() => mockAccessibility.requestPermission()).called(1);
+        verify(() => mockAccessibility.checkPermission()).called(1);
+      },
     );
   });
 }

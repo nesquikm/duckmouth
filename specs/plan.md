@@ -21,9 +21,9 @@ Each milestone is independently gatable. Don't proceed to M(n+1) until M(n) gate
 - DI container resolves dependencies
 
 **Acceptance Criteria:**
-- [ ] App launches on macOS with a window
-- [ ] Menu bar icon appears
-- [ ] Gate passes: `fvm flutter analyze && fvm flutter test`
+- [x] App launches on macOS with a window
+- [x] Menu bar icon appears
+- [x] Gate passes: `fvm flutter analyze && fvm flutter test`
 
 **Gate:** `fvm flutter analyze && fvm flutter test`
 
@@ -46,10 +46,10 @@ Each milestone is independently gatable. Don't proceed to M(n+1) until M(n) gate
 - Recording repository with mocked audio plugin
 
 **Acceptance Criteria:**
-- [ ] Can start/stop recording via UI
-- [ ] Recording duration displayed in real-time
-- [ ] Audio data available after recording stops
-- [ ] Gate passes
+- [x] Can start/stop recording via UI
+- [x] Recording duration displayed in real-time
+- [x] Audio data available after recording stops
+- [x] Gate passes
 
 **Gate:** `fvm flutter analyze && fvm flutter test`
 
@@ -73,10 +73,10 @@ Each milestone is independently gatable. Don't proceed to M(n+1) until M(n) gate
 - Error handling (network failure, invalid response)
 
 **Acceptance Criteria:**
-- [ ] Recording is sent to configured STT endpoint
-- [ ] Transcription text displayed in UI
-- [ ] Errors shown gracefully
-- [ ] Gate passes
+- [x] Recording is sent to configured STT endpoint
+- [x] Transcription text displayed in UI
+- [x] Errors shown gracefully
+- [x] Gate passes
 
 **Gate:** `fvm flutter analyze && fvm flutter test`
 
@@ -100,10 +100,10 @@ Each milestone is independently gatable. Don't proceed to M(n+1) until M(n) gate
 - Provider preset configuration
 
 **Acceptance Criteria:**
-- [ ] Can configure API endpoint, key, and model
-- [ ] Provider presets (OpenAI, Groq) pre-fill settings
-- [ ] API keys stored in macOS Keychain
-- [ ] Gate passes
+- [x] Can configure API endpoint, key, and model
+- [x] Provider presets (OpenAI, Groq) pre-fill settings
+- [x] API keys stored in macOS Keychain
+- [x] Gate passes
 
 **Gate:** `fvm flutter analyze && fvm flutter test`
 
@@ -127,10 +127,10 @@ Each milestone is independently gatable. Don't proceed to M(n+1) until M(n) gate
 - Pipeline with post-processing enabled/disabled
 
 **Acceptance Criteria:**
-- [ ] Post-processing can be toggled on/off
-- [ ] Custom prompts applied to transcription
-- [ ] Raw text preserved, processed text displayed
-- [ ] Gate passes
+- [x] Post-processing can be toggled on/off
+- [x] Custom prompts applied to transcription
+- [x] Raw text preserved, processed text displayed
+- [x] Gate passes
 
 **Gate:** `fvm flutter analyze && fvm flutter test`
 
@@ -152,10 +152,10 @@ Each milestone is independently gatable. Don't proceed to M(n+1) until M(n) gate
 - Output mode configuration
 
 **Acceptance Criteria:**
-- [ ] Result copied to clipboard
-- [ ] Paste-at-cursor works via clipboard sandwich
-- [ ] Output mode configurable
-- [ ] Gate passes
+- [x] Result copied to clipboard
+- [x] Paste-at-cursor works via clipboard sandwich
+- [x] Output mode configurable
+- [x] Gate passes
 
 **Gate:** `fvm flutter analyze && fvm flutter test`
 
@@ -177,10 +177,10 @@ Each milestone is independently gatable. Don't proceed to M(n+1) until M(n) gate
 - Mode switching logic
 
 **Acceptance Criteria:**
-- [ ] Global hotkey starts/stops recording
-- [ ] Push-to-talk and toggle modes work
-- [ ] Hotkey configurable in settings
-- [ ] Gate passes
+- [x] Global hotkey starts/stops recording
+- [x] Push-to-talk and toggle modes work
+- [x] Hotkey configurable in settings
+- [x] Gate passes
 
 **Gate:** `fvm flutter analyze && fvm flutter test`
 
@@ -202,10 +202,10 @@ Each milestone is independently gatable. Don't proceed to M(n+1) until M(n) gate
 - Sound settings persistence
 
 **Acceptance Criteria:**
-- [ ] Sounds play on recording start, stop, and transcription complete
-- [ ] Sounds can be enabled/disabled
-- [ ] Per-sound volume control works
-- [ ] Gate passes
+- [x] Sounds play on recording start, stop, and transcription complete
+- [x] Sounds can be enabled/disabled
+- [x] Per-sound volume control works
+- [x] Gate passes
 
 **Gate:** `fvm flutter analyze && fvm flutter test`
 
@@ -229,11 +229,11 @@ Each milestone is independently gatable. Don't proceed to M(n+1) until M(n) gate
 - History UI widget tests
 
 **Acceptance Criteria:**
-- [ ] History shows transcriptions with timestamps
-- [ ] Click to copy works
-- [ ] Clear history works
-- [ ] Recent items in menu bar popover
-- [ ] Gate passes
+- [x] History shows transcriptions with timestamps
+- [x] Click to copy works
+- [x] Clear history works
+- [x] Recent items in menu bar popover
+- [x] Gate passes
 
 **Gate:** `fvm flutter analyze && fvm flutter test`
 
@@ -256,10 +256,107 @@ Each milestone is independently gatable. Don't proceed to M(n+1) until M(n) gate
 - Error state UI tests
 
 **Acceptance Criteria:**
-- [ ] Full flow works end-to-end
-- [ ] All settings functional
-- [ ] Error states handled gracefully
-- [ ] Gate passes
+- [x] Full flow works end-to-end
+- [x] All settings functional
+- [x] Error states handled gracefully
+- [x] Gate passes
+
+**Gate:** `fvm flutter analyze && fvm flutter test`
+
+---
+
+## M11: Audio Format & Quality
+
+**Goal:** Let users choose recording format and quality, with smart defaults.
+**Prerequisites:** M2, M4
+
+**Tasks:**
+1. Add audio format enum: WAV, FLAC, AAC (m4a), Opus (ogg) — matching what Flutter `record` supports on macOS
+2. Add quality preset enum: "Best compatibility" (WAV 16kHz 16-bit mono — works everywhere including whisper.cpp), "Balanced" (AAC 64kbps 16kHz mono — good size/quality), "Smallest" (AAC 32kbps 16kHz mono)
+3. Add format/quality settings to SettingsCubit and settings UI
+4. Wire format config into recording repository (configure `record` package encoder)
+5. Add info text explaining tradeoffs per format (especially whisper.cpp WAV requirement)
+
+**Tests:**
+- Settings cubit handles format/quality changes
+- Recording repository configures encoder correctly per format
+- Default format produces valid audio accepted by OpenAI API
+
+**Acceptance Criteria:**
+- [x] User can select audio format (WAV, FLAC, AAC, Opus)
+- [x] Quality presets available with clear descriptions
+- [x] Default is WAV 16kHz mono (maximum compatibility)
+- [x] Recording produces correct format based on settings
+- [x] Gate passes
+
+**Gate:** `fvm flutter analyze && fvm flutter test`
+
+---
+
+## M12: Accessibility API Text Insertion
+
+**Goal:** Replace osascript clipboard sandwich with native Accessibility API for direct text insertion, with intelligent fallback chain. Prompt user for Accessibility permission.
+**Prerequisites:** M6
+
+**Tasks:**
+1. Add Swift platform channel (`TextInsertionChannel`) in `macos/Runner/`
+2. Implement `AXUIElementSetAttributeValue` with `kAXSelectedTextAttribute` — directly sets text at cursor in the focused app without touching the clipboard
+3. Implement `CGEvent` Cmd+V fallback — same as current clipboard sandwich but without subprocess overhead (no `osascript`)
+4. Implement Accessibility permission check via `AXIsProcessTrusted()` / `AXIsProcessTrustedWithOptions()` with prompt
+5. Create `AccessibilityService` in `lib/core/services/` wrapping the platform channel
+6. Add permission status UI: banner/dialog prompting user to enable Accessibility in System Settings → Privacy & Security → Accessibility
+7. Update `ClipboardService.pasteAtCursor()` to use the fallback chain: AX direct insert → CGEvent Cmd+V with clipboard sandwich → osascript (legacy fallback)
+8. Add Accessibility permission status to settings page
+
+**Fallback chain:**
+1. **AX direct insert** (`kAXSelectedTextAttribute`) — no clipboard touch, instant. Fails silently in Electron/web apps.
+2. **CGEvent Cmd+V** — clipboard sandwich via native CGEvent (fast, no subprocess). Requires Accessibility permission.
+3. **osascript Cmd+V** — current approach, kept as last resort.
+
+**Tests:**
+- AccessibilityService platform channel communication with mocked method channel
+- Permission check returns correct status (granted, denied, unknown)
+- Fallback chain: AX fails → CGEvent attempted → osascript attempted
+- ClipboardService integration with AccessibilityService
+- Permission UI shows/hides based on permission state
+
+**Acceptance Criteria:**
+- [x] Text inserted at cursor via Accessibility API in native macOS apps (TextEdit, Notes, etc.)
+- [x] Graceful fallback to CGEvent Cmd+V when AX insert fails
+- [x] Final fallback to osascript preserves existing behavior
+- [x] App prompts user for Accessibility permission on first paste attempt
+- [x] Permission status visible in settings
+- [x] No clipboard clobbering when AX direct insert succeeds
+- [x] Gate passes
+
+**Gate:** `fvm flutter analyze && fvm flutter test`
+
+---
+
+## M13: Native Sound Playback
+
+**Goal:** Replace `afplay` process spawning with native NSSound via Flutter platform channel. Fixes sandbox compatibility and reduces latency.
+**Prerequisites:** M8
+
+**Tasks:**
+1. Add Swift platform channel (`SoundChannel`) in `macos/Runner/`
+2. Implement `NSSound(named:)` playback with volume control via `NSSound.volume`
+3. Replace `SoundServiceImpl` to use `MethodChannel` instead of `Process.run('afplay', ...)`
+4. Remove `dart:io` dependency from sound service
+
+**Tests:**
+- SoundService platform channel communication with mocked MethodChannel
+- Volume is clamped and passed correctly
+- Playback errors handled gracefully (sound not found, channel unavailable)
+- Existing sound settings and triggers unchanged
+
+**Acceptance Criteria:**
+- [x] Sounds play via NSSound instead of afplay
+- [x] Works in sandboxed release builds
+- [x] Volume control preserved
+- [x] No process spawning for sound playback
+- [x] Existing sound enable/disable and per-sound volume settings still work
+- [x] Gate passes
 
 **Gate:** `fvm flutter analyze && fvm flutter test`
 
@@ -269,10 +366,11 @@ Each milestone is independently gatable. Don't proceed to M(n+1) until M(n) gate
 
 ```
 M1 → M2 → M3 → M5
-      │    │ ↘ M6
+      │    │ ↘ M6 → M12
       │    └→ M9
       ├→ M7
-      └→ M8
+      └→ M8 → M13
 M3 + M4 → M5
+M2 + M4 → M11
 M1–M9 → M10
 ```

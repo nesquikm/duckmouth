@@ -4,6 +4,7 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
+import 'package:duckmouth/features/recording/domain/audio_format_config.dart';
 import 'package:duckmouth/features/recording/domain/recording_repository.dart';
 import 'package:duckmouth/features/recording/ui/recording_cubit.dart';
 import 'package:duckmouth/features/recording/ui/recording_state.dart';
@@ -12,6 +13,10 @@ class MockRecordingRepository extends Mock implements RecordingRepository {}
 
 void main() {
   late MockRecordingRepository mockRepo;
+
+  setUpAll(() {
+    registerFallbackValue(const AudioFormatConfig());
+  });
 
   setUp(() {
     mockRepo = MockRecordingRepository();
@@ -31,7 +36,7 @@ void main() {
         setUp: () {
           when(() => mockRepo.hasPermission())
               .thenAnswer((_) async => true);
-          when(() => mockRepo.start()).thenAnswer((_) async {});
+          when(() => mockRepo.start(formatConfig: any(named: 'formatConfig'))).thenAnswer((_) async {});
           when(() => mockRepo.durationStream)
               .thenAnswer((_) => const Stream<Duration>.empty());
         },
@@ -39,7 +44,7 @@ void main() {
         act: (cubit) => cubit.startRecording(),
         expect: () => [const RecordingInProgress(Duration.zero)],
         verify: (_) {
-          verify(() => mockRepo.start()).called(1);
+          verify(() => mockRepo.start(formatConfig: any(named: 'formatConfig'))).called(1);
         },
       );
 
@@ -48,7 +53,7 @@ void main() {
         setUp: () {
           when(() => mockRepo.hasPermission())
               .thenAnswer((_) async => true);
-          when(() => mockRepo.start()).thenAnswer((_) async {});
+          when(() => mockRepo.start(formatConfig: any(named: 'formatConfig'))).thenAnswer((_) async {});
           when(() => mockRepo.durationStream).thenAnswer(
             (_) => Stream.fromIterable([
               const Duration(seconds: 1),
@@ -96,7 +101,7 @@ void main() {
             return callCount > 1; // false first, true after request
           });
           when(() => mockRepo.requestPermission()).thenAnswer((_) async {});
-          when(() => mockRepo.start()).thenAnswer((_) async {});
+          when(() => mockRepo.start(formatConfig: any(named: 'formatConfig'))).thenAnswer((_) async {});
           when(() => mockRepo.durationStream)
               .thenAnswer((_) => const Stream<Duration>.empty());
         },
@@ -113,7 +118,7 @@ void main() {
         setUp: () {
           when(() => mockRepo.hasPermission())
               .thenAnswer((_) async => true);
-          when(() => mockRepo.start())
+          when(() => mockRepo.start(formatConfig: any(named: 'formatConfig')))
               .thenThrow(Exception('Audio device busy'));
           when(() => mockRepo.durationStream)
               .thenAnswer((_) => const Stream<Duration>.empty());

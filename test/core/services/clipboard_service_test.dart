@@ -1,20 +1,26 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 
+import 'package:duckmouth/core/services/accessibility_service.dart';
 import 'package:duckmouth/core/services/clipboard_service.dart';
+
+class MockAccessibilityService extends Mock implements AccessibilityService {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  late ClipboardServiceImpl service;
+  group('ClipboardServiceImpl (clipboard operations)', () {
+    late ClipboardServiceImpl service;
 
-  setUp(() {
-    service = ClipboardServiceImpl();
-  });
+    setUp(() {
+      final mockAccessibility = MockAccessibilityService();
+      when(() => mockAccessibility.insertTextWithFallback(any()))
+          .thenAnswer((_) async => InsertionMethod.axDirectInsert);
+      service = ClipboardServiceImpl(accessibilityService: mockAccessibility);
+    });
 
-  group('ClipboardServiceImpl', () {
     testWidgets('copyToClipboard sets clipboard data', (tester) async {
-      // Set up a mock clipboard handler.
       String? clipboardContent;
       tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
         SystemChannels.platform,
@@ -67,6 +73,49 @@ void main() {
 
       final result = await service.getClipboard();
       expect(result, isNull);
+    });
+  });
+
+  group('ClipboardServiceImpl (pasteAtCursor via AccessibilityService)', () {
+    late MockAccessibilityService mockAccessibility;
+    late ClipboardServiceImpl service;
+
+    setUp(() {
+      mockAccessibility = MockAccessibilityService();
+      service = ClipboardServiceImpl(accessibilityService: mockAccessibility);
+    });
+
+    testWidgets('pasteAtCursor delegates to AccessibilityService',
+        (tester) async {
+      when(() => mockAccessibility.insertTextWithFallback('test text'))
+          .thenAnswer((_) async => InsertionMethod.axDirectInsert);
+
+      await service.pasteAtCursor('test text');
+
+      verify(() => mockAccessibility.insertTextWithFallback('test text'))
+          .called(1);
+    });
+
+    testWidgets('pasteAtCursor works when fallback reaches CGEvent',
+        (tester) async {
+      when(() => mockAccessibility.insertTextWithFallback('test text'))
+          .thenAnswer((_) async => InsertionMethod.cgEventPaste);
+
+      await service.pasteAtCursor('test text');
+
+      verify(() => mockAccessibility.insertTextWithFallback('test text'))
+          .called(1);
+    });
+
+    testWidgets('pasteAtCursor works when fallback reaches osascript',
+        (tester) async {
+      when(() => mockAccessibility.insertTextWithFallback('test text'))
+          .thenAnswer((_) async => InsertionMethod.osascript);
+
+      await service.pasteAtCursor('test text');
+
+      verify(() => mockAccessibility.insertTextWithFallback('test text'))
+          .called(1);
     });
   });
 }

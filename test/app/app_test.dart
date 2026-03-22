@@ -4,6 +4,7 @@ import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:mocktail/mocktail.dart';
 
 import 'package:duckmouth/app/app.dart';
+import 'package:duckmouth/core/services/accessibility_service.dart';
 import 'package:duckmouth/core/services/clipboard_service.dart';
 import 'package:duckmouth/core/services/output_mode.dart';
 import 'package:duckmouth/core/services/sound_config.dart';
@@ -14,6 +15,7 @@ import 'package:duckmouth/features/hotkey/ui/hotkey_cubit.dart';
 import 'package:duckmouth/features/post_processing/domain/post_processing_config.dart';
 import 'package:duckmouth/features/post_processing/domain/post_processing_repository.dart';
 import 'package:duckmouth/features/post_processing/ui/post_processing_cubit.dart';
+import 'package:duckmouth/features/recording/domain/audio_format_config.dart';
 import 'package:duckmouth/features/recording/domain/recording_repository.dart';
 import 'package:duckmouth/features/recording/ui/recording_cubit.dart';
 import 'package:duckmouth/features/settings/domain/settings_repository.dart';
@@ -39,6 +41,8 @@ class MockClipboardService extends Mock implements ClipboardService {}
 class MockHotkeyService extends Mock implements HotkeyService {}
 
 class MockSoundService extends Mock implements SoundService {}
+
+class MockAccessibilityService extends Mock implements AccessibilityService {}
 
 class FakeHotKey extends Fake implements HotKey {}
 
@@ -72,6 +76,8 @@ void main() {
         .thenAnswer((_) async => HotkeyConfig.defaultConfig);
     when(() => mockSettingsRepo.loadSoundConfig())
         .thenAnswer((_) async => const SoundConfig());
+    when(() => mockSettingsRepo.loadAudioFormatConfig())
+        .thenAnswer((_) async => const AudioFormatConfig());
 
     final mockHotkeyService = MockHotkeyService();
     when(() => mockHotkeyService.unregisterAll()).thenAnswer((_) async {});
@@ -92,8 +98,14 @@ void main() {
     sl.registerFactory<TranscriptionCubit>(
       () => TranscriptionCubit(repository: mockSttRepo),
     );
+    final mockAccessibility = MockAccessibilityService();
+    when(() => mockAccessibility.checkPermission())
+        .thenAnswer((_) async => AccessibilityStatus.unknown);
     sl.registerFactory<SettingsCubit>(
-      () => SettingsCubit(repository: mockSettingsRepo),
+      () => SettingsCubit(
+        repository: mockSettingsRepo,
+        accessibilityService: mockAccessibility,
+      ),
     );
     sl.registerFactory<PostProcessingCubit>(
       () => PostProcessingCubit(

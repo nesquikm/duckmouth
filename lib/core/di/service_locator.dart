@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:duckmouth/core/api/llm_client.dart';
 import 'package:duckmouth/core/api/openai_client.dart';
+import 'package:duckmouth/core/services/accessibility_service.dart';
 import 'package:duckmouth/core/services/clipboard_service.dart';
 import 'package:duckmouth/core/services/sound_service.dart';
 import 'package:duckmouth/features/history/data/history_repository_impl.dart';
@@ -35,8 +36,15 @@ Future<void> setupServiceLocator() async {
   sl.registerSingleton<SharedPreferences>(prefs);
   sl.registerSingleton<FlutterSecureStorage>(const FlutterSecureStorage());
 
+  // Accessibility
+  sl.registerLazySingleton<AccessibilityService>(
+    AccessibilityServiceImpl.new,
+  );
+
   // Clipboard
-  sl.registerLazySingleton<ClipboardService>(ClipboardServiceImpl.new);
+  sl.registerLazySingleton<ClipboardService>(
+    () => ClipboardServiceImpl(accessibilityService: sl<AccessibilityService>()),
+  );
 
   // Sound
   sl.registerLazySingleton<SoundService>(SoundServiceImpl.new);
@@ -50,7 +58,10 @@ Future<void> setupServiceLocator() async {
   );
 
   sl.registerFactory<SettingsCubit>(
-    () => SettingsCubit(repository: sl<SettingsRepository>()),
+    () => SettingsCubit(
+      repository: sl<SettingsRepository>(),
+      accessibilityService: sl<AccessibilityService>(),
+    ),
   );
 
   // Recording

@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'package:flutter/services.dart';
 
 /// Abstract interface for playing sound feedback.
 abstract class SoundService {
@@ -15,23 +15,24 @@ abstract class SoundService {
   void dispose();
 }
 
-/// macOS implementation that plays built-in system sounds via `afplay`.
+/// macOS implementation that plays system sounds via NSSound platform channel.
 class SoundServiceImpl implements SoundService {
-  /// Play a macOS system sound by name.
-  ///
-  /// Uses `afplay` with the `-v` flag for volume control.
-  /// Volume is clamped to 0.0–1.0 and mapped to afplay's 0–255 range.
-  Future<void> _play(String soundName, {double volume = 1.0}) async {
-    final path = '/System/Library/Sounds/$soundName.aiff';
-    final file = File(path);
-    if (!file.existsSync()) return;
+  SoundServiceImpl({
+    MethodChannel? channel,
+  }) : _channel = channel ?? const MethodChannel('com.duckmouth/sound');
 
-    // afplay volume: 0 = silent, 1 = normal. We pass it directly.
+  final MethodChannel _channel;
+
+  /// Play a macOS system sound by name via the native platform channel.
+  Future<void> _play(String soundName, {double volume = 1.0}) async {
     final clampedVolume = volume.clamp(0.0, 1.0);
     try {
-      await Process.run('afplay', ['-v', '$clampedVolume', path]);
-    } on ProcessException {
-      // Silently ignore – sound is non-critical.
+      await _channel.invokeMethod<Map>('playSound', {
+        'name': soundName,
+        'volume': clampedVolume,
+      });
+    } on Exception {
+      // Silently ignore — sound is non-critical.
     }
   }
 
@@ -49,6 +50,6 @@ class SoundServiceImpl implements SoundService {
 
   @override
   void dispose() {
-    // No resources to release for Process.run approach.
+    // No resources to release for platform channel approach.
   }
 }

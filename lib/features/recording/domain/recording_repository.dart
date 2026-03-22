@@ -1,7 +1,12 @@
+import 'package:duckmouth/features/recording/domain/audio_format_config.dart';
+
 /// Abstract interface for audio recording operations.
 abstract class RecordingRepository {
   /// Start recording audio to a temporary file.
-  Future<void> start();
+  ///
+  /// If [formatConfig] is provided, it determines the audio format,
+  /// sample rate, and bit rate. Otherwise defaults are used.
+  Future<void> start({AudioFormatConfig? formatConfig});
 
   /// Stop recording and return the file path of the recorded audio.
   /// Returns null if no recording was in progress.

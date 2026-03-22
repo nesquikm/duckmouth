@@ -41,7 +41,7 @@ Duckmouth is a macOS desktop app that captures speech via microphone, transcribe
 
 **Acceptance Criteria:**
 - AC-4.1: Result can be copied to clipboard
-- AC-4.2: Paste-at-cursor via clipboard sandwich (save clipboard → write text → Cmd+V → restore clipboard)
+- AC-4.2: Paste-at-cursor via Accessibility API with clipboard sandwich fallback (see FR-10)
 - AC-4.3: Default output action is configurable (copy, paste, or both)
 
 ### FR-5: Sound Feedback
@@ -92,6 +92,17 @@ Duckmouth is a macOS desktop app that captures speech via microphone, transcribe
 - AC-9.5: Hotkey configuration with push-to-talk vs toggle mode choice
 - AC-9.6: Sound enable/disable and per-sound volume
 - AC-9.7: Default output action selection
+
+### FR-10: Accessibility API Text Insertion
+
+**Description:** Use macOS Accessibility API to insert text directly at the cursor in other apps, avoiding clipboard clobbering. Fall back to clipboard sandwich when the target app doesn't support AX text insertion.
+
+**Acceptance Criteria:**
+- AC-10.1: Text inserted at cursor via Accessibility API (`kAXSelectedTextAttribute`) in supported apps
+- AC-10.2: Automatic fallback to CGEvent Cmd+V (clipboard sandwich) when AX insert fails
+- AC-10.3: Final fallback to osascript preserves existing behavior
+- AC-10.4: App checks Accessibility permission status and prompts user to grant it
+- AC-10.5: Permission status displayed in settings page
 
 ## 3. Non-Functional Requirements
 
@@ -148,3 +159,8 @@ Duckmouth is a macOS desktop app that captures speech via microphone, transcribe
 | AC-9.5      |               |       |
 | AC-9.6      |               |       |
 | AC-9.7      |               |       |
+| AC-10.1     | `lib/core/services/accessibility_service.dart`, `macos/Runner/TextInsertionChannel.swift` | `test/core/services/accessibility_service_test.dart` |
+| AC-10.2     | `lib/core/services/accessibility_service.dart` | `test/core/services/accessibility_service_test.dart` |
+| AC-10.3     | `lib/core/services/accessibility_service.dart` | `test/core/services/accessibility_service_test.dart` |
+| AC-10.4     | `macos/Runner/TextInsertionChannel.swift`, `lib/features/settings/ui/settings_cubit.dart` | `test/features/settings/ui/settings_cubit_test.dart` |
+| AC-10.5     | `lib/features/settings/ui/settings_page.dart`, `lib/features/settings/ui/settings_state.dart` | `test/features/settings/ui/settings_cubit_test.dart` |

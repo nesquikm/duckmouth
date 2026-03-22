@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:record/record.dart';
 
+import '../domain/audio_format_config.dart';
 import '../domain/recording_repository.dart';
 
 /// Concrete implementation of [RecordingRepository] using the record package.
@@ -17,7 +18,7 @@ class RecordingRepositoryImpl implements RecordingRepository {
   DateTime? _recordingStartTime;
 
   @override
-  Future<void> start() async {
+  Future<void> start({AudioFormatConfig? formatConfig}) async {
     final hasPermission = await _recorder.hasPermission();
     if (!hasPermission) {
       throw RecordingPermissionException(
@@ -25,14 +26,18 @@ class RecordingRepositoryImpl implements RecordingRepository {
       );
     }
 
+    final config = formatConfig ?? const AudioFormatConfig();
+    final format = config.effectiveFormat;
     final tempDir = Directory.systemTemp;
     final timestamp = DateTime.now().millisecondsSinceEpoch;
-    final filePath = '${tempDir.path}/duckmouth_recording_$timestamp.m4a';
+    final filePath =
+        '${tempDir.path}/duckmouth_recording_$timestamp.${format.extension}';
 
     await _recorder.start(
-      const RecordConfig(
-        encoder: AudioEncoder.aacLc,
-        sampleRate: 44100,
+      RecordConfig(
+        encoder: format.encoder,
+        sampleRate: config.effectiveSampleRate,
+        bitRate: config.effectiveBitRate ?? 128000,
         numChannels: 1,
       ),
       path: filePath,

@@ -5,6 +5,7 @@ import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:mocktail/mocktail.dart';
 
 import 'package:duckmouth/app/home_page.dart';
+import 'package:duckmouth/core/services/accessibility_service.dart';
 import 'package:duckmouth/core/services/clipboard_service.dart';
 import 'package:duckmouth/core/services/output_mode.dart';
 import 'package:duckmouth/core/services/sound_config.dart';
@@ -18,6 +19,7 @@ import 'package:duckmouth/features/hotkey/ui/hotkey_cubit.dart';
 import 'package:duckmouth/features/post_processing/domain/post_processing_config.dart';
 import 'package:duckmouth/features/post_processing/domain/post_processing_repository.dart';
 import 'package:duckmouth/features/post_processing/ui/post_processing_cubit.dart';
+import 'package:duckmouth/features/recording/domain/audio_format_config.dart';
 import 'package:duckmouth/features/recording/domain/recording_repository.dart';
 import 'package:duckmouth/features/recording/ui/recording_cubit.dart';
 import 'package:duckmouth/features/settings/domain/settings_repository.dart';
@@ -42,6 +44,8 @@ class MockHotkeyService extends Mock implements HotkeyService {}
 
 class MockSoundService extends Mock implements SoundService {}
 
+class MockAccessibilityService extends Mock implements AccessibilityService {}
+
 class FakeHotKey extends Fake implements HotKey {}
 
 class FakeTranscriptionEntry extends Fake implements TranscriptionEntry {}
@@ -59,6 +63,7 @@ void main() {
   setUpAll(() {
     registerFallbackValue(FakeHotKey());
     registerFallbackValue(FakeTranscriptionEntry());
+    registerFallbackValue(const AudioFormatConfig());
   });
 
   setUp(() {
@@ -85,6 +90,8 @@ void main() {
         .thenAnswer((_) async => HotkeyConfig.defaultConfig);
     when(() => mockSettingsRepo.loadSoundConfig())
         .thenAnswer((_) async => const SoundConfig());
+    when(() => mockSettingsRepo.loadAudioFormatConfig())
+        .thenAnswer((_) async => const AudioFormatConfig());
     when(() => mockHotkeyService.unregisterAll()).thenAnswer((_) async {});
     when(
       () => mockHotkeyService.register(
@@ -112,8 +119,14 @@ void main() {
     sl.registerFactory<TranscriptionCubit>(
       () => TranscriptionCubit(repository: mockSttRepo),
     );
+    final mockAccessibility = MockAccessibilityService();
+    when(() => mockAccessibility.checkPermission())
+        .thenAnswer((_) async => AccessibilityStatus.unknown);
     sl.registerFactory<SettingsCubit>(
-      () => SettingsCubit(repository: mockSettingsRepo),
+      () => SettingsCubit(
+        repository: mockSettingsRepo,
+        accessibilityService: mockAccessibility,
+      ),
     );
     sl.registerFactory<PostProcessingCubit>(
       () => PostProcessingCubit(
@@ -152,7 +165,7 @@ void main() {
         // Set up the recording to succeed
         when(() => mockRecordingRepo.hasPermission())
             .thenAnswer((_) async => true);
-        when(() => mockRecordingRepo.start()).thenAnswer((_) async {});
+        when(() => mockRecordingRepo.start(formatConfig: any(named: 'formatConfig'))).thenAnswer((_) async {});
         when(() => mockRecordingRepo.stop())
             .thenAnswer((_) async => '/tmp/test.m4a');
 
@@ -199,7 +212,7 @@ void main() {
       (tester) async {
         when(() => mockRecordingRepo.hasPermission())
             .thenAnswer((_) async => true);
-        when(() => mockRecordingRepo.start()).thenAnswer((_) async {});
+        when(() => mockRecordingRepo.start(formatConfig: any(named: 'formatConfig'))).thenAnswer((_) async {});
         when(() => mockRecordingRepo.stop())
             .thenAnswer((_) async => '/tmp/test.m4a');
         when(() => mockSttRepo.transcribe(any()))
@@ -266,7 +279,7 @@ void main() {
     testWidgets('New Recording button resets state', (tester) async {
       when(() => mockRecordingRepo.hasPermission())
           .thenAnswer((_) async => true);
-      when(() => mockRecordingRepo.start()).thenAnswer((_) async {});
+      when(() => mockRecordingRepo.start(formatConfig: any(named: 'formatConfig'))).thenAnswer((_) async {});
       when(() => mockRecordingRepo.stop())
           .thenAnswer((_) async => '/tmp/test.m4a');
       when(() => mockSttRepo.transcribe(any()))
@@ -304,7 +317,7 @@ void main() {
         (tester) async {
       when(() => mockRecordingRepo.hasPermission())
           .thenAnswer((_) async => true);
-      when(() => mockRecordingRepo.start()).thenAnswer((_) async {});
+      when(() => mockRecordingRepo.start(formatConfig: any(named: 'formatConfig'))).thenAnswer((_) async {});
       when(() => mockRecordingRepo.stop())
           .thenAnswer((_) async => '/tmp/test.m4a');
       when(() => mockSttRepo.transcribe(any()))

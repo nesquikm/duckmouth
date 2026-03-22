@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
+import 'package:duckmouth/features/recording/domain/audio_format_config.dart';
 import 'package:duckmouth/features/recording/domain/recording_repository.dart';
 import 'package:duckmouth/features/recording/ui/recording_controls.dart';
 import 'package:duckmouth/features/recording/ui/recording_cubit.dart';
@@ -13,6 +14,10 @@ class MockRecordingRepository extends Mock implements RecordingRepository {}
 void main() {
   late MockRecordingRepository mockRepo;
   late RecordingCubit cubit;
+
+  setUpAll(() {
+    registerFallbackValue(const AudioFormatConfig());
+  });
 
   setUp(() {
     mockRepo = MockRecordingRepository();
@@ -49,7 +54,7 @@ void main() {
   testWidgets('shows Recording... and stop icon when recording',
       (tester) async {
     when(() => mockRepo.hasPermission()).thenAnswer((_) async => true);
-    when(() => mockRepo.start()).thenAnswer((_) async {});
+    when(() => mockRepo.start(formatConfig: any(named: 'formatConfig'))).thenAnswer((_) async {});
 
     await tester.pumpWidget(buildTestWidget());
     await cubit.startRecording();
@@ -83,13 +88,13 @@ void main() {
 
   testWidgets('tapping mic button calls startRecording', (tester) async {
     when(() => mockRepo.hasPermission()).thenAnswer((_) async => true);
-    when(() => mockRepo.start()).thenAnswer((_) async {});
+    when(() => mockRepo.start(formatConfig: any(named: 'formatConfig'))).thenAnswer((_) async {});
 
     await tester.pumpWidget(buildTestWidget());
     await tester.tap(find.byIcon(Icons.mic));
     await tester.pump();
 
-    verify(() => mockRepo.start()).called(1);
+    verify(() => mockRepo.start(formatConfig: any(named: 'formatConfig'))).called(1);
   });
 
   testWidgets('tapping stop button calls stopRecording', (tester) async {

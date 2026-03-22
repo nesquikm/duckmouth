@@ -18,10 +18,14 @@ import 'package:duckmouth/features/recording/domain/recording_repository.dart';
 import 'package:duckmouth/features/recording/ui/recording_cubit.dart';
 import 'package:duckmouth/features/settings/domain/settings_repository.dart';
 import 'package:duckmouth/features/settings/ui/settings_cubit.dart';
+import 'package:duckmouth/features/history/domain/history_repository.dart';
+import 'package:duckmouth/features/history/ui/history_cubit.dart';
 import 'package:duckmouth/features/transcription/domain/stt_repository.dart';
 import 'package:duckmouth/features/transcription/ui/transcription_cubit.dart';
 
 class MockRecordingRepository extends Mock implements RecordingRepository {}
+
+class MockHistoryRepository extends Mock implements HistoryRepository {}
 
 class MockSttRepository extends Mock implements SttRepository {}
 
@@ -53,6 +57,8 @@ void main() {
     mockSttRepo = MockSttRepository();
     mockSettingsRepo = MockSettingsRepository();
     mockPpRepo = MockPostProcessingRepository();
+    final mockHistoryRepo = MockHistoryRepository();
+    when(() => mockHistoryRepo.getAll()).thenAnswer((_) async => []);
     when(() => mockRepo.dispose()).thenAnswer((_) async {});
     when(() => mockRepo.durationStream)
         .thenAnswer((_) => const Stream<Duration>.empty());
@@ -97,6 +103,9 @@ void main() {
     );
     sl.registerFactory<HotkeyCubit>(
       () => HotkeyCubit(service: mockHotkeyService),
+    );
+    sl.registerFactory<HistoryCubit>(
+      () => HistoryCubit(repository: mockHistoryRepo),
     );
   });
 

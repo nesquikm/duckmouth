@@ -98,6 +98,48 @@ void main() {
       );
     });
 
+    test('provides user-friendly message for 401 status', () async {
+      final mockClient = http_testing.MockClient((_) async {
+        return http.Response('Unauthorized', 401);
+      });
+
+      final client = LlmClientImpl(
+        apiKey: 'bad-key',
+        baseUrl: 'https://api.example.com',
+        model: 'gpt-4o-mini',
+        httpClient: mockClient,
+      );
+
+      try {
+        await client.chatCompletion('prompt', 'text');
+        fail('Should have thrown');
+      } on LlmClientException catch (e) {
+        expect(e.statusCode, 401);
+        expect(e.message, contains('Invalid LLM API key'));
+      }
+    });
+
+    test('provides user-friendly message for server error', () async {
+      final mockClient = http_testing.MockClient((_) async {
+        return http.Response('Internal Server Error', 502);
+      });
+
+      final client = LlmClientImpl(
+        apiKey: 'test-key',
+        baseUrl: 'https://api.example.com',
+        model: 'gpt-4o-mini',
+        httpClient: mockClient,
+      );
+
+      try {
+        await client.chatCompletion('prompt', 'text');
+        fail('Should have thrown');
+      } on LlmClientException catch (e) {
+        expect(e.statusCode, 502);
+        expect(e.message, contains('server error'));
+      }
+    });
+
     test('throws LlmClientException when choices is missing', () async {
       final mockClient = http_testing.MockClient((_) async {
         return http.Response(jsonEncode({'id': 'abc'}), 200);

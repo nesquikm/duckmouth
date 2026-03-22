@@ -43,8 +43,8 @@ class OpenAiClientImpl implements OpenAiClient {
 
     if (response.statusCode != 200) {
       throw OpenAiClientException(
-        'Transcription failed with status ${response.statusCode}: '
-        '${response.body}',
+        _userFriendlyMessage(response.statusCode, response.body),
+        statusCode: response.statusCode,
       );
     }
 
@@ -60,11 +60,29 @@ class OpenAiClientImpl implements OpenAiClient {
   }
 }
 
+/// Returns a user-friendly error message based on the HTTP status code.
+String _userFriendlyMessage(int statusCode, String body) {
+  switch (statusCode) {
+    case 401:
+      return 'Invalid API key. Check your API key in Settings.';
+    case 403:
+      return 'Access denied. Your API key may lack permissions.';
+    case 429:
+      return 'Rate limit exceeded. Please wait a moment and try again.';
+    case >= 500:
+      return 'Server error ($statusCode). The API service may be '
+          'temporarily unavailable.';
+    default:
+      return 'Transcription failed (HTTP $statusCode).';
+  }
+}
+
 /// Exception thrown by [OpenAiClient] operations.
 class OpenAiClientException implements Exception {
-  const OpenAiClientException(this.message);
+  const OpenAiClientException(this.message, {this.statusCode});
 
   final String message;
+  final int? statusCode;
 
   @override
   String toString() => 'OpenAiClientException: $message';

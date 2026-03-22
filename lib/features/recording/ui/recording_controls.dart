@@ -20,6 +20,10 @@ class RecordingControls extends StatelessWidget {
             _buildDurationDisplay(state),
             const SizedBox(height: 32),
             _buildRecordButton(context, state),
+            if (state is RecordingError) ...[
+              const SizedBox(height: 16),
+              _buildRetryButton(context),
+            ],
           ],
         );
       },
@@ -45,9 +49,13 @@ class RecordingControls extends StatelessWidget {
         color = Colors.red;
     }
 
-    return Text(
-      text,
-      style: TextStyle(fontSize: 16, color: color),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Text(
+        text,
+        style: TextStyle(fontSize: 16, color: color),
+        textAlign: TextAlign.center,
+      ),
     );
   }
 
@@ -57,8 +65,10 @@ class RecordingControls extends StatelessWidget {
       _ => Duration.zero,
     };
 
-    final minutes = duration.inMinutes.remainder(60).toString().padLeft(2, '0');
-    final seconds = duration.inSeconds.remainder(60).toString().padLeft(2, '0');
+    final minutes =
+        duration.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final seconds =
+        duration.inSeconds.remainder(60).toString().padLeft(2, '0');
     final tenths =
         (duration.inMilliseconds.remainder(1000) ~/ 100).toString();
 
@@ -87,6 +97,16 @@ class RecordingControls extends StatelessWidget {
           size: 32,
         ),
       ),
+    );
+  }
+
+  Widget _buildRetryButton(BuildContext context) {
+    return TextButton.icon(
+      onPressed: () {
+        context.read<RecordingCubit>().startRecording();
+      },
+      icon: const Icon(Icons.refresh, size: 16),
+      label: const Text('Retry'),
     );
   }
 }

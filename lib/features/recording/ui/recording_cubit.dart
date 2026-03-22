@@ -23,7 +23,11 @@ class RecordingCubit extends Cubit<RecordingState> {
         await _repository.requestPermission();
         final granted = await _repository.hasPermission();
         if (!granted) {
-          _tryEmit(const RecordingError('Microphone permission denied'));
+          _tryEmit(const RecordingError(
+            'Microphone access required. Open System Settings > '
+            'Privacy & Security > Microphone and enable access '
+            'for Duckmouth.',
+          ));
           return;
         }
       }
@@ -57,6 +61,11 @@ class RecordingCubit extends Cubit<RecordingState> {
     } on Exception catch (e) {
       _tryEmit(RecordingError('Failed to stop recording: $e'));
     }
+  }
+
+  /// Reset to idle state for a new recording.
+  void reset() {
+    _tryEmit(const RecordingIdle());
   }
 
   void _tryEmit(RecordingState state) {

@@ -79,7 +79,11 @@ void main() {
         build: () => RecordingCubit(repository: mockRepo),
         act: (cubit) => cubit.startRecording(),
         expect: () => [
-          const RecordingError('Microphone permission denied'),
+          const RecordingError(
+            'Microphone access required. Open System Settings > '
+            'Privacy & Security > Microphone and enable access '
+            'for Duckmouth.',
+          ),
         ],
       );
 

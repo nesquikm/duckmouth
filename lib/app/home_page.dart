@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'package:duckmouth/app/system_tray_manager.dart';
 import 'package:duckmouth/core/di/service_locator.dart';
 import 'package:duckmouth/core/services/clipboard_service.dart';
 import 'package:duckmouth/core/services/output_mode.dart';
@@ -130,6 +131,12 @@ void _handleOutput(BuildContext context, String text) {
   }
 }
 
+void _updateTrayStatus(String status) {
+  if (sl.isRegistered<SystemTrayManager>()) {
+    sl<SystemTrayManager>().updateToolTip(status);
+  }
+}
+
 class _HomeBody extends StatelessWidget {
   const _HomeBody();
 
@@ -146,6 +153,7 @@ class _HomeBody extends StatelessWidget {
                 sl<SoundService>()
                     .playRecordingStart(volume: sc.startVolume);
               }
+              _updateTrayStatus('Recording...');
             }
             if (state is RecordingComplete) {
               final sc = _currentSoundConfig(context);
@@ -153,11 +161,18 @@ class _HomeBody extends StatelessWidget {
                 sl<SoundService>()
                     .playRecordingStop(volume: sc.stopVolume);
               }
+              _updateTrayStatus('Transcribing...');
               context.read<TranscriptionCubit>().transcribe(state.filePath);
+            }
+            if (state is RecordingError) {
+              _updateTrayStatus('Error');
             }
             // Reset hotkey recording state when recording stops externally.
             if (state is RecordingIdle || state is RecordingComplete) {
               context.read<HotkeyCubit>().resetRecordingState();
+            }
+            if (state is RecordingIdle) {
+              _updateTrayStatus('Idle');
             }
           },
         ),
@@ -165,6 +180,12 @@ class _HomeBody extends StatelessWidget {
           listener: (context, state) {
             if (state is TranscriptionSuccess) {
               context.read<PostProcessingCubit>().process(state.text);
+            }
+            if (state is TranscriptionError) {
+              _updateTrayStatus('Error');
+            }
+            if (state is TranscriptionIdle) {
+              _updateTrayStatus('Idle');
             }
           },
         ),
@@ -192,6 +213,7 @@ class _HomeBody extends StatelessWidget {
                 );
               }
               _handleOutput(context, textToOutput);
+              _updateTrayStatus('Done');
 
               // Save to history.
               final transcriptionState =
@@ -210,6 +232,13 @@ class _HomeBody extends StatelessWidget {
                       timestamp: DateTime.now(),
                     ),
                   );
+
+              // Update tray with recent transcription.
+              _updateTrayRecentTranscription(textToOutput);
+            }
+
+            if (state is PostProcessingError) {
+              _updateTrayStatus('Processing error');
             }
           },
         ),
@@ -223,16 +252,34 @@ class _HomeBody extends StatelessWidget {
           },
         ),
       ],
-      child: const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            RecordingControls(),
-            SizedBox(height: 24),
-            TranscriptionDisplay(),
-          ],
+      child: const Padding(
+        padding: EdgeInsets.symmetric(horizontal: 16),
+        child: Center(
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                RecordingControls(),
+                SizedBox(height: 24),
+                TranscriptionDisplay(),
+              ],
+            ),
+          ),
         ),
       ),
     );
   }
+}
+
+/// Keep a small list of recent transcription snippets for the tray menu.
+final List<String> _recentSnippets = [];
+
+void _updateTrayRecentTranscription(String text) {
+  if (!sl.isRegistered<SystemTrayManager>()) return;
+
+  _recentSnippets.insert(0, text);
+  if (_recentSnippets.length > 3) {
+    _recentSnippets.removeRange(3, _recentSnippets.length);
+  }
+  sl<SystemTrayManager>().updateRecentTranscriptions(_recentSnippets);
 }

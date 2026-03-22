@@ -1,7 +1,10 @@
+import 'dart:io';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
+import 'package:duckmouth/core/api/llm_client.dart';
 import 'package:duckmouth/features/post_processing/domain/post_processing_config.dart';
 import 'package:duckmouth/features/post_processing/domain/post_processing_repository.dart';
 import 'package:duckmouth/features/post_processing/ui/post_processing_cubit.dart';
@@ -81,7 +84,7 @@ void main() {
     );
 
     blocTest<PostProcessingCubit, PostProcessingState>(
-      'emits [Loading, Error] when enabled and processing fails',
+      'emits [Loading, Error] with friendly message on generic exception',
       setUp: () {
         when(() => mockRepo.process(any(), any()))
             .thenThrow(Exception('API error'));
@@ -95,7 +98,53 @@ void main() {
         const PostProcessingLoading(rawText: 'raw text'),
         const PostProcessingError(
           rawText: 'raw text',
-          message: 'Exception: API error',
+          message: 'Post-processing failed. Please try again.',
+        ),
+      ],
+    );
+
+    blocTest<PostProcessingCubit, PostProcessingState>(
+      'emits [Loading, Error] with API message on LlmClientException',
+      setUp: () {
+        when(() => mockRepo.process(any(), any())).thenThrow(
+          const LlmClientException(
+            'Invalid LLM API key. Check your post-processing API key '
+            'in Settings.',
+            statusCode: 401,
+          ),
+        );
+      },
+      build: () => PostProcessingCubit(
+        repository: mockRepo,
+        config: enabledConfig,
+      ),
+      act: (cubit) => cubit.process('raw text'),
+      expect: () => [
+        const PostProcessingLoading(rawText: 'raw text'),
+        const PostProcessingError(
+          rawText: 'raw text',
+          message: 'Invalid LLM API key. Check your post-processing API key '
+              'in Settings.',
+        ),
+      ],
+    );
+
+    blocTest<PostProcessingCubit, PostProcessingState>(
+      'emits [Loading, Error] with network message on SocketException',
+      setUp: () {
+        when(() => mockRepo.process(any(), any()))
+            .thenThrow(const SocketException('No internet'));
+      },
+      build: () => PostProcessingCubit(
+        repository: mockRepo,
+        config: enabledConfig,
+      ),
+      act: (cubit) => cubit.process('raw text'),
+      expect: () => [
+        const PostProcessingLoading(rawText: 'raw text'),
+        const PostProcessingError(
+          rawText: 'raw text',
+          message: 'Network error. Check your internet connection.',
         ),
       ],
     );
@@ -123,6 +172,20 @@ void main() {
           processedText: 'processed',
         ),
       ],
+    );
+
+    blocTest<PostProcessingCubit, PostProcessingState>(
+      'reset emits PostProcessingIdle',
+      build: () => PostProcessingCubit(
+        repository: mockRepo,
+        config: enabledConfig,
+      ),
+      seed: () => const PostProcessingSuccess(
+        rawText: 'raw',
+        processedText: 'processed',
+      ),
+      act: (cubit) => cubit.reset(),
+      expect: () => [const PostProcessingIdle()],
     );
   });
 }

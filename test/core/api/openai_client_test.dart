@@ -93,6 +93,63 @@ void main() {
       );
     });
 
+    test('provides user-friendly message for 401 status', () async {
+      final mockClient = http_testing.MockClient((_) async {
+        return http.Response('Unauthorized', 401);
+      });
+
+      final client = OpenAiClientImpl(
+        apiKey: 'bad-key',
+        httpClient: mockClient,
+      );
+
+      try {
+        await client.transcribe(testAudioPath);
+        fail('Should have thrown');
+      } on OpenAiClientException catch (e) {
+        expect(e.statusCode, 401);
+        expect(e.message, contains('Invalid API key'));
+      }
+    });
+
+    test('provides user-friendly message for 429 status', () async {
+      final mockClient = http_testing.MockClient((_) async {
+        return http.Response('Rate limited', 429);
+      });
+
+      final client = OpenAiClientImpl(
+        apiKey: 'test-key',
+        httpClient: mockClient,
+      );
+
+      try {
+        await client.transcribe(testAudioPath);
+        fail('Should have thrown');
+      } on OpenAiClientException catch (e) {
+        expect(e.statusCode, 429);
+        expect(e.message, contains('Rate limit'));
+      }
+    });
+
+    test('provides user-friendly message for 500 status', () async {
+      final mockClient = http_testing.MockClient((_) async {
+        return http.Response('Internal Server Error', 500);
+      });
+
+      final client = OpenAiClientImpl(
+        apiKey: 'test-key',
+        httpClient: mockClient,
+      );
+
+      try {
+        await client.transcribe(testAudioPath);
+        fail('Should have thrown');
+      } on OpenAiClientException catch (e) {
+        expect(e.statusCode, 500);
+        expect(e.message, contains('Server error'));
+      }
+    });
+
     test('throws OpenAiClientException when response missing text field',
         () async {
       final mockClient = http_testing.MockClient((_) async {

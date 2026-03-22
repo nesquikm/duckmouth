@@ -78,7 +78,7 @@ void main() {
     await cubit.startRecording();
     await tester.pump();
 
-    expect(find.text('Microphone permission denied'), findsOneWidget);
+    expect(find.textContaining('Microphone access required'), findsOneWidget);
   });
 
   testWidgets('tapping mic button calls startRecording', (tester) async {

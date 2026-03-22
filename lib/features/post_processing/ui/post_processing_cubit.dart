@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'package:duckmouth/core/api/llm_client.dart';
 import 'package:duckmouth/features/post_processing/domain/post_processing_config.dart';
 import 'package:duckmouth/features/post_processing/domain/post_processing_repository.dart';
 import 'package:duckmouth/features/post_processing/ui/post_processing_state.dart';
@@ -35,17 +38,41 @@ class PostProcessingCubit extends Cubit<PostProcessingState> {
         rawText: rawText,
         processedText: processedText,
       ));
+    } on LlmClientException catch (e) {
+      _tryEmit(PostProcessingError(
+        rawText: rawText,
+        message: e.message,
+      ));
+    } on SocketException catch (_) {
+      _tryEmit(PostProcessingError(
+        rawText: rawText,
+        message: 'Network error. Check your internet connection.',
+      ));
     } on Exception catch (e) {
       _tryEmit(PostProcessingError(
         rawText: rawText,
-        message: e.toString(),
+        message: _friendlyError(e),
       ));
     }
+  }
+
+  /// Reset to idle state.
+  void reset() {
+    _tryEmit(const PostProcessingIdle());
   }
 
   void _tryEmit(PostProcessingState state) {
     if (!isClosed) {
       emit(state);
     }
+  }
+
+  static String _friendlyError(Exception e) {
+    final message = e.toString();
+    if (message.contains('SocketException') ||
+        message.contains('Connection refused')) {
+      return 'Network error. Check your internet connection.';
+    }
+    return 'Post-processing failed. Please try again.';
   }
 }

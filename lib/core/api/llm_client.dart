@@ -48,8 +48,8 @@ class LlmClientImpl implements LlmClient {
 
     if (response.statusCode != 200) {
       throw LlmClientException(
-        'Chat completion failed with status ${response.statusCode}: '
-        '${response.body}',
+        _llmUserFriendlyMessage(response.statusCode, response.body),
+        statusCode: response.statusCode,
       );
     }
 
@@ -74,11 +74,30 @@ class LlmClientImpl implements LlmClient {
   }
 }
 
+/// Returns a user-friendly error message based on the HTTP status code.
+String _llmUserFriendlyMessage(int statusCode, String body) {
+  switch (statusCode) {
+    case 401:
+      return 'Invalid LLM API key. Check your post-processing API key '
+          'in Settings.';
+    case 403:
+      return 'Access denied. Your LLM API key may lack permissions.';
+    case 429:
+      return 'Rate limit exceeded. Please wait a moment and try again.';
+    case >= 500:
+      return 'LLM server error ($statusCode). The API service may be '
+          'temporarily unavailable.';
+    default:
+      return 'Post-processing failed (HTTP $statusCode).';
+  }
+}
+
 /// Exception thrown by [LlmClient] operations.
 class LlmClientException implements Exception {
-  const LlmClientException(this.message);
+  const LlmClientException(this.message, {this.statusCode});
 
   final String message;
+  final int? statusCode;
 
   @override
   String toString() => 'LlmClientException: $message';

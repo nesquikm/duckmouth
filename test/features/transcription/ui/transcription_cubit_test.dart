@@ -1,7 +1,10 @@
+import 'dart:io';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
+import 'package:duckmouth/core/api/openai_client.dart';
 import 'package:duckmouth/features/transcription/domain/stt_repository.dart';
 import 'package:duckmouth/features/transcription/ui/transcription_cubit.dart';
 import 'package:duckmouth/features/transcription/ui/transcription_state.dart';
@@ -40,16 +43,67 @@ void main() {
     );
 
     blocTest<TranscriptionCubit, TranscriptionState>(
-      'emits [Loading, Error] when transcription fails',
+      'emits [Loading, Error] with friendly message on generic exception',
       setUp: () {
         when(() => mockRepo.transcribe(any()))
-            .thenThrow(Exception('Network error'));
+            .thenThrow(Exception('something went wrong'));
       },
       build: () => TranscriptionCubit(repository: mockRepo),
       act: (cubit) => cubit.transcribe('/audio.m4a'),
       expect: () => [
         const TranscriptionLoading(),
-        const TranscriptionError('Exception: Network error'),
+        const TranscriptionError('Transcription failed. Please try again.'),
+      ],
+    );
+
+    blocTest<TranscriptionCubit, TranscriptionState>(
+      'emits [Loading, Error] with API message on OpenAiClientException',
+      setUp: () {
+        when(() => mockRepo.transcribe(any()))
+            .thenThrow(const OpenAiClientException(
+          'Invalid API key. Check your API key in Settings.',
+          statusCode: 401,
+        ));
+      },
+      build: () => TranscriptionCubit(repository: mockRepo),
+      act: (cubit) => cubit.transcribe('/audio.m4a'),
+      expect: () => [
+        const TranscriptionLoading(),
+        const TranscriptionError(
+          'Invalid API key. Check your API key in Settings.',
+        ),
+      ],
+    );
+
+    blocTest<TranscriptionCubit, TranscriptionState>(
+      'emits [Loading, Error] with network message on SocketException',
+      setUp: () {
+        when(() => mockRepo.transcribe(any()))
+            .thenThrow(const SocketException('No internet'));
+      },
+      build: () => TranscriptionCubit(repository: mockRepo),
+      act: (cubit) => cubit.transcribe('/audio.m4a'),
+      expect: () => [
+        const TranscriptionLoading(),
+        const TranscriptionError(
+          'Network error. Check your internet connection and try again.',
+        ),
+      ],
+    );
+
+    blocTest<TranscriptionCubit, TranscriptionState>(
+      'emits [Loading, Error] when transcription result is empty',
+      setUp: () {
+        when(() => mockRepo.transcribe(any()))
+            .thenAnswer((_) async => '   ');
+      },
+      build: () => TranscriptionCubit(repository: mockRepo),
+      act: (cubit) => cubit.transcribe('/audio.m4a'),
+      expect: () => [
+        const TranscriptionLoading(),
+        const TranscriptionError(
+          'No speech detected. Try speaking louder or check your microphone.',
+        ),
       ],
     );
 
@@ -66,6 +120,14 @@ void main() {
         const TranscriptionLoading(),
         const TranscriptionSuccess('Second transcription'),
       ],
+    );
+
+    blocTest<TranscriptionCubit, TranscriptionState>(
+      'reset emits TranscriptionIdle',
+      build: () => TranscriptionCubit(repository: mockRepo),
+      seed: () => const TranscriptionSuccess('some text'),
+      act: (cubit) => cubit.reset(),
+      expect: () => [const TranscriptionIdle()],
     );
   });
 }

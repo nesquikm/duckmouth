@@ -6,6 +6,9 @@ import 'package:duckmouth/core/services/clipboard_service.dart';
 import 'package:duckmouth/core/services/output_mode.dart';
 import 'package:duckmouth/core/services/sound_config.dart';
 import 'package:duckmouth/core/services/sound_service.dart';
+import 'package:duckmouth/features/history/domain/transcription_entry.dart';
+import 'package:duckmouth/features/history/ui/history_cubit.dart';
+import 'package:duckmouth/features/history/ui/history_page.dart';
 import 'package:duckmouth/features/hotkey/ui/hotkey_cubit.dart';
 import 'package:duckmouth/features/hotkey/ui/hotkey_state.dart';
 import 'package:duckmouth/features/post_processing/ui/post_processing_cubit.dart';
@@ -32,14 +35,37 @@ class HomePage extends StatelessWidget {
         BlocProvider(create: (_) => sl<SettingsCubit>()..loadSettings()),
         BlocProvider(create: (_) => sl<PostProcessingCubit>()),
         BlocProvider(create: (_) => sl<HotkeyCubit>()),
+        BlocProvider(create: (_) => sl<HistoryCubit>()..loadHistory()),
       ],
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Duckmouth'),
-          actions: const [_SettingsButton()],
+          actions: const [_HistoryButton(), _SettingsButton()],
         ),
         body: const _HomeBody(),
       ),
+    );
+  }
+}
+
+class _HistoryButton extends StatelessWidget {
+  const _HistoryButton();
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      icon: const Icon(Icons.history),
+      tooltip: 'History',
+      onPressed: () {
+        Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (_) => BlocProvider.value(
+              value: context.read<HistoryCubit>(),
+              child: const HistoryPage(),
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -166,6 +192,24 @@ class _HomeBody extends StatelessWidget {
                 );
               }
               _handleOutput(context, textToOutput);
+
+              // Save to history.
+              final transcriptionState =
+                  context.read<TranscriptionCubit>().state;
+              final rawText = transcriptionState is TranscriptionSuccess
+                  ? transcriptionState.text
+                  : textToOutput;
+              final processedText = state is PostProcessingSuccess
+                  ? state.processedText
+                  : null;
+              context.read<HistoryCubit>().addEntry(
+                    TranscriptionEntry(
+                      id: DateTime.now().microsecondsSinceEpoch.toString(),
+                      rawText: rawText,
+                      processedText: processedText,
+                      timestamp: DateTime.now(),
+                    ),
+                  );
             }
           },
         ),

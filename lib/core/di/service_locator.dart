@@ -6,6 +6,9 @@ import 'package:duckmouth/core/api/llm_client.dart';
 import 'package:duckmouth/core/api/openai_client.dart';
 import 'package:duckmouth/core/services/clipboard_service.dart';
 import 'package:duckmouth/core/services/sound_service.dart';
+import 'package:duckmouth/features/history/data/history_repository_impl.dart';
+import 'package:duckmouth/features/history/domain/history_repository.dart';
+import 'package:duckmouth/features/history/ui/history_cubit.dart';
 import 'package:duckmouth/features/hotkey/data/hotkey_service_impl.dart';
 import 'package:duckmouth/features/hotkey/domain/hotkey_service.dart';
 import 'package:duckmouth/features/hotkey/ui/hotkey_cubit.dart';
@@ -89,6 +92,15 @@ Future<void> setupServiceLocator() async {
 
   sl.registerFactory<HotkeyCubit>(
     () => HotkeyCubit(service: sl<HotkeyService>()),
+  );
+
+  // History
+  sl.registerLazySingleton<HistoryRepository>(
+    () => HistoryRepositoryImpl(prefs: sl<SharedPreferences>()),
+  );
+
+  sl.registerFactory<HistoryCubit>(
+    () => HistoryCubit(repository: sl<HistoryRepository>()),
   );
 
   // Post-processing

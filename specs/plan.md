@@ -402,14 +402,14 @@ Each milestone is independently gatable. Don't proceed to M(n+1) until M(n) gate
 - History CRUD: create entry → view → delete
 
 **Acceptance Criteria:**
-- [ ] `integration_test/` directory with Flutter integration test driver
-- [ ] Test harness with fake services (no HTTP, no platform channels)
-- [ ] Happy path E2E passes: record → transcribe → post-process → verify output
-- [ ] Error + retry E2E passes for both STT and post-processing
-- [ ] Settings and history E2E scenarios pass
-- [ ] All fakes implement production interfaces (type-safe)
-- [ ] Gate passes: `fvm flutter analyze && fvm flutter test`
-- [ ] Integration tests runnable via `fvm flutter test integration_test/`
+- [x] `integration_test/` directory with Flutter integration test driver
+- [x] Test harness with fake services (no HTTP, no platform channels)
+- [x] Happy path E2E passes: record → transcribe → post-process → verify output
+- [x] Error + retry E2E passes for both STT and post-processing
+- [x] Settings and history E2E scenarios pass
+- [x] All fakes implement production interfaces (type-safe)
+- [x] Gate passes: `fvm flutter analyze && fvm flutter test`
+- [x] Integration tests runnable via `fvm flutter test integration_test/`
 
 **Gate:** `fvm flutter analyze && fvm flutter test`
 
@@ -452,6 +452,38 @@ The hotkey_manager plugin's native Swift layer expects Carbon key codes (e.g. `4
 
 ---
 
+## M16: Structured Logging (the_logger)
+
+**Goal:** Integrate the_logger for structured, level-based console logging with sensitive data masking. Console output only — no log viewer or export UI.
+**Prerequisites:** M4 (Settings — for API key masking hookup)
+
+**Tasks:**
+1. Add `the_logger` (path dependency: `~/workspace/the/the_logger`) and `logging` to `pubspec.yaml`
+2. Create `lib/core/logging/logging_setup.dart` with `setupLogging()` — calls `TheLogger.i().init(dbLogger: false)` with app version in `sessionStartExtra`
+3. Call `setupLogging()` in `main()` before `runApp()`
+4. Add `Logger` instances to key services: `RecordingRepositoryImpl`, `SttRepositoryImpl`, `PostProcessingRepositoryImpl`, `ClipboardService`, `AccessibilityService`, `SoundService`, `HotkeyCubit`, `SettingsCubit`, `OpenAIClient`, `LlmClient`
+5. Add API key masking in `SettingsCubit` — call `addMaskingString` when keys are loaded/changed, `removeMaskingString` when keys are cleared
+6. Replace all `print()` / `debugPrint()` calls in `lib/` with appropriate `Logger` level calls
+7. Log errors with `Logger.severe(message, error, stackTrace)` in all catch blocks
+8. Add logging setup tests
+
+**Tests:**
+- `setupLogging()` initializes correctly with dbLogger disabled
+- API key masking: key is redacted, empty key skipped, key change updates masking
+- No remaining `print()`/`debugPrint()` in `lib/` (grep check)
+
+**Acceptance Criteria:**
+- [ ] `the_logger` initialized in `main()` with console-only config
+- [ ] All key services use named `Logger` instances
+- [ ] API keys masked in console output
+- [ ] No `print()`/`debugPrint()` remaining in `lib/`
+- [ ] Errors logged with `.severe()` including error objects
+- [ ] Gate passes: `fvm flutter analyze && fvm flutter test`
+
+**Gate:** `fvm flutter analyze && fvm flutter test`
+
+---
+
 ## Milestone Dependency Graph
 
 ```
@@ -464,4 +496,5 @@ M3 + M4 → M5
 M2 + M4 → M11
 M1–M9 → M10
 M10 → M14
+M4 → M16
 ```

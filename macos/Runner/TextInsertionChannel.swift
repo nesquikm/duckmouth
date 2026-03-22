@@ -27,8 +27,13 @@ class TextInsertionChannel {
             result(["status": trusted ? "granted" : "denied"])
 
         case "requestAccessibilityPermission":
+            // Trigger the system trust prompt (registers the app in the AX list).
             let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue(): true] as CFDictionary
             AXIsProcessTrustedWithOptions(options)
+            // Also open the Accessibility pane directly so the user sees it.
+            if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") {
+                NSWorkspace.shared.open(url)
+            }
             result(nil)
 
         case "insertTextViaAccessibility":

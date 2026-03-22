@@ -362,6 +362,59 @@ Each milestone is independently gatable. Don't proceed to M(n+1) until M(n) gate
 
 ---
 
+## M14: End-to-End Integration Tests
+
+**Goal:** Full-app integration tests that launch the real app with mocked backends, exercising the complete user flow from recording through transcription, post-processing, and output — all driven programmatically.
+**Prerequisites:** M10
+
+**Tasks:**
+1. Create `integration_test/` directory with Flutter integration test driver (`integration_test_driver.dart`)
+2. Build test harness that overrides `setupServiceLocator()` with fakes:
+   - `FakeRecordingRepository` — simulates mic capture, returns a canned audio file
+   - `FakeSttRepository` — returns canned transcription text (no HTTP)
+   - `FakePostProcessingRepository` — returns canned processed text (no HTTP)
+   - `FakeSoundService` — no-op (no NSSound platform channel needed)
+   - `FakeAccessibilityService` — no-op (no AX platform channel needed)
+   - `FakeClipboardService` — captures output text for assertion
+   - `FakeHotkeyService` — no-op (no native hotkey registration)
+3. Create test fixtures: canned transcription responses, prompt templates, settings configs
+4. Write E2E scenario: **Happy path** — app launches → tap record → recording completes → transcription succeeds → post-processing succeeds → result displayed → history entry created
+5. Write E2E scenario: **STT error & retry** — recording completes → transcription fails → error shown → tap retry → transcription succeeds
+6. Write E2E scenario: **Post-processing disabled** — recording → transcription → post-processing skipped → raw text shown and copied
+7. Write E2E scenario: **Post-processing error & retry** — transcription succeeds → post-processing fails → error shown → tap retry → succeeds
+8. Write E2E scenario: **Settings round-trip** — navigate to settings → change STT config → save → verify new config persisted
+9. Write E2E scenario: **History** — complete a transcription → navigate to history → verify entry visible → swipe to delete → verify removal
+10. Add `integration_test` to gate check documentation (optional: separate from unit gate since it requires macOS runner)
+
+**Test Infrastructure:**
+- Use `IntegrationTestWidgetsFlutterBinding.ensureInitialized()` for real app bootstrapping
+- Override GetIt registrations before `pumpWidget(DuckmouthApp())`
+- Use `SharedPreferences.setMockInitialValues()` for deterministic settings
+- All fakes implement existing abstract interfaces — no API calls, no platform channels
+- `tester.runAsync()` for tap operations that trigger async cubit flows
+
+**Tests:**
+- Happy path: record → transcribe → post-process → output → history
+- Error recovery: STT failure → retry → success
+- Error recovery: post-processing failure → retry → success
+- Feature toggle: post-processing disabled → raw text output
+- Settings persistence: change config → reload → config retained
+- History CRUD: create entry → view → delete
+
+**Acceptance Criteria:**
+- [ ] `integration_test/` directory with Flutter integration test driver
+- [ ] Test harness with fake services (no HTTP, no platform channels)
+- [ ] Happy path E2E passes: record → transcribe → post-process → verify output
+- [ ] Error + retry E2E passes for both STT and post-processing
+- [ ] Settings and history E2E scenarios pass
+- [ ] All fakes implement production interfaces (type-safe)
+- [ ] Gate passes: `fvm flutter analyze && fvm flutter test`
+- [ ] Integration tests runnable via `fvm flutter test integration_test/`
+
+**Gate:** `fvm flutter analyze && fvm flutter test`
+
+---
+
 ## Milestone Dependency Graph
 
 ```
@@ -373,4 +426,5 @@ M1 → M2 → M3 → M5
 M3 + M4 → M5
 M2 + M4 → M11
 M1–M9 → M10
+M10 → M14
 ```

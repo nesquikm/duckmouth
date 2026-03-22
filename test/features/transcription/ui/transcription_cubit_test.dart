@@ -20,7 +20,7 @@ void main() {
 
   group('TranscriptionCubit', () {
     test('initial state is TranscriptionIdle', () {
-      final cubit = TranscriptionCubit(repository: mockRepo);
+      final cubit = TranscriptionCubit(repositoryFactory: () => mockRepo);
       expect(cubit.state, const TranscriptionIdle());
       cubit.close();
     });
@@ -31,7 +31,7 @@ void main() {
         when(() => mockRepo.transcribe(any()))
             .thenAnswer((_) async => 'Hello world');
       },
-      build: () => TranscriptionCubit(repository: mockRepo),
+      build: () => TranscriptionCubit(repositoryFactory: () => mockRepo),
       act: (cubit) => cubit.transcribe('/audio.m4a'),
       expect: () => [
         const TranscriptionLoading(),
@@ -48,7 +48,7 @@ void main() {
         when(() => mockRepo.transcribe(any()))
             .thenThrow(Exception('something went wrong'));
       },
-      build: () => TranscriptionCubit(repository: mockRepo),
+      build: () => TranscriptionCubit(repositoryFactory: () => mockRepo),
       act: (cubit) => cubit.transcribe('/audio.m4a'),
       expect: () => [
         const TranscriptionLoading(),
@@ -65,7 +65,7 @@ void main() {
           statusCode: 401,
         ));
       },
-      build: () => TranscriptionCubit(repository: mockRepo),
+      build: () => TranscriptionCubit(repositoryFactory: () => mockRepo),
       act: (cubit) => cubit.transcribe('/audio.m4a'),
       expect: () => [
         const TranscriptionLoading(),
@@ -81,7 +81,7 @@ void main() {
         when(() => mockRepo.transcribe(any()))
             .thenThrow(const SocketException('No internet'));
       },
-      build: () => TranscriptionCubit(repository: mockRepo),
+      build: () => TranscriptionCubit(repositoryFactory: () => mockRepo),
       act: (cubit) => cubit.transcribe('/audio.m4a'),
       expect: () => [
         const TranscriptionLoading(),
@@ -97,7 +97,7 @@ void main() {
         when(() => mockRepo.transcribe(any()))
             .thenAnswer((_) async => '   ');
       },
-      build: () => TranscriptionCubit(repository: mockRepo),
+      build: () => TranscriptionCubit(repositoryFactory: () => mockRepo),
       act: (cubit) => cubit.transcribe('/audio.m4a'),
       expect: () => [
         const TranscriptionLoading(),
@@ -113,7 +113,7 @@ void main() {
         when(() => mockRepo.transcribe(any()))
             .thenAnswer((_) async => 'Second transcription');
       },
-      build: () => TranscriptionCubit(repository: mockRepo),
+      build: () => TranscriptionCubit(repositoryFactory: () => mockRepo),
       seed: () => const TranscriptionSuccess('First'),
       act: (cubit) => cubit.transcribe('/audio2.m4a'),
       expect: () => [
@@ -124,7 +124,7 @@ void main() {
 
     blocTest<TranscriptionCubit, TranscriptionState>(
       'reset emits TranscriptionIdle',
-      build: () => TranscriptionCubit(repository: mockRepo),
+      build: () => TranscriptionCubit(repositoryFactory: () => mockRepo),
       seed: () => const TranscriptionSuccess('some text'),
       act: (cubit) => cubit.reset(),
       expect: () => [const TranscriptionIdle()],

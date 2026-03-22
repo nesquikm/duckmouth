@@ -1,6 +1,4 @@
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:duckmouth/core/services/output_mode.dart';
@@ -11,28 +9,18 @@ import 'package:duckmouth/features/recording/domain/audio_format_config.dart';
 import 'package:duckmouth/features/settings/data/settings_repository_impl.dart';
 import 'package:duckmouth/features/settings/domain/api_config.dart';
 
-class MockFlutterSecureStorage extends Mock implements FlutterSecureStorage {}
-
 void main() {
   late SharedPreferences prefs;
-  late MockFlutterSecureStorage mockSecure;
   late SettingsRepositoryImpl repo;
 
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
     prefs = await SharedPreferences.getInstance();
-    mockSecure = MockFlutterSecureStorage();
-    repo = SettingsRepositoryImpl(
-      prefs: prefs,
-      secureStorage: mockSecure,
-    );
+    repo = SettingsRepositoryImpl(prefs: prefs);
   });
 
   group('SettingsRepositoryImpl', () {
     test('loadSttConfig returns null when no settings saved', () async {
-      when(() => mockSecure.read(key: any(named: 'key')))
-          .thenAnswer((_) async => null);
-
       final result = await repo.loadSttConfig();
       expect(result, isNull);
     });
@@ -41,8 +29,7 @@ void main() {
       await prefs.setString('stt_base_url', 'https://api.groq.com/openai');
       await prefs.setString('stt_model', 'whisper-large-v3-turbo');
       await prefs.setString('stt_provider_name', 'groq');
-      when(() => mockSecure.read(key: 'stt_api_key'))
-          .thenAnswer((_) async => 'secret-key');
+      await prefs.setString('stt_api_key', 'secret-key');
 
       final result = await repo.loadSttConfig();
 
@@ -55,8 +42,6 @@ void main() {
 
     test('loadSttConfig uses empty string for missing API key', () async {
       await prefs.setString('stt_provider_name', 'openAi');
-      when(() => mockSecure.read(key: 'stt_api_key'))
-          .thenAnswer((_) async => null);
 
       final result = await repo.loadSttConfig();
 
@@ -72,18 +57,12 @@ void main() {
         providerName: 'openAi',
       );
 
-      when(
-        () => mockSecure.write(key: any(named: 'key'), value: any(named: 'value')),
-      ).thenAnswer((_) async {});
-
       await repo.saveSttConfig(config);
 
       expect(prefs.getString('stt_base_url'), 'https://api.openai.com');
       expect(prefs.getString('stt_model'), 'whisper-1');
       expect(prefs.getString('stt_provider_name'), 'openAi');
-      verify(
-        () => mockSecure.write(key: 'stt_api_key', value: 'my-key'),
-      ).called(1);
+      expect(prefs.getString('stt_api_key'), 'my-key');
     });
   });
 
@@ -97,9 +76,6 @@ void main() {
   group('PostProcessingConfig persistence', () {
     test('loadPostProcessingConfig returns defaults when nothing saved',
         () async {
-      when(() => mockSecure.read(key: any(named: 'key')))
-          .thenAnswer((_) async => null);
-
       final result = await repo.loadPostProcessingConfig();
 
       expect(result.enabled, false);
@@ -115,8 +91,7 @@ void main() {
       await prefs.setString('pp_base_url', 'https://custom.api.com');
       await prefs.setString('pp_model', 'gpt-4');
       await prefs.setString('pp_provider_name', 'custom');
-      when(() => mockSecure.read(key: 'pp_api_key'))
-          .thenAnswer((_) async => 'llm-key');
+      await prefs.setString('pp_api_key', 'llm-key');
 
       final result = await repo.loadPostProcessingConfig();
 
@@ -129,13 +104,6 @@ void main() {
     });
 
     test('savePostProcessingConfig persists all fields', () async {
-      when(
-        () => mockSecure.write(
-          key: any(named: 'key'),
-          value: any(named: 'value'),
-        ),
-      ).thenAnswer((_) async {});
-
       const config = PostProcessingConfig(
         enabled: true,
         prompt: 'My prompt',
@@ -154,9 +122,7 @@ void main() {
       expect(prefs.getString('pp_base_url'), 'https://api.example.com');
       expect(prefs.getString('pp_model'), 'gpt-4o');
       expect(prefs.getString('pp_provider_name'), 'custom');
-      verify(
-        () => mockSecure.write(key: 'pp_api_key', value: 'secret'),
-      ).called(1);
+      expect(prefs.getString('pp_api_key'), 'secret');
     });
   });
 

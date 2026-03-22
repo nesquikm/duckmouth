@@ -40,7 +40,7 @@ void main() {
   group('PostProcessingCubit', () {
     test('initial state is PostProcessingIdle', () {
       final cubit = PostProcessingCubit(
-        repository: mockRepo,
+        repositoryFactory: () => mockRepo,
         config: disabledConfig,
       );
       expect(cubit.state, const PostProcessingIdle());
@@ -50,7 +50,7 @@ void main() {
     blocTest<PostProcessingCubit, PostProcessingState>(
       'emits PostProcessingDisabled when disabled',
       build: () => PostProcessingCubit(
-        repository: mockRepo,
+        repositoryFactory: () => mockRepo,
         config: disabledConfig,
       ),
       act: (cubit) => cubit.process('hello'),
@@ -67,7 +67,7 @@ void main() {
             .thenAnswer((_) async => 'Fixed text');
       },
       build: () => PostProcessingCubit(
-        repository: mockRepo,
+        repositoryFactory: () => mockRepo,
         config: enabledConfig,
       ),
       act: (cubit) => cubit.process('raw text'),
@@ -90,7 +90,7 @@ void main() {
             .thenThrow(Exception('API error'));
       },
       build: () => PostProcessingCubit(
-        repository: mockRepo,
+        repositoryFactory: () => mockRepo,
         config: enabledConfig,
       ),
       act: (cubit) => cubit.process('raw text'),
@@ -115,7 +115,7 @@ void main() {
         );
       },
       build: () => PostProcessingCubit(
-        repository: mockRepo,
+        repositoryFactory: () => mockRepo,
         config: enabledConfig,
       ),
       act: (cubit) => cubit.process('raw text'),
@@ -136,7 +136,7 @@ void main() {
             .thenThrow(const SocketException('No internet'));
       },
       build: () => PostProcessingCubit(
-        repository: mockRepo,
+        repositoryFactory: () => mockRepo,
         config: enabledConfig,
       ),
       act: (cubit) => cubit.process('raw text'),
@@ -156,7 +156,7 @@ void main() {
             .thenAnswer((_) async => 'processed');
       },
       build: () => PostProcessingCubit(
-        repository: mockRepo,
+        repositoryFactory: () => mockRepo,
         config: disabledConfig,
       ),
       act: (cubit) async {
@@ -177,7 +177,7 @@ void main() {
     blocTest<PostProcessingCubit, PostProcessingState>(
       'reset emits PostProcessingIdle',
       build: () => PostProcessingCubit(
-        repository: mockRepo,
+        repositoryFactory: () => mockRepo,
         config: enabledConfig,
       ),
       seed: () => const PostProcessingSuccess(

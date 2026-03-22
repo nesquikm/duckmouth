@@ -8,14 +8,14 @@ void main() {
   group('HotkeyConfig', () {
     test('defaultConfig has expected values', () {
       const config = HotkeyConfig.defaultConfig;
-      expect(config.keyCode, 0x00000020);
+      expect(config.keyCode, 0x0007002C);
       expect(config.modifiers, ['control', 'shift']);
       expect(config.mode, HotkeyMode.toggle);
     });
 
     test('toHotKey creates HotKey with correct scope', () {
       const config = HotkeyConfig(
-        keyCode: 0x00000020,
+        keyCode: 0x0007002C,
         modifiers: ['control', 'shift'],
       );
       final hotKey = config.toHotKey();
@@ -41,17 +41,17 @@ void main() {
 
     test('equality works correctly', () {
       const a = HotkeyConfig(
-        keyCode: 0x00000020,
+        keyCode: 0x0007002C,
         modifiers: ['control', 'shift'],
         mode: HotkeyMode.toggle,
       );
       const b = HotkeyConfig(
-        keyCode: 0x00000020,
+        keyCode: 0x0007002C,
         modifiers: ['control', 'shift'],
         mode: HotkeyMode.toggle,
       );
       const c = HotkeyConfig(
-        keyCode: 0x00000020,
+        keyCode: 0x0007002C,
         modifiers: ['control'],
         mode: HotkeyMode.toggle,
       );
@@ -61,12 +61,12 @@ void main() {
 
     test('hashCode is consistent with equality', () {
       const a = HotkeyConfig(
-        keyCode: 0x00000020,
+        keyCode: 0x0007002C,
         modifiers: ['control', 'shift'],
         mode: HotkeyMode.toggle,
       );
       const b = HotkeyConfig(
-        keyCode: 0x00000020,
+        keyCode: 0x0007002C,
         modifiers: ['control', 'shift'],
         mode: HotkeyMode.toggle,
       );

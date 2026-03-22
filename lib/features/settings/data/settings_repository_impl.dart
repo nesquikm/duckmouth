@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:duckmouth/core/services/output_mode.dart';
@@ -16,7 +15,6 @@ const _kBaseUrl = 'stt_base_url';
 const _kModel = 'stt_model';
 const _kProviderName = 'stt_provider_name';
 
-/// Key used in FlutterSecureStorage.
 const _kApiKey = 'stt_api_key';
 
 /// Post-processing keys in SharedPreferences.
@@ -26,7 +24,6 @@ const _kPpBaseUrl = 'pp_base_url';
 const _kPpModel = 'pp_model';
 const _kPpProviderName = 'pp_provider_name';
 
-/// Post-processing key in FlutterSecureStorage.
 const _kPpApiKey = 'pp_api_key';
 
 /// Output mode key in SharedPreferences.
@@ -53,16 +50,13 @@ const _kAudioSampleRate = 'audio_sample_rate';
 const _kAudioBitRate = 'audio_bit_rate';
 
 /// [SettingsRepository] backed by SharedPreferences (non-sensitive values)
-/// and FlutterSecureStorage (API keys).
+/// including API keys.
 class SettingsRepositoryImpl implements SettingsRepository {
   SettingsRepositoryImpl({
     required SharedPreferences prefs,
-    required FlutterSecureStorage secureStorage,
-  })  : _prefs = prefs,
-        _secureStorage = secureStorage;
+  }) : _prefs = prefs;
 
   final SharedPreferences _prefs;
-  final FlutterSecureStorage _secureStorage;
 
   @override
   Future<ApiConfig?> loadSttConfig() async {
@@ -73,7 +67,7 @@ class SettingsRepositoryImpl implements SettingsRepository {
     // If no provider has been saved yet, return null.
     if (providerName == null) return null;
 
-    final apiKey = await _secureStorage.read(key: _kApiKey) ?? '';
+    final apiKey = _prefs.getString(_kApiKey) ?? '';
 
     return ApiConfig(
       baseUrl: baseUrl ?? '',
@@ -89,7 +83,7 @@ class SettingsRepositoryImpl implements SettingsRepository {
       _prefs.setString(_kBaseUrl, config.baseUrl),
       _prefs.setString(_kModel, config.model),
       _prefs.setString(_kProviderName, config.providerName),
-      _secureStorage.write(key: _kApiKey, value: config.apiKey),
+      _prefs.setString(_kApiKey, config.apiKey),
     ]);
   }
 
@@ -100,7 +94,7 @@ class SettingsRepositoryImpl implements SettingsRepository {
     final baseUrl = _prefs.getString(_kPpBaseUrl) ?? 'https://api.openai.com';
     final model = _prefs.getString(_kPpModel) ?? 'gpt-4o-mini';
     final providerName = _prefs.getString(_kPpProviderName) ?? 'openAi';
-    final apiKey = await _secureStorage.read(key: _kPpApiKey) ?? '';
+    final apiKey = _prefs.getString(_kPpApiKey) ?? '';
 
     return PostProcessingConfig(
       enabled: enabled,
@@ -122,7 +116,7 @@ class SettingsRepositoryImpl implements SettingsRepository {
       _prefs.setString(_kPpBaseUrl, config.llmConfig.baseUrl),
       _prefs.setString(_kPpModel, config.llmConfig.model),
       _prefs.setString(_kPpProviderName, config.llmConfig.providerName),
-      _secureStorage.write(key: _kPpApiKey, value: config.llmConfig.apiKey),
+      _prefs.setString(_kPpApiKey, config.llmConfig.apiKey),
     ]);
   }
 

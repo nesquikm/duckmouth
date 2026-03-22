@@ -112,11 +112,13 @@ class SettingsCubit extends Cubit<SettingsState> {
     emit(_currentOrDefault(accessibilityStatus: status));
   }
 
-  /// Prompt the user to grant Accessibility permission, then re-check.
+  /// Prompt the user to grant Accessibility permission.
+  ///
+  /// Does NOT immediately re-check — the user needs time to toggle the
+  /// switch in System Settings. Call [checkAccessibilityPermission] when
+  /// the app regains focus instead.
   Future<void> requestAccessibilityPermission() async {
     await _accessibilityService.requestPermission();
-    // Re-check after prompt (user may not have granted yet).
-    await checkAccessibilityPermission();
   }
 
   /// Save the given STT [config] and emit the updated state.

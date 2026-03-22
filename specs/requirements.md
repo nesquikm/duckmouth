@@ -117,6 +117,18 @@ Duckmouth is a macOS desktop app that captures speech via microphone, transcribe
 ### NFR-3: Accessibility
 - Standard macOS accessibility support for all UI elements
 
+### FR-11: End-to-End Integration Tests
+
+**Description:** Full-app integration tests that launch the real app with mocked backends, verifying complete user flows from recording through output.
+
+**Acceptance Criteria:**
+- AC-11.1: Happy path E2E — record → transcribe → post-process → output → history entry
+- AC-11.2: Error recovery — STT failure shows error, retry succeeds
+- AC-11.3: Error recovery — post-processing failure shows error with raw text, retry succeeds
+- AC-11.4: Feature toggle — post-processing disabled skips LLM and outputs raw text
+- AC-11.5: Settings round-trip — change config, save, reload, verify persisted
+- AC-11.6: History CRUD — create, view, delete, clear all
+
 ## 4. Out of Scope
 
 - Local Whisper inference (API-only for now)
@@ -164,3 +176,9 @@ Duckmouth is a macOS desktop app that captures speech via microphone, transcribe
 | AC-10.3     | `lib/core/services/accessibility_service.dart` | `test/core/services/accessibility_service_test.dart` |
 | AC-10.4     | `macos/Runner/TextInsertionChannel.swift`, `lib/features/settings/ui/settings_cubit.dart` | `test/features/settings/ui/settings_cubit_test.dart` |
 | AC-10.5     | `lib/features/settings/ui/settings_page.dart`, `lib/features/settings/ui/settings_state.dart` | `test/features/settings/ui/settings_cubit_test.dart` |
+| AC-11.1     | `integration_test/app_test.dart` | `integration_test/app_test.dart` |
+| AC-11.2     | `integration_test/app_test.dart` | `integration_test/app_test.dart` |
+| AC-11.3     | `integration_test/app_test.dart` | `integration_test/app_test.dart` |
+| AC-11.4     | `integration_test/app_test.dart` | `integration_test/app_test.dart` |
+| AC-11.5     | `integration_test/settings_test.dart` | `integration_test/settings_test.dart` |
+| AC-11.6     | `integration_test/history_test.dart` | `integration_test/history_test.dart` |

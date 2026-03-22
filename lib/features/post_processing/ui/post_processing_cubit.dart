@@ -10,13 +10,13 @@ import 'package:duckmouth/features/post_processing/ui/post_processing_state.dart
 /// Cubit that manages LLM post-processing of transcription results.
 class PostProcessingCubit extends Cubit<PostProcessingState> {
   PostProcessingCubit({
-    required PostProcessingRepository repository,
+    required PostProcessingRepository Function() repositoryFactory,
     required PostProcessingConfig config,
-  })  : _repository = repository,
+  })  : _repositoryFactory = repositoryFactory,
         _config = config,
         super(const PostProcessingIdle());
 
-  final PostProcessingRepository _repository;
+  final PostProcessingRepository Function() _repositoryFactory;
   PostProcessingConfig _config;
 
   /// Update the configuration (e.g. when settings change).
@@ -33,7 +33,8 @@ class PostProcessingCubit extends Cubit<PostProcessingState> {
 
     _tryEmit(PostProcessingLoading(rawText: rawText));
     try {
-      final processedText = await _repository.process(rawText, _config.prompt);
+      final processedText =
+          await _repositoryFactory().process(rawText, _config.prompt);
       _tryEmit(PostProcessingSuccess(
         rawText: rawText,
         processedText: processedText,

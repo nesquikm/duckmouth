@@ -69,6 +69,22 @@ fvm flutter analyze && fvm flutter test
 - **Structure:** `test/` mirrors `lib/`
 - **Coverage target:** >=80% for services/domain, >=60% overall
 
+## Specs
+
+Specs live in `specs/` and are the source of truth for what the app should do. All four files must stay consistent with each other and with the code:
+
+- **requirements.md** — functional requirements (FR-*) and acceptance criteria (AC-*), traceability matrix
+- **technical-spec.md** — architecture, data models, APIs, design decisions
+- **testing-spec.md** — test structure, conventions, coverage targets, test scenarios
+- **plan.md** — milestones (M1–M14), tasks, gates, dependency graph
+
+**When adding or changing a feature/milestone:**
+1. Update **all four spec files** — not just the plan
+2. Add acceptance criteria to requirements.md and traceability matrix entries
+3. Add test scenarios to testing-spec.md
+4. Update technical-spec.md if architecture, data models, or APIs change
+5. Add the milestone to plan.md with tasks, tests, acceptance criteria, and dependency graph
+
 ## DO NOT
 
 - Do not commit without user approval

@@ -182,7 +182,16 @@ specs/                            # SDD spec files
 - Unit tests: cubits, repositories, models
 - Widget tests: key UI components
 - Integration tests: API client with mocked HTTP
+- E2E integration tests: full app with fake backends via `integration_test/`
 - No real API calls in tests
+
+### E2E Test Architecture
+- `IntegrationTestWidgetsFlutterBinding` launches the real app widget tree
+- GetIt service locator overridden with fake implementations before app launch
+- Fakes implement production interfaces (e.g., `FakeSttRepository implements SttRepository`)
+- Fakes are deterministic (canned responses, configurable errors) — no `when()` setup
+- Platform services (sound, accessibility, hotkeys) replaced with no-op fakes
+- Run via `fvm flutter test integration_test/`
 
 ## 5. Dependencies
 

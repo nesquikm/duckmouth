@@ -115,11 +115,13 @@ void main() {
     final sl = GetIt.instance;
     sl.registerLazySingleton<ClipboardService>(() => mockClipboard);
     sl.registerLazySingleton<SoundService>(() => mockSoundService);
+    sl.registerFactory<SttRepository>(() => mockSttRepo);
+    sl.registerFactory<PostProcessingRepository>(() => mockPpRepo);
     sl.registerFactory<RecordingCubit>(
       () => RecordingCubit(repository: mockRecordingRepo),
     );
     sl.registerFactory<TranscriptionCubit>(
-      () => TranscriptionCubit(repository: mockSttRepo),
+      () => TranscriptionCubit(repositoryFactory: () => mockSttRepo),
     );
     final mockAccessibility = MockAccessibilityService();
     when(() => mockAccessibility.checkPermission())
@@ -132,7 +134,7 @@ void main() {
     );
     sl.registerFactory<PostProcessingCubit>(
       () => PostProcessingCubit(
-        repository: mockPpRepo,
+        repositoryFactory: () => mockPpRepo,
         config: const PostProcessingConfig(),
       ),
     );
@@ -274,7 +276,8 @@ void main() {
         // Should show permission error with guidance
         expect(find.textContaining('Microphone access required'),
             findsOneWidget);
-        expect(find.textContaining('System Settings'), findsOneWidget);
+        expect(find.textContaining('Microphone and enable access'),
+            findsOneWidget);
       },
     );
 

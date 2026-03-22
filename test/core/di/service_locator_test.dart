@@ -1,4 +1,3 @@
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -78,10 +77,6 @@ void main() {
     expect(sl.isRegistered<SharedPreferences>(), isTrue);
   });
 
-  test('registers FlutterSecureStorage', () async {
-    await setupServiceLocator();
-    expect(sl.isRegistered<FlutterSecureStorage>(), isTrue);
-  });
 
   test('registers LlmClient', () async {
     await setupServiceLocator();

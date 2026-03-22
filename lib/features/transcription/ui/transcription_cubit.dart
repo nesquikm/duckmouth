@@ -8,17 +8,17 @@ import 'transcription_state.dart';
 
 /// Cubit that manages speech-to-text transcription state.
 class TranscriptionCubit extends Cubit<TranscriptionState> {
-  TranscriptionCubit({required SttRepository repository})
-      : _repository = repository,
+  TranscriptionCubit({required SttRepository Function() repositoryFactory})
+      : _repositoryFactory = repositoryFactory,
         super(const TranscriptionIdle());
 
-  final SttRepository _repository;
+  final SttRepository Function() _repositoryFactory;
 
   /// Transcribe the audio file at [audioFilePath].
   Future<void> transcribe(String audioFilePath) async {
     _tryEmit(const TranscriptionLoading());
     try {
-      final text = await _repository.transcribe(audioFilePath);
+      final text = await _repositoryFactory().transcribe(audioFilePath);
       if (text.trim().isEmpty) {
         _tryEmit(const TranscriptionError(
           'No speech detected. Try speaking louder or check your microphone.',

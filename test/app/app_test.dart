@@ -98,7 +98,7 @@ void main() {
       () => RecordingCubit(repository: mockRepo),
     );
     sl.registerFactory<TranscriptionCubit>(
-      () => TranscriptionCubit(repository: mockSttRepo),
+      () => TranscriptionCubit(repositoryFactory: () => mockSttRepo),
     );
     final mockAccessibility = MockAccessibilityService();
     when(() => mockAccessibility.checkPermission())
@@ -111,7 +111,7 @@ void main() {
     );
     sl.registerFactory<PostProcessingCubit>(
       () => PostProcessingCubit(
-        repository: mockPpRepo,
+        repositoryFactory: () => mockPpRepo,
         config: const PostProcessingConfig(),
       ),
     );

@@ -36,7 +36,7 @@ class HotkeyConfig {
 
   /// Default hotkey: Ctrl+Shift+Space.
   static const HotkeyConfig defaultConfig = HotkeyConfig(
-    keyCode: 0x00000020, // LogicalKeyboardKey.space.keyId
+    keyCode: 0x0007002C, // PhysicalKeyboardKey.space USB HID usage
     modifiers: ['control', 'shift'],
     mode: HotkeyMode.toggle,
   );

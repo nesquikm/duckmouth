@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:duckmouth/app/system_tray_manager.dart';
 import 'package:duckmouth/core/di/service_locator.dart';
+import 'package:duckmouth/core/services/accessibility_service.dart';
 import 'package:duckmouth/core/services/clipboard_service.dart';
 import 'package:duckmouth/core/services/output_mode.dart';
 import 'package:duckmouth/core/services/sound_config.dart';
@@ -143,8 +144,32 @@ void _updateTrayStatus(String status) {
   }
 }
 
-class _HomeBody extends StatelessWidget {
+class _HomeBody extends StatefulWidget {
   const _HomeBody();
+
+  @override
+  State<_HomeBody> createState() => _HomeBodyState();
+}
+
+class _HomeBodyState extends State<_HomeBody> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      context.read<SettingsCubit>().checkAccessibilityPermission();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -258,19 +283,43 @@ class _HomeBody extends StatelessWidget {
           },
         ),
       ],
-      child: const Padding(
-        padding: EdgeInsets.symmetric(horizontal: 16),
-        child: Center(
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                RecordingControls(),
-                SizedBox(height: 24),
-                TranscriptionDisplay(),
-              ],
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Column(
+          children: [
+            BlocBuilder<SettingsCubit, SettingsState>(
+              buildWhen: (previous, current) {
+                final prevStatus = previous is SettingsLoaded
+                    ? previous.accessibilityStatus
+                    : null;
+                final currStatus = current is SettingsLoaded
+                    ? current.accessibilityStatus
+                    : null;
+                return prevStatus != currStatus;
+              },
+              builder: (context, state) {
+                if (state is SettingsLoaded &&
+                    state.accessibilityStatus != AccessibilityStatus.granted) {
+                  return const _AccessibilityBanner();
+                }
+                return const SizedBox.shrink();
+              },
             ),
-          ),
+            const Expanded(
+              child: Center(
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      RecordingControls(),
+                      SizedBox(height: 24),
+                      TranscriptionDisplay(),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -288,4 +337,42 @@ void _updateTrayRecentTranscription(String text) {
     _recentSnippets.removeRange(3, _recentSnippets.length);
   }
   sl<SystemTrayManager>().updateRecentTranscriptions(_recentSnippets);
+}
+
+class _AccessibilityBanner extends StatelessWidget {
+  const _AccessibilityBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(top: 8, bottom: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.orange.shade50,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.orange.shade200),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.warning_amber_rounded, color: Colors.orange.shade700, size: 20),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Accessibility permission is required to insert text at the cursor. '
+              'Grant access in System Settings \u2192 Privacy & Security \u2192 Accessibility.',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ),
+          const SizedBox(width: 8),
+          TextButton(
+            onPressed: () {
+              context.read<SettingsCubit>().requestAccessibilityPermission();
+            },
+            child: const Text('Grant Access'),
+          ),
+        ],
+      ),
+    );
+  }
 }

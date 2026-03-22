@@ -1,4 +1,3 @@
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -34,8 +33,6 @@ Future<void> setupServiceLocator() async {
   // Storage
   final prefs = await SharedPreferences.getInstance();
   sl.registerSingleton<SharedPreferences>(prefs);
-  sl.registerSingleton<FlutterSecureStorage>(const FlutterSecureStorage());
-
   // Accessibility
   sl.registerLazySingleton<AccessibilityService>(
     AccessibilityServiceImpl.new,
@@ -53,7 +50,6 @@ Future<void> setupServiceLocator() async {
   sl.registerLazySingleton<SettingsRepository>(
     () => SettingsRepositoryImpl(
       prefs: sl<SharedPreferences>(),
-      secureStorage: sl<FlutterSecureStorage>(),
     ),
   );
 
@@ -86,7 +82,7 @@ Future<void> setupServiceLocator() async {
   );
 
   sl.registerFactory<TranscriptionCubit>(
-    () => TranscriptionCubit(repository: sl<SttRepository>()),
+    () => TranscriptionCubit(repositoryFactory: () => sl<SttRepository>()),
   );
 
   // LLM client — default (re-registered when settings change).
@@ -121,15 +117,13 @@ Future<void> setupServiceLocator() async {
 
   sl.registerFactory<PostProcessingCubit>(
     () => PostProcessingCubit(
-      repository: sl<PostProcessingRepository>(),
+      repositoryFactory: () => sl<PostProcessingRepository>(),
       config: const PostProcessingConfig(),
     ),
   );
 }
 
 /// Re-register the [OpenAiClient] with the given [config].
-///
-/// Also re-registers [SttRepository] so it picks up the new client.
 void updateOpenAiClient(ApiConfig config) {
   if (sl.isRegistered<OpenAiClient>()) {
     sl.unregister<OpenAiClient>();
@@ -151,8 +145,6 @@ void updateOpenAiClient(ApiConfig config) {
 }
 
 /// Re-register the [LlmClient] with the given [config].
-///
-/// Also re-registers [PostProcessingRepository] so it picks up the new client.
 void updateLlmClient(ApiConfig config) {
   if (sl.isRegistered<LlmClient>()) {
     sl.unregister<LlmClient>();

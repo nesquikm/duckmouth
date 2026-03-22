@@ -28,6 +28,21 @@ test/
 ├── core/
 │   └── api/
 └── helpers/              # Shared test utilities, fakes, fixtures
+
+integration_test/
+├── app_test.dart          # E2E test scenarios (happy path, errors, retry)
+├── settings_test.dart     # Settings round-trip E2E
+├── history_test.dart      # History CRUD E2E
+└── helpers/
+    ├── test_harness.dart  # GetIt overrides with fakes, app bootstrapping
+    └── fakes/             # Fake implementations of service interfaces
+        ├── fake_recording_repository.dart
+        ├── fake_stt_repository.dart
+        ├── fake_post_processing_repository.dart
+        ├── fake_sound_service.dart
+        ├── fake_accessibility_service.dart
+        ├── fake_clipboard_service.dart
+        └── fake_hotkey_service.dart
 ```
 
 ## 3. Conventions
@@ -158,3 +173,70 @@ blocTest<TranscriptionCubit, TranscriptionState>(
 - `pasteAtCursor` delegates to AccessibilityService when available
 - Clipboard contents unchanged after successful AX direct insert
 - Clipboard restored after CGEvent/osascript fallback
+
+## 9. End-to-End Integration Tests
+
+### Overview
+Full-app integration tests using `IntegrationTestWidgetsFlutterBinding` that launch the real app with fake backends. All fakes implement production interfaces — no HTTP calls, no platform channels.
+
+### Test Harness
+- Uses `IntegrationTestWidgetsFlutterBinding.ensureInitialized()`
+- Overrides GetIt registrations with fakes before `pumpWidget(DuckmouthApp())`
+- `SharedPreferences.setMockInitialValues()` for deterministic settings
+- `tester.runAsync()` for tap operations that trigger async cubit flows
+
+### Fake Services
+All fakes implement existing abstract interfaces (type-safe, no `when()` setup):
+
+| Fake | Behavior |
+|------|----------|
+| `FakeRecordingRepository` | Simulates mic capture; returns a canned audio file path after configurable delay |
+| `FakeSttRepository` | Returns canned transcription text; can be configured to throw for error scenarios |
+| `FakePostProcessingRepository` | Returns canned processed text; can be configured to throw or disabled |
+| `FakeSoundService` | No-op; records calls for assertion |
+| `FakeAccessibilityService` | No-op; returns granted permission status |
+| `FakeClipboardService` | Captures output text in a buffer for assertion |
+| `FakeHotkeyService` | No-op; no native hotkey registration |
+
+### E2E Scenarios
+
+#### Happy path
+1. App launches → home page visible
+2. Tap record → recording state shown
+3. Recording completes → transcription loading shown
+4. Transcription succeeds → raw text displayed
+5. Post-processing succeeds → processed text displayed
+6. Result copied/pasted → verify via FakeClipboardService
+7. History entry created → navigate to history → verify entry
+
+#### STT error & retry
+1. Configure FakeSttRepository to throw on first call
+2. Record → transcription fails → error message shown
+3. Tap retry → FakeSttRepository succeeds → transcription displayed
+
+#### Post-processing error & retry
+1. Configure FakePostProcessingRepository to throw on first call
+2. Record → transcribe → post-processing fails → error shown with raw text
+3. Tap retry → post-processing succeeds → processed text displayed
+
+#### Post-processing disabled
+1. Configure settings with post-processing disabled
+2. Record → transcribe → post-processing skipped
+3. Raw text displayed and copied directly
+
+#### Settings round-trip
+1. Navigate to settings
+2. Change STT config (endpoint, model)
+3. Save → navigate back → reopen settings
+4. Verify config persisted
+
+#### History CRUD
+1. Complete a transcription
+2. Navigate to history → verify entry with timestamp
+3. Swipe to delete → verify removal
+4. Complete another transcription → clear all → verify empty
+
+### Running
+```bash
+fvm flutter test integration_test/
+```

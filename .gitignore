@@ -1,0 +1,23 @@
+# Flutter/Dart
+.dart_tool/
+.packages
+build/
+*.iml
+.metadata
+
+# FVM
+.fvm/
+
+# IDE
+.idea/
+*.swp
+*.swo
+.vscode/
+
+# macOS
+.DS_Store
+macos/Flutter/ephemeral/
+macos/Pods/
+
+# Coverage
+coverage/

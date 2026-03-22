@@ -38,6 +38,7 @@ dependencies:
   get_it: ^9.2.1
   system_tray: ^2.0.3
   record: ^6.2.0
+  http: ^1.6.0
 
 dev_dependencies:
   flutter_test:

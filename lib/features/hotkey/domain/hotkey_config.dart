@@ -2,6 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
 
+import 'key_code_translator.dart';
+
 /// Recording mode triggered by the hotkey.
 enum HotkeyMode {
   /// Hold key to record, release to stop.
@@ -25,7 +27,7 @@ class HotkeyConfig {
     this.mode = HotkeyMode.toggle,
   });
 
-  /// The physical key for the hotkey.
+  /// The physical key for the hotkey (USB HID usage code).
   final int keyCode;
 
   /// Modifier keys (as [HotKeyModifier] name strings for serialisation).
@@ -42,8 +44,22 @@ class HotkeyConfig {
   );
 
   /// Build a [HotKey] instance from this config.
+  ///
+  /// Translates the USB HID key code to a Carbon key code before
+  /// creating the HotKey, since the native macOS plugin expects Carbon codes.
   HotKey toHotKey() {
-    final key = PhysicalKeyboardKey(keyCode);
+    // Translate USB HID → Carbon. If no mapping exists, fall back to
+    // using the raw code as a PhysicalKeyboardKey (legacy behavior).
+    final carbonCode = KeyCodeTranslator.usbHidToCarbon(keyCode);
+    final PhysicalKeyboardKey key;
+    if (carbonCode != null) {
+      // Create a PhysicalKeyboardKey from the Carbon code.
+      // The hotkey_manager plugin passes this through to the native layer
+      // which expects Carbon virtual key codes.
+      key = PhysicalKeyboardKey(carbonCode);
+    } else {
+      key = PhysicalKeyboardKey(keyCode);
+    }
     final mods = modifiers.map(_modifierFromName).toList();
     return HotKey(key: key, modifiers: mods, scope: HotKeyScope.system);
   }
@@ -75,6 +91,19 @@ class HotkeyConfig {
       HotKeyModifier.meta => 'meta',
       _ => 'control',
     };
+  }
+
+  /// Human-readable display label (e.g., "Ctrl + Shift + Space").
+  String get displayLabel {
+    final modLabels = modifiers.map((m) => switch (m) {
+          'control' => 'Ctrl',
+          'shift' => 'Shift',
+          'alt' => 'Alt',
+          'meta' => 'Cmd',
+          _ => m,
+        });
+    final keyLabel = KeyCodeTranslator.usbHidToLabel(keyCode);
+    return [...modLabels, keyLabel].join(' + ');
   }
 
   @override

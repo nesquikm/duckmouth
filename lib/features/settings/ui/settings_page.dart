@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:record/record.dart' show AudioRecorder, InputDevice;
 
 import 'package:duckmouth/core/services/accessibility_service.dart';
 import 'package:duckmouth/core/services/output_mode.dart';
 import 'package:duckmouth/core/services/sound_config.dart';
 import 'package:duckmouth/features/hotkey/domain/hotkey_config.dart';
+import 'package:duckmouth/features/hotkey/ui/hotkey_recorder_dialog.dart';
 import 'package:duckmouth/features/post_processing/domain/post_processing_config.dart'
     show PostProcessingConfig, PromptTemplate;
 import 'package:duckmouth/features/recording/domain/audio_format_config.dart';
@@ -104,7 +104,6 @@ class _SettingsFormState extends State<_SettingsForm> {
 
   // Hotkey
   late HotkeyConfig _hotkeyConfig;
-  HotKey? _recordedHotKey;
 
   // Sound
   late SoundConfig _soundConfig;
@@ -287,52 +286,6 @@ class _SettingsFormState extends State<_SettingsForm> {
     return PromptTemplate.custom;
   }
 
-  String _hotkeyDisplayLabel(HotkeyConfig config) {
-    final modLabels = config.modifiers.map((m) => switch (m) {
-          'control' => 'Ctrl',
-          'shift' => 'Shift',
-          'alt' => 'Alt',
-          'meta' => 'Cmd',
-          _ => m,
-        });
-    // Try to get a readable key name from keyCode.
-    final keyLabel = _keyCodeToLabel(config.keyCode);
-    return [...modLabels, keyLabel].join(' + ');
-  }
-
-  String _keyCodeToLabel(int keyCode) {
-    // Common physical key mappings for display.
-    const labels = <int, String>{
-      0x00000020: 'Space',
-      0x00070004: 'A',
-      0x00070005: 'B',
-      0x00070006: 'C',
-      0x00070007: 'D',
-      0x00070008: 'E',
-      0x00070009: 'F',
-      0x0007000a: 'G',
-      0x0007000b: 'H',
-      0x0007000c: 'I',
-      0x0007000d: 'J',
-      0x0007000e: 'K',
-      0x0007000f: 'L',
-      0x00070010: 'M',
-      0x00070011: 'N',
-      0x00070012: 'O',
-      0x00070013: 'P',
-      0x00070014: 'Q',
-      0x00070015: 'R',
-      0x00070016: 'S',
-      0x00070017: 'T',
-      0x00070018: 'U',
-      0x00070019: 'V',
-      0x0007001a: 'W',
-      0x0007001b: 'X',
-      0x0007001c: 'Y',
-      0x0007001d: 'Z',
-    };
-    return labels[keyCode] ?? 'Key(0x${keyCode.toRadixString(16)})';
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -552,16 +505,7 @@ class _SettingsFormState extends State<_SettingsForm> {
                     labelText: 'Shortcut',
                     border: OutlineInputBorder(),
                   ),
-                  child: Text(
-                    _recordedHotKey != null
-                        ? _hotkeyDisplayLabel(
-                            HotkeyConfig.fromHotKey(
-                              _recordedHotKey!,
-                              mode: _hotkeyConfig.mode,
-                            ),
-                          )
-                        : _hotkeyDisplayLabel(_hotkeyConfig),
-                  ),
+                  child: Text(_hotkeyConfig.displayLabel),
                 ),
               ),
               const SizedBox(width: 12),
@@ -760,32 +704,13 @@ class _SettingsFormState extends State<_SettingsForm> {
     showDialog<void>(
       context: context,
       builder: (dialogContext) {
-        return AlertDialog(
-          title: const Text('Record Hotkey'),
-          content: SizedBox(
-            width: 300,
-            height: 100,
-            child: Center(
-              child: HotKeyRecorder(
-                onHotKeyRecorded: (hotKey) {
-                  setState(() {
-                    _recordedHotKey = hotKey;
-                    _hotkeyConfig = HotkeyConfig.fromHotKey(
-                      hotKey,
-                      mode: _hotkeyConfig.mode,
-                    );
-                  });
-                  Navigator.of(dialogContext).pop();
-                },
-              ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('Cancel'),
-            ),
-          ],
+        return HotkeyRecorderDialog(
+          currentMode: _hotkeyConfig.mode,
+          onHotKeyRecorded: (config) {
+            setState(() {
+              _hotkeyConfig = config;
+            });
+          },
         );
       },
     );

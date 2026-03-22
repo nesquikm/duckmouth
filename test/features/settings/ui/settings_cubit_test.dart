@@ -511,12 +511,10 @@ void main() {
     );
 
     blocTest<SettingsCubit, SettingsState>(
-      'requestAccessibilityPermission calls service and re-checks',
+      'requestAccessibilityPermission calls service (no re-check)',
       build: () {
         when(() => mockAccessibility.requestPermission())
             .thenAnswer((_) async {});
-        when(() => mockAccessibility.checkPermission())
-            .thenAnswer((_) async => AccessibilityStatus.granted);
         return SettingsCubit(repository: mockRepo, accessibilityService: mockAccessibility);
       },
       seed: () => const SettingsLoaded(
@@ -524,17 +522,9 @@ void main() {
         accessibilityStatus: AccessibilityStatus.denied,
       ),
       act: (cubit) => cubit.requestAccessibilityPermission(),
-      expect: () => [
-        const SettingsLoaded(
-          sttConfig: defaultConfig,
-          postProcessingConfig: defaultPpConfig,
-          hotkeyConfig: defaultHotkeyConfig,
-          accessibilityStatus: AccessibilityStatus.granted,
-        ),
-      ],
+      expect: () => <SettingsState>[],
       verify: (_) {
         verify(() => mockAccessibility.requestPermission()).called(1);
-        verify(() => mockAccessibility.checkPermission()).called(1);
       },
     );
 

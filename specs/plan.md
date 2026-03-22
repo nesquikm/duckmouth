@@ -415,13 +415,50 @@ Each milestone is independently gatable. Don't proceed to M(n+1) until M(n) gate
 
 ---
 
+## M15: Hotkey System Fix — Recorder, Key Codes, Display
+
+**Goal:** Fix all three hotkey issues: registration silently failing (wrong key code format), recorder capturing bare modifiers, and hex codes in the UI.
+**Prerequisites:** M7 (Global Hotkeys)
+
+**Background:**
+The hotkey_manager plugin's native Swift layer expects Carbon key codes (e.g. `49` for Space), but the app sends USB HID usage codes (`0x0007002C`). The plugin's `HotKeyRecorder` widget fires immediately on any key event including bare modifiers. The settings UI shows raw hex codes for unrecognized keys.
+
+**Tasks:**
+1. Create `key_code_translator.dart` with USB HID ↔ Carbon mapping and human-readable labels
+2. Update `HotkeyConfig.toHotKey()` to translate USB HID → Carbon before sending to native plugin
+3. Build custom `HotkeyRecorderDialog` that waits for modifier+key combo (replaces `HotKeyRecorder` widget)
+4. Update settings page to use new recorder dialog and display human-readable labels
+5. Update `_hotkeyDisplayLabel` / `_keyCodeToLabel` to use the translator
+6. Add comprehensive tests for translator, recorder, and display
+
+**Tests:**
+- Key code translator: USB HID → Carbon mapping for all common keys
+- Key code translator: USB HID → label for all common keys
+- Custom recorder: bare modifier doesn't fire callback
+- Custom recorder: modifier+key combo fires with correct config
+- Custom recorder: escape cancels
+- Hotkey display: shows human-readable labels
+- Hotkey registration: translated Carbon code reaches native plugin
+- Round-trip: record → save → reload → display matches
+
+**Acceptance Criteria:**
+- [x] Global hotkey actually triggers recording (Carbon codes sent to native)
+- [x] Hotkey recorder waits for full modifier+key combo
+- [x] Settings UI shows "Ctrl + Shift + Space" format, not hex codes
+- [x] All existing hotkey tests updated and passing
+- [x] Gate passes: `fvm flutter analyze && fvm flutter test`
+
+**Gate:** `fvm flutter analyze && fvm flutter test`
+
+---
+
 ## Milestone Dependency Graph
 
 ```
 M1 → M2 → M3 → M5
       │    │ ↘ M6 → M12
       │    └→ M9
-      ├→ M7
+      ├→ M7 → M15
       └→ M8 → M13
 M3 + M4 → M5
 M2 + M4 → M11

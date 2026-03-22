@@ -22,6 +22,35 @@ void main() {
       expect(hotKey.scope, HotKeyScope.system);
     });
 
+    test('toHotKey translates USB HID to Carbon key code', () {
+      const config = HotkeyConfig(
+        keyCode: 0x0007002C, // Space USB HID
+        modifiers: ['control'],
+      );
+      final hotKey = config.toHotKey();
+      // Carbon code for Space is 49
+      expect(hotKey.physicalKey.usbHidUsage, 49);
+    });
+
+    test('toHotKey translates letter A correctly', () {
+      const config = HotkeyConfig(
+        keyCode: 0x00070004, // A USB HID
+        modifiers: ['meta'],
+      );
+      final hotKey = config.toHotKey();
+      // Carbon code for A is 0
+      expect(hotKey.physicalKey.usbHidUsage, 0);
+    });
+
+    test('toHotKey falls back to raw code for unknown USB HID', () {
+      const config = HotkeyConfig(
+        keyCode: 0xDEADBEEF,
+        modifiers: ['control'],
+      );
+      final hotKey = config.toHotKey();
+      expect(hotKey.physicalKey.usbHidUsage, 0xDEADBEEF);
+    });
+
     test('fromHotKey creates config preserving mode', () {
       final hotKey = HotKey(
         key: PhysicalKeyboardKey(0x00070004),
@@ -37,6 +66,35 @@ void main() {
       expect(config.keyCode, 0x00070004);
       expect(config.modifiers, ['alt']);
       expect(config.mode, HotkeyMode.pushToTalk);
+    });
+
+    test('displayLabel shows human-readable format for default config', () {
+      const config = HotkeyConfig.defaultConfig;
+      expect(config.displayLabel, 'Ctrl + Shift + Space');
+    });
+
+    test('displayLabel shows letter key correctly', () {
+      const config = HotkeyConfig(
+        keyCode: 0x00070004, // A
+        modifiers: ['meta'],
+      );
+      expect(config.displayLabel, 'Cmd + A');
+    });
+
+    test('displayLabel shows multiple modifiers correctly', () {
+      const config = HotkeyConfig(
+        keyCode: 0x0007000e, // K
+        modifiers: ['control', 'alt', 'shift'],
+      );
+      expect(config.displayLabel, 'Ctrl + Alt + Shift + K');
+    });
+
+    test('displayLabel shows hex for unknown key code', () {
+      const config = HotkeyConfig(
+        keyCode: 0xDEADBEEF,
+        modifiers: ['control'],
+      );
+      expect(config.displayLabel, contains('Key('));
     });
 
     test('equality works correctly', () {

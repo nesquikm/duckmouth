@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import 'package:logging/logging.dart';
 
 /// Abstract interface for an LLM chat completions client.
 abstract class LlmClient {
@@ -10,6 +11,8 @@ abstract class LlmClient {
 
 /// HTTP-based implementation of [LlmClient] targeting OpenAI-compatible APIs.
 class LlmClientImpl implements LlmClient {
+  static final _log = Logger('LlmClient');
+
   LlmClientImpl({
     required String apiKey,
     required String baseUrl,
@@ -27,6 +30,7 @@ class LlmClientImpl implements LlmClient {
 
   @override
   Future<String> chatCompletion(String systemPrompt, String userMessage) async {
+    _log.info('Chat completion (model: $_model)');
     final uri = Uri.parse('$_baseUrl/v1/chat/completions');
 
     final body = jsonEncode({
@@ -47,6 +51,7 @@ class LlmClientImpl implements LlmClient {
     );
 
     if (response.statusCode != 200) {
+      _log.warning('LLM API error ${response.statusCode}: ${response.body}');
       throw LlmClientException(
         _llmUserFriendlyMessage(response.statusCode, response.body),
         statusCode: response.statusCode,
@@ -70,6 +75,7 @@ class LlmClientImpl implements LlmClient {
       );
     }
 
+    _log.fine('Chat completion done (${content.length} chars)');
     return content;
   }
 }

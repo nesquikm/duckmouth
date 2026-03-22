@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:logging/logging.dart';
 import 'package:record/record.dart' show AudioRecorder, InputDevice, RecordConfig;
 
 import '../domain/audio_format_config.dart';
@@ -8,6 +9,8 @@ import '../domain/recording_repository.dart';
 
 /// Concrete implementation of [RecordingRepository] using the record package.
 class RecordingRepositoryImpl implements RecordingRepository {
+  static final _log = Logger('RecordingRepository');
+
   RecordingRepositoryImpl({AudioRecorder? recorder})
       : _recorder = recorder ?? AudioRecorder();
 
@@ -33,6 +36,7 @@ class RecordingRepositoryImpl implements RecordingRepository {
     final filePath =
         '${tempDir.path}/duckmouth_recording_$timestamp.${format.extension}';
 
+    _log.info('Recording to $filePath (${format.label}, ${config.effectiveSampleRate}Hz)');
     await _recorder.start(
       RecordConfig(
         encoder: format.encoder,
@@ -64,6 +68,7 @@ class RecordingRepositoryImpl implements RecordingRepository {
     _recordingStartTime = null;
 
     final path = await _recorder.stop();
+    _log.info('Recording stopped: $path');
     return path;
   }
 

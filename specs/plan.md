@@ -473,12 +473,12 @@ The hotkey_manager plugin's native Swift layer expects Carbon key codes (e.g. `4
 - No remaining `print()`/`debugPrint()` in `lib/` (grep check)
 
 **Acceptance Criteria:**
-- [ ] `the_logger` initialized in `main()` with console-only config
-- [ ] All key services use named `Logger` instances
-- [ ] API keys masked in console output
-- [ ] No `print()`/`debugPrint()` remaining in `lib/`
-- [ ] Errors logged with `.severe()` including error objects
-- [ ] Gate passes: `fvm flutter analyze && fvm flutter test`
+- [x] `the_logger` initialized in `main()` with console-only config
+- [x] All key services use named `Logger` instances
+- [x] API keys masked in console output
+- [x] No `print()`/`debugPrint()` remaining in `lib/`
+- [x] Errors logged with `.severe()` including error objects
+- [x] Gate passes: `fvm flutter analyze && fvm flutter test`
 
 **Gate:** `fvm flutter analyze && fvm flutter test`
 

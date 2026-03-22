@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:logging/logging.dart';
 
 import '../domain/hotkey_config.dart';
 import '../domain/hotkey_service.dart';
@@ -6,6 +7,8 @@ import 'hotkey_state.dart';
 
 /// Cubit that manages global hotkey registration and recording triggers.
 class HotkeyCubit extends Cubit<HotkeyState> {
+  static final _log = Logger('HotkeyCubit');
+
   HotkeyCubit({required HotkeyService service})
       : _service = service,
         super(const HotkeyIdle());
@@ -35,8 +38,10 @@ class HotkeyCubit extends Cubit<HotkeyState> {
             : null,
       );
 
+      _log.info('Hotkey registered: ${config.displayLabel}');
       _tryEmit(HotkeyRegistered(config: config));
-    } on Exception catch (e) {
+    } on Exception catch (e, st) {
+      _log.severe('Failed to register hotkey', e, st);
       _tryEmit(HotkeyError(message: 'Failed to register hotkey: $e'));
     }
   }
@@ -47,7 +52,8 @@ class HotkeyCubit extends Cubit<HotkeyState> {
       await _service.unregisterAll();
       _isRecording = false;
       _tryEmit(const HotkeyIdle());
-    } on Exception catch (e) {
+    } on Exception catch (e, st) {
+      _log.severe('Failed to unregister hotkey', e, st);
       _tryEmit(HotkeyError(message: 'Failed to unregister hotkey: $e'));
     }
   }

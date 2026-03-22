@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:logging/logging.dart';
 
 import 'package:duckmouth/core/api/llm_client.dart';
 import 'package:duckmouth/features/post_processing/domain/post_processing_config.dart';
@@ -9,6 +10,8 @@ import 'package:duckmouth/features/post_processing/ui/post_processing_state.dart
 
 /// Cubit that manages LLM post-processing of transcription results.
 class PostProcessingCubit extends Cubit<PostProcessingState> {
+  static final _log = Logger('PostProcessingCubit');
+
   PostProcessingCubit({
     required PostProcessingRepository Function() repositoryFactory,
     required PostProcessingConfig config,
@@ -39,17 +42,20 @@ class PostProcessingCubit extends Cubit<PostProcessingState> {
         rawText: rawText,
         processedText: processedText,
       ));
-    } on LlmClientException catch (e) {
+    } on LlmClientException catch (e, st) {
+      _log.warning('LLM API error', e, st);
       _tryEmit(PostProcessingError(
         rawText: rawText,
         message: e.message,
       ));
-    } on SocketException catch (_) {
+    } on SocketException catch (e, st) {
+      _log.severe('Network error during post-processing', e, st);
       _tryEmit(PostProcessingError(
         rawText: rawText,
         message: 'Network error. Check your internet connection.',
       ));
-    } on Exception catch (e) {
+    } on Exception catch (e, st) {
+      _log.severe('Post-processing failed', e, st);
       _tryEmit(PostProcessingError(
         rawText: rawText,
         message: _friendlyError(e),

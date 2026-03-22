@@ -1,4 +1,5 @@
 import 'package:flutter/services.dart';
+import 'package:logging/logging.dart';
 
 /// Abstract interface for playing sound feedback.
 abstract class SoundService {
@@ -17,6 +18,8 @@ abstract class SoundService {
 
 /// macOS implementation that plays system sounds via NSSound platform channel.
 class SoundServiceImpl implements SoundService {
+  static final _log = Logger('SoundService');
+
   SoundServiceImpl({
     MethodChannel? channel,
   }) : _channel = channel ?? const MethodChannel('com.duckmouth/sound');
@@ -31,8 +34,8 @@ class SoundServiceImpl implements SoundService {
         'name': soundName,
         'volume': clampedVolume,
       });
-    } on Exception {
-      // Silently ignore — sound is non-critical.
+    } on Exception catch (e, st) {
+      _log.fine('Sound playback failed: $soundName', e, st);
     }
   }
 

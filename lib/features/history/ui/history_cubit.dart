@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:logging/logging.dart';
 
 import 'package:duckmouth/features/history/domain/history_repository.dart';
 import 'package:duckmouth/features/history/domain/transcription_entry.dart';
@@ -6,6 +7,8 @@ import 'package:duckmouth/features/history/ui/history_state.dart';
 
 /// Cubit that manages transcription history.
 class HistoryCubit extends Cubit<HistoryState> {
+  static final _log = Logger('HistoryCubit');
+
   HistoryCubit({required HistoryRepository repository})
       : _repository = repository,
         super(const HistoryLoading());
@@ -18,7 +21,8 @@ class HistoryCubit extends Cubit<HistoryState> {
     try {
       final entries = await _repository.getAll();
       _tryEmit(HistoryLoaded(entries));
-    } on Exception catch (e) {
+    } on Exception catch (e, st) {
+      _log.severe('History operation failed', e, st);
       _tryEmit(HistoryError(e.toString()));
     }
   }
@@ -29,7 +33,8 @@ class HistoryCubit extends Cubit<HistoryState> {
       await _repository.add(entry);
       final entries = await _repository.getAll();
       _tryEmit(HistoryLoaded(entries));
-    } on Exception catch (e) {
+    } on Exception catch (e, st) {
+      _log.severe('History operation failed', e, st);
       _tryEmit(HistoryError(e.toString()));
     }
   }
@@ -40,7 +45,8 @@ class HistoryCubit extends Cubit<HistoryState> {
       await _repository.delete(id);
       final entries = await _repository.getAll();
       _tryEmit(HistoryLoaded(entries));
-    } on Exception catch (e) {
+    } on Exception catch (e, st) {
+      _log.severe('History operation failed', e, st);
       _tryEmit(HistoryError(e.toString()));
     }
   }
@@ -50,7 +56,8 @@ class HistoryCubit extends Cubit<HistoryState> {
     try {
       await _repository.clear();
       _tryEmit(const HistoryLoaded([]));
-    } on Exception catch (e) {
+    } on Exception catch (e, st) {
+      _log.severe('History operation failed', e, st);
       _tryEmit(HistoryError(e.toString()));
     }
   }

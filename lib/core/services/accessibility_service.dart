@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/services.dart';
+import 'package:logging/logging.dart';
 
 /// Permission status for macOS Accessibility API.
 enum AccessibilityStatus {
@@ -48,6 +49,8 @@ typedef OsascriptPasteFn = Future<void> Function(String text);
 
 /// Implementation backed by the `com.duckmouth/text_insertion` platform channel.
 class AccessibilityServiceImpl implements AccessibilityService {
+  static final _log = Logger('AccessibilityService');
+
   AccessibilityServiceImpl({
     MethodChannel? channel,
     OsascriptPasteFn? osascriptPaste,
@@ -110,15 +113,18 @@ class AccessibilityServiceImpl implements AccessibilityService {
   Future<InsertionMethod> insertTextWithFallback(String text) async {
     // 1. Try AX direct insert (no clipboard touch).
     if (await insertText(text)) {
+      _log.fine('Text inserted via AX direct insert');
       return InsertionMethod.axDirectInsert;
     }
 
     // 2. Try CGEvent Cmd+V (clipboard sandwich, no subprocess).
     if (await pasteViaCGEvent(text)) {
+      _log.fine('Text inserted via CGEvent paste');
       return InsertionMethod.cgEventPaste;
     }
 
     // 3. Legacy osascript fallback.
+    _log.fine('Text inserted via osascript fallback');
     await _osascriptPaste(text);
     return InsertionMethod.osascript;
   }

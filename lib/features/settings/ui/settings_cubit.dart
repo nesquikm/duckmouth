@@ -1,4 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:logging/logging.dart';
+import 'package:the_logger/the_logger.dart';
 
 import 'package:duckmouth/core/services/accessibility_service.dart';
 import 'package:duckmouth/core/services/output_mode.dart';
@@ -21,6 +23,8 @@ const _kDefaultConfig = ApiConfig(
 
 /// Cubit managing the settings feature state.
 class SettingsCubit extends Cubit<SettingsState> {
+  static final _log = Logger('SettingsCubit');
+
   SettingsCubit({
     required SettingsRepository repository,
     required AccessibilityService accessibilityService,
@@ -91,6 +95,9 @@ class SettingsCubit extends Cubit<SettingsState> {
       final audioFormatConfig = await _repository.loadAudioFormatConfig();
       final selectedDevice = await _repository.loadSelectedInputDevice();
       final axStatus = await _accessibilityService.checkPermission();
+      _maskApiKey(config?.apiKey);
+      _maskApiKey(ppConfig.llmConfig.apiKey);
+      _log.info('Settings loaded');
       emit(SettingsLoaded(
         sttConfig: config ?? _kDefaultConfig,
         postProcessingConfig: ppConfig,
@@ -101,7 +108,8 @@ class SettingsCubit extends Cubit<SettingsState> {
         accessibilityStatus: axStatus,
         selectedInputDeviceId: selectedDevice,
       ));
-    } on Exception catch (e) {
+    } on Exception catch (e, st) {
+      _log.severe('Failed to load settings', e, st);
       emit(SettingsError(message: e.toString()));
     }
   }
@@ -124,9 +132,11 @@ class SettingsCubit extends Cubit<SettingsState> {
   /// Save the given STT [config] and emit the updated state.
   Future<void> saveSettings(ApiConfig config) async {
     try {
+      _maskApiKey(config.apiKey);
       await _repository.saveSttConfig(config);
       emit(_currentOrDefault(sttConfig: config));
-    } on Exception catch (e) {
+    } on Exception catch (e, st) {
+      _log.severe('Failed to save STT settings', e, st);
       emit(SettingsError(message: e.toString()));
     }
   }
@@ -134,9 +144,11 @@ class SettingsCubit extends Cubit<SettingsState> {
   /// Save the given post-processing [config] and emit the updated state.
   Future<void> savePostProcessingConfig(PostProcessingConfig config) async {
     try {
+      _maskApiKey(config.llmConfig.apiKey);
       await _repository.savePostProcessingConfig(config);
       emit(_currentOrDefault(postProcessingConfig: config));
-    } on Exception catch (e) {
+    } on Exception catch (e, st) {
+      _log.severe('Failed to save post-processing config', e, st);
       emit(SettingsError(message: e.toString()));
     }
   }
@@ -146,7 +158,8 @@ class SettingsCubit extends Cubit<SettingsState> {
     try {
       await _repository.saveOutputMode(outputMode);
       emit(_currentOrDefault(outputMode: outputMode));
-    } on Exception catch (e) {
+    } on Exception catch (e, st) {
+      _log.severe('Failed to save settings', e, st);
       emit(SettingsError(message: e.toString()));
     }
   }
@@ -156,7 +169,8 @@ class SettingsCubit extends Cubit<SettingsState> {
     try {
       await _repository.saveHotkeyConfig(hotkeyConfig);
       emit(_currentOrDefault(hotkeyConfig: hotkeyConfig));
-    } on Exception catch (e) {
+    } on Exception catch (e, st) {
+      _log.severe('Failed to save settings', e, st);
       emit(SettingsError(message: e.toString()));
     }
   }
@@ -166,7 +180,8 @@ class SettingsCubit extends Cubit<SettingsState> {
     try {
       await _repository.saveSoundConfig(soundConfig);
       emit(_currentOrDefault(soundConfig: soundConfig));
-    } on Exception catch (e) {
+    } on Exception catch (e, st) {
+      _log.severe('Failed to save settings', e, st);
       emit(SettingsError(message: e.toString()));
     }
   }
@@ -176,7 +191,8 @@ class SettingsCubit extends Cubit<SettingsState> {
     try {
       await _repository.saveAudioFormatConfig(audioFormatConfig);
       emit(_currentOrDefault(audioFormatConfig: audioFormatConfig));
-    } on Exception catch (e) {
+    } on Exception catch (e, st) {
+      _log.severe('Failed to save settings', e, st);
       emit(SettingsError(message: e.toString()));
     }
   }
@@ -186,8 +202,20 @@ class SettingsCubit extends Cubit<SettingsState> {
     try {
       await _repository.saveSelectedInputDevice(deviceId);
       emit(_currentOrDefault(selectedInputDeviceId: () => deviceId));
-    } on Exception catch (e) {
+    } on Exception catch (e, st) {
+      _log.severe('Failed to save settings', e, st);
       emit(SettingsError(message: e.toString()));
+    }
+  }
+
+  /// Add a non-empty API key to the log masking list.
+  void _maskApiKey(String? key) {
+    if (key != null && key.isNotEmpty) {
+      try {
+        TheLogger.i().addMaskingString(MaskingString(key));
+      } on Exception {
+        // TheLogger may not be initialized in test environments.
+      }
     }
   }
 

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:logging/logging.dart';
 
 import '../data/recording_repository_impl.dart';
 import '../domain/audio_format_config.dart';
@@ -9,6 +10,8 @@ import 'recording_state.dart';
 
 /// Cubit that manages audio recording state.
 class RecordingCubit extends Cubit<RecordingState> {
+  static final _log = Logger('RecordingCubit');
+
   RecordingCubit({required RecordingRepository repository})
       : _repository = repository,
         super(const RecordingIdle());
@@ -55,9 +58,11 @@ class RecordingCubit extends Cubit<RecordingState> {
       _durationSubscription = _repository.durationStream.listen(
         (duration) => _tryEmit(RecordingInProgress(duration)),
       );
-    } on RecordingPermissionException catch (e) {
+    } on RecordingPermissionException catch (e, st) {
+      _log.warning('Permission denied', e, st);
       _tryEmit(RecordingError(e.message));
-    } on Exception catch (e) {
+    } on Exception catch (e, st) {
+      _log.severe('Failed to start recording', e, st);
       _tryEmit(RecordingError('Failed to start recording: $e'));
     }
   }
@@ -74,7 +79,8 @@ class RecordingCubit extends Cubit<RecordingState> {
       } else {
         _tryEmit(const RecordingError('No recording data available'));
       }
-    } on Exception catch (e) {
+    } on Exception catch (e, st) {
+      _log.severe('Failed to stop recording', e, st);
       _tryEmit(RecordingError('Failed to stop recording: $e'));
     }
   }

@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:logging/logging.dart';
 
 import 'package:duckmouth/core/api/openai_client.dart';
 import 'package:duckmouth/features/transcription/domain/stt_repository.dart';
@@ -8,6 +9,8 @@ import 'transcription_state.dart';
 
 /// Cubit that manages speech-to-text transcription state.
 class TranscriptionCubit extends Cubit<TranscriptionState> {
+  static final _log = Logger('TranscriptionCubit');
+
   TranscriptionCubit({required SttRepository Function() repositoryFactory})
       : _repositoryFactory = repositoryFactory,
         super(const TranscriptionIdle());
@@ -26,17 +29,21 @@ class TranscriptionCubit extends Cubit<TranscriptionState> {
         return;
       }
       _tryEmit(TranscriptionSuccess(text));
-    } on OpenAiClientException catch (e) {
+    } on OpenAiClientException catch (e, st) {
+      _log.warning('STT API error', e, st);
       _tryEmit(TranscriptionError(e.message));
-    } on SocketException catch (_) {
+    } on SocketException catch (e, st) {
+      _log.severe('Network error during transcription', e, st);
       _tryEmit(const TranscriptionError(
         'Network error. Check your internet connection and try again.',
       ));
-    } on HttpException catch (_) {
+    } on HttpException catch (e, st) {
+      _log.severe('HTTP error during transcription', e, st);
       _tryEmit(const TranscriptionError(
         'Network error. Check your internet connection and try again.',
       ));
-    } on Exception catch (e) {
+    } on Exception catch (e, st) {
+      _log.severe('Transcription failed', e, st);
       _tryEmit(TranscriptionError(_friendlyError(e)));
     }
   }

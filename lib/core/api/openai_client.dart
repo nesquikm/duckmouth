@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import 'package:logging/logging.dart';
 
 /// Default configuration constants for the OpenAI-compatible API.
 const kDefaultBaseUrl = 'https://api.openai.com';
@@ -14,6 +15,8 @@ abstract class OpenAiClient {
 
 /// HTTP-based implementation of [OpenAiClient].
 class OpenAiClientImpl implements OpenAiClient {
+  static final _log = Logger('OpenAiClient');
+
   OpenAiClientImpl({
     required String apiKey,
     String baseUrl = kDefaultBaseUrl,
@@ -31,6 +34,7 @@ class OpenAiClientImpl implements OpenAiClient {
 
   @override
   Future<String> transcribe(String audioFilePath) async {
+    _log.info('Transcribing $audioFilePath (model: $_model)');
     final uri = Uri.parse('$_baseUrl/v1/audio/transcriptions');
 
     final request = http.MultipartRequest('POST', uri)
@@ -42,6 +46,7 @@ class OpenAiClientImpl implements OpenAiClient {
     final response = await http.Response.fromStream(streamedResponse);
 
     if (response.statusCode != 200) {
+      _log.warning('STT API error ${response.statusCode}: ${response.body}');
       throw OpenAiClientException(
         _userFriendlyMessage(response.statusCode, response.body),
         statusCode: response.statusCode,
@@ -51,11 +56,13 @@ class OpenAiClientImpl implements OpenAiClient {
     final json = jsonDecode(response.body) as Map<String, dynamic>;
     final text = json['text'] as String?;
     if (text == null) {
+      _log.warning('STT API returned no text field');
       throw const OpenAiClientException(
         'Invalid response: missing "text" field',
       );
     }
 
+    _log.fine('Transcription complete (${text.length} chars)');
     return text;
   }
 }

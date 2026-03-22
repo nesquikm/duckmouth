@@ -48,20 +48,23 @@ void main() {
     });
 
     blocTest<PostProcessingCubit, PostProcessingState>(
-      'emits PostProcessingDisabled when disabled',
+      'emits [Idle, Disabled] when disabled (Idle resets for BlocListener)',
       build: () => PostProcessingCubit(
         repositoryFactory: () => mockRepo,
         config: disabledConfig,
       ),
       act: (cubit) => cubit.process('hello'),
-      expect: () => [const PostProcessingDisabled()],
+      expect: () => [
+        const PostProcessingIdle(),
+        const PostProcessingDisabled(),
+      ],
       verify: (_) {
         verifyNever(() => mockRepo.process(any(), any()));
       },
     );
 
     blocTest<PostProcessingCubit, PostProcessingState>(
-      'emits [Loading, Success] when enabled and processing succeeds',
+      'emits [Idle, Loading, Success] when enabled and processing succeeds',
       setUp: () {
         when(() => mockRepo.process(any(), any()))
             .thenAnswer((_) async => 'Fixed text');
@@ -72,6 +75,7 @@ void main() {
       ),
       act: (cubit) => cubit.process('raw text'),
       expect: () => [
+        const PostProcessingIdle(),
         const PostProcessingLoading(rawText: 'raw text'),
         const PostProcessingSuccess(
           rawText: 'raw text',
@@ -84,7 +88,7 @@ void main() {
     );
 
     blocTest<PostProcessingCubit, PostProcessingState>(
-      'emits [Loading, Error] with friendly message on generic exception',
+      'emits [Idle, Loading, Error] with friendly message on generic exception',
       setUp: () {
         when(() => mockRepo.process(any(), any()))
             .thenThrow(Exception('API error'));
@@ -95,6 +99,7 @@ void main() {
       ),
       act: (cubit) => cubit.process('raw text'),
       expect: () => [
+        const PostProcessingIdle(),
         const PostProcessingLoading(rawText: 'raw text'),
         const PostProcessingError(
           rawText: 'raw text',
@@ -104,7 +109,7 @@ void main() {
     );
 
     blocTest<PostProcessingCubit, PostProcessingState>(
-      'emits [Loading, Error] with API message on LlmClientException',
+      'emits [Idle, Loading, Error] with API message on LlmClientException',
       setUp: () {
         when(() => mockRepo.process(any(), any())).thenThrow(
           const LlmClientException(
@@ -120,6 +125,7 @@ void main() {
       ),
       act: (cubit) => cubit.process('raw text'),
       expect: () => [
+        const PostProcessingIdle(),
         const PostProcessingLoading(rawText: 'raw text'),
         const PostProcessingError(
           rawText: 'raw text',
@@ -130,7 +136,7 @@ void main() {
     );
 
     blocTest<PostProcessingCubit, PostProcessingState>(
-      'emits [Loading, Error] with network message on SocketException',
+      'emits [Idle, Loading, Error] with network message on SocketException',
       setUp: () {
         when(() => mockRepo.process(any(), any()))
             .thenThrow(const SocketException('No internet'));
@@ -141,6 +147,7 @@ void main() {
       ),
       act: (cubit) => cubit.process('raw text'),
       expect: () => [
+        const PostProcessingIdle(),
         const PostProcessingLoading(rawText: 'raw text'),
         const PostProcessingError(
           rawText: 'raw text',
@@ -165,7 +172,9 @@ void main() {
         await cubit.process('text');
       },
       expect: () => [
+        const PostProcessingIdle(),
         const PostProcessingDisabled(),
+        const PostProcessingIdle(),
         const PostProcessingLoading(rawText: 'text'),
         const PostProcessingSuccess(
           rawText: 'text',

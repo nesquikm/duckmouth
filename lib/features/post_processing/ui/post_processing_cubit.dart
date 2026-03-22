@@ -29,6 +29,10 @@ class PostProcessingCubit extends Cubit<PostProcessingState> {
 
   /// Process the given [rawText] if post-processing is enabled.
   Future<void> process(String rawText) async {
+    // Always transition through Idle first so BlocListener fires even when
+    // the previous state was the same (e.g. two consecutive Disabled emits).
+    _tryEmit(const PostProcessingIdle());
+
     if (!_config.enabled) {
       _log.info('Post-processing disabled, passing through raw text');
       _tryEmit(const PostProcessingDisabled());

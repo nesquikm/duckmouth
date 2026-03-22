@@ -4,6 +4,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:duckmouth/core/services/output_mode.dart';
+import 'package:duckmouth/features/hotkey/domain/hotkey_config.dart';
 import 'package:duckmouth/features/post_processing/domain/post_processing_config.dart';
 import 'package:duckmouth/features/settings/data/settings_repository_impl.dart';
 import 'package:duckmouth/features/settings/domain/api_config.dart';
@@ -178,6 +179,48 @@ void main() {
     test('saveOutputMode persists the mode', () async {
       await repo.saveOutputMode(OutputMode.both);
       expect(prefs.getString('output_mode'), 'both');
+    });
+  });
+
+  group('HotkeyConfig persistence', () {
+    test('loadHotkeyConfig returns default when nothing saved', () async {
+      final result = await repo.loadHotkeyConfig();
+      expect(result, HotkeyConfig.defaultConfig);
+    });
+
+    test('loadHotkeyConfig returns saved values', () async {
+      await prefs.setInt('hotkey_key_code', 0x00070004);
+      await prefs.setString('hotkey_modifiers', '["alt","shift"]');
+      await prefs.setString('hotkey_mode', 'pushToTalk');
+
+      final result = await repo.loadHotkeyConfig();
+
+      expect(result.keyCode, 0x00070004);
+      expect(result.modifiers, ['alt', 'shift']);
+      expect(result.mode, HotkeyMode.pushToTalk);
+    });
+
+    test('loadHotkeyConfig returns toggle for unknown mode', () async {
+      await prefs.setInt('hotkey_key_code', 0x00000020);
+      await prefs.setString('hotkey_modifiers', '["control"]');
+      await prefs.setString('hotkey_mode', 'nonexistent');
+
+      final result = await repo.loadHotkeyConfig();
+      expect(result.mode, HotkeyMode.toggle);
+    });
+
+    test('saveHotkeyConfig persists all fields', () async {
+      const config = HotkeyConfig(
+        keyCode: 0x00070004,
+        modifiers: ['alt', 'meta'],
+        mode: HotkeyMode.pushToTalk,
+      );
+
+      await repo.saveHotkeyConfig(config);
+
+      expect(prefs.getInt('hotkey_key_code'), 0x00070004);
+      expect(prefs.getString('hotkey_modifiers'), '["alt","meta"]');
+      expect(prefs.getString('hotkey_mode'), 'pushToTalk');
     });
   });
 }

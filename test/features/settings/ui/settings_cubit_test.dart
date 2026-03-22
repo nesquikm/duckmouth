@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
 import 'package:duckmouth/core/services/output_mode.dart';
+import 'package:duckmouth/features/hotkey/domain/hotkey_config.dart';
 import 'package:duckmouth/features/post_processing/domain/post_processing_config.dart';
 import 'package:duckmouth/features/settings/domain/api_config.dart';
 import 'package:duckmouth/features/settings/domain/provider_preset.dart';
@@ -16,6 +17,8 @@ class FakeApiConfig extends Fake implements ApiConfig {}
 
 class FakePostProcessingConfig extends Fake implements PostProcessingConfig {}
 
+class FakeHotkeyConfig extends Fake implements HotkeyConfig {}
+
 void main() {
   late MockSettingsRepository mockRepo;
 
@@ -23,6 +26,7 @@ void main() {
     registerFallbackValue(FakeApiConfig());
     registerFallbackValue(FakePostProcessingConfig());
     registerFallbackValue(OutputMode.copy);
+    registerFallbackValue(HotkeyConfig.defaultConfig);
   });
 
   setUp(() {
@@ -44,6 +48,7 @@ void main() {
   );
 
   const defaultPpConfig = PostProcessingConfig();
+  const defaultHotkeyConfig = HotkeyConfig.defaultConfig;
 
   group('SettingsCubit', () {
     test('initial state is SettingsLoading', () {
@@ -60,6 +65,8 @@ void main() {
             .thenAnswer((_) async => defaultPpConfig);
         when(() => mockRepo.loadOutputMode())
             .thenAnswer((_) async => OutputMode.copy);
+        when(() => mockRepo.loadHotkeyConfig())
+            .thenAnswer((_) async => defaultHotkeyConfig);
         return SettingsCubit(repository: mockRepo);
       },
       act: (cubit) => cubit.loadSettings(),
@@ -67,6 +74,7 @@ void main() {
         const SettingsLoaded(
           sttConfig: defaultConfig,
           postProcessingConfig: defaultPpConfig,
+          hotkeyConfig: defaultHotkeyConfig,
         ),
       ],
     );
@@ -80,6 +88,8 @@ void main() {
             .thenAnswer((_) async => defaultPpConfig);
         when(() => mockRepo.loadOutputMode())
             .thenAnswer((_) async => OutputMode.copy);
+        when(() => mockRepo.loadHotkeyConfig())
+            .thenAnswer((_) async => defaultHotkeyConfig);
         return SettingsCubit(repository: mockRepo);
       },
       act: (cubit) => cubit.loadSettings(),
@@ -87,6 +97,7 @@ void main() {
         const SettingsLoaded(
           sttConfig: savedConfig,
           postProcessingConfig: defaultPpConfig,
+          hotkeyConfig: defaultHotkeyConfig,
         ),
       ],
     );
@@ -117,6 +128,7 @@ void main() {
         const SettingsLoaded(
           sttConfig: savedConfig,
           postProcessingConfig: defaultPpConfig,
+          hotkeyConfig: defaultHotkeyConfig,
         ),
       ],
       verify: (_) {
@@ -154,6 +166,7 @@ void main() {
             model: 'whisper-1',
             providerName: 'openAi',
           ),
+          hotkeyConfig: defaultHotkeyConfig,
         ),
       ],
     );
@@ -170,6 +183,7 @@ void main() {
             model: 'whisper-large-v3-turbo',
             providerName: 'groq',
           ),
+          hotkeyConfig: defaultHotkeyConfig,
         ),
       ],
     );
@@ -192,6 +206,7 @@ void main() {
             enabled: true,
             prompt: 'Custom',
           ),
+          hotkeyConfig: defaultHotkeyConfig,
         ),
       ],
       verify: (_) {
@@ -220,6 +235,8 @@ void main() {
             .thenAnswer((_) async => defaultPpConfig);
         when(() => mockRepo.loadOutputMode())
             .thenAnswer((_) async => OutputMode.paste);
+        when(() => mockRepo.loadHotkeyConfig())
+            .thenAnswer((_) async => defaultHotkeyConfig);
         return SettingsCubit(repository: mockRepo);
       },
       act: (cubit) => cubit.loadSettings(),
@@ -228,6 +245,7 @@ void main() {
           sttConfig: defaultConfig,
           postProcessingConfig: defaultPpConfig,
           outputMode: OutputMode.paste,
+          hotkeyConfig: defaultHotkeyConfig,
         ),
       ],
     );
@@ -246,6 +264,7 @@ void main() {
           sttConfig: defaultConfig,
           postProcessingConfig: defaultPpConfig,
           outputMode: OutputMode.both,
+          hotkeyConfig: defaultHotkeyConfig,
         ),
       ],
       verify: (_) {
@@ -261,6 +280,50 @@ void main() {
         return SettingsCubit(repository: mockRepo);
       },
       act: (cubit) => cubit.saveOutputMode(OutputMode.paste),
+      expect: () => [
+        const SettingsError(message: 'Exception: write error'),
+      ],
+    );
+
+    blocTest<SettingsCubit, SettingsState>(
+      'saveHotkeyConfig persists and emits updated state',
+      build: () {
+        when(() => mockRepo.saveHotkeyConfig(any()))
+            .thenAnswer((_) async {});
+        return SettingsCubit(repository: mockRepo);
+      },
+      seed: () => const SettingsLoaded(sttConfig: defaultConfig),
+      act: (cubit) => cubit.saveHotkeyConfig(
+        const HotkeyConfig(
+          keyCode: 0x00070004,
+          modifiers: ['alt'],
+          mode: HotkeyMode.pushToTalk,
+        ),
+      ),
+      expect: () => [
+        const SettingsLoaded(
+          sttConfig: defaultConfig,
+          postProcessingConfig: defaultPpConfig,
+          hotkeyConfig: HotkeyConfig(
+            keyCode: 0x00070004,
+            modifiers: ['alt'],
+            mode: HotkeyMode.pushToTalk,
+          ),
+        ),
+      ],
+      verify: (_) {
+        verify(() => mockRepo.saveHotkeyConfig(any())).called(1);
+      },
+    );
+
+    blocTest<SettingsCubit, SettingsState>(
+      'saveHotkeyConfig emits SettingsError on exception',
+      build: () {
+        when(() => mockRepo.saveHotkeyConfig(any()))
+            .thenThrow(Exception('write error'));
+        return SettingsCubit(repository: mockRepo);
+      },
+      act: (cubit) => cubit.saveHotkeyConfig(defaultHotkeyConfig),
       expect: () => [
         const SettingsError(message: 'Exception: write error'),
       ],

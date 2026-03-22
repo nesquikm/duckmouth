@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:hotkey_manager/hotkey_manager.dart';
 
 import 'package:duckmouth/core/services/output_mode.dart';
+import 'package:duckmouth/features/hotkey/domain/hotkey_config.dart';
 import 'package:duckmouth/features/post_processing/domain/post_processing_config.dart';
 import 'package:duckmouth/features/settings/domain/api_config.dart';
 import 'package:duckmouth/features/settings/domain/provider_preset.dart';
@@ -28,11 +30,13 @@ class SettingsPage extends StatelessWidget {
               :final sttConfig,
               :final postProcessingConfig,
               :final outputMode,
+              :final hotkeyConfig,
             ) =>
               _SettingsForm(
                 config: sttConfig,
                 ppConfig: postProcessingConfig,
                 outputMode: outputMode,
+                hotkeyConfig: hotkeyConfig,
               ),
           };
         },
@@ -46,11 +50,13 @@ class _SettingsForm extends StatefulWidget {
     required this.config,
     required this.ppConfig,
     required this.outputMode,
+    required this.hotkeyConfig,
   });
 
   final ApiConfig config;
   final PostProcessingConfig ppConfig;
   final OutputMode outputMode;
+  final HotkeyConfig hotkeyConfig;
 
   @override
   State<_SettingsForm> createState() => _SettingsFormState();
@@ -74,6 +80,10 @@ class _SettingsFormState extends State<_SettingsForm> {
   late final TextEditingController _ppModelController;
   late ProviderPreset _ppSelectedPreset;
 
+  // Hotkey
+  late HotkeyConfig _hotkeyConfig;
+  HotKey? _recordedHotKey;
+
   @override
   void initState() {
     super.initState();
@@ -94,6 +104,8 @@ class _SettingsFormState extends State<_SettingsForm> {
         TextEditingController(text: widget.ppConfig.llmConfig.model);
     _ppSelectedPreset =
         ProviderPreset.fromName(widget.ppConfig.llmConfig.providerName);
+
+    _hotkeyConfig = widget.hotkeyConfig;
   }
 
   @override
@@ -116,6 +128,9 @@ class _SettingsFormState extends State<_SettingsForm> {
       _ppModelController.text = widget.ppConfig.llmConfig.model;
       _ppSelectedPreset =
           ProviderPreset.fromName(widget.ppConfig.llmConfig.providerName);
+    }
+    if (oldWidget.hotkeyConfig != widget.hotkeyConfig) {
+      _hotkeyConfig = widget.hotkeyConfig;
     }
   }
 
@@ -175,12 +190,60 @@ class _SettingsFormState extends State<_SettingsForm> {
     await cubit.saveSettings(config);
     await cubit.savePostProcessingConfig(ppConfig);
     await cubit.saveOutputMode(_outputMode);
+    await cubit.saveHotkeyConfig(_hotkeyConfig);
 
     if (mounted) {
       messenger.showSnackBar(
         const SnackBar(content: Text('Settings saved')),
       );
     }
+  }
+
+  String _hotkeyDisplayLabel(HotkeyConfig config) {
+    final modLabels = config.modifiers.map((m) => switch (m) {
+          'control' => 'Ctrl',
+          'shift' => 'Shift',
+          'alt' => 'Alt',
+          'meta' => 'Cmd',
+          _ => m,
+        });
+    // Try to get a readable key name from keyCode.
+    final keyLabel = _keyCodeToLabel(config.keyCode);
+    return [...modLabels, keyLabel].join(' + ');
+  }
+
+  String _keyCodeToLabel(int keyCode) {
+    // Common physical key mappings for display.
+    const labels = <int, String>{
+      0x00000020: 'Space',
+      0x00070004: 'A',
+      0x00070005: 'B',
+      0x00070006: 'C',
+      0x00070007: 'D',
+      0x00070008: 'E',
+      0x00070009: 'F',
+      0x0007000a: 'G',
+      0x0007000b: 'H',
+      0x0007000c: 'I',
+      0x0007000d: 'J',
+      0x0007000e: 'K',
+      0x0007000f: 'L',
+      0x00070010: 'M',
+      0x00070011: 'N',
+      0x00070012: 'O',
+      0x00070013: 'P',
+      0x00070014: 'Q',
+      0x00070015: 'R',
+      0x00070016: 'S',
+      0x00070017: 'T',
+      0x00070018: 'U',
+      0x00070019: 'V',
+      0x0007001a: 'W',
+      0x0007001b: 'X',
+      0x0007001c: 'Y',
+      0x0007001d: 'Z',
+    };
+    return labels[keyCode] ?? 'Key(0x${keyCode.toRadixString(16)})';
   }
 
   @override
@@ -269,6 +332,68 @@ class _SettingsFormState extends State<_SettingsForm> {
           const Divider(),
           const SizedBox(height: 16),
 
+          // ── Global Hotkey Section ──
+          Text(
+            'Global Hotkey',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: InputDecorator(
+                  decoration: const InputDecoration(
+                    labelText: 'Shortcut',
+                    border: OutlineInputBorder(),
+                  ),
+                  child: Text(
+                    _recordedHotKey != null
+                        ? _hotkeyDisplayLabel(
+                            HotkeyConfig.fromHotKey(
+                              _recordedHotKey!,
+                              mode: _hotkeyConfig.mode,
+                            ),
+                          )
+                        : _hotkeyDisplayLabel(_hotkeyConfig),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              FilledButton.tonal(
+                onPressed: _showHotkeyRecorderDialog,
+                child: const Text('Record'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          DropdownButtonFormField<HotkeyMode>(
+            initialValue: _hotkeyConfig.mode,
+            decoration: const InputDecoration(
+              labelText: 'Hotkey Mode',
+              border: OutlineInputBorder(),
+            ),
+            items: HotkeyMode.values
+                .map(
+                  (m) => DropdownMenuItem(value: m, child: Text(m.label)),
+                )
+                .toList(),
+            onChanged: (value) {
+              if (value != null) {
+                setState(() {
+                  _hotkeyConfig = HotkeyConfig(
+                    keyCode: _hotkeyConfig.keyCode,
+                    modifiers: _hotkeyConfig.modifiers,
+                    mode: value,
+                  );
+                });
+              }
+            },
+          ),
+
+          const SizedBox(height: 32),
+          const Divider(),
+          const SizedBox(height: 16),
+
           // ── Post-Processing Section ──
           Text(
             'Post-Processing (LLM)',
@@ -347,6 +472,41 @@ class _SettingsFormState extends State<_SettingsForm> {
           ),
         ],
       ),
+    );
+  }
+
+  void _showHotkeyRecorderDialog() {
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Record Hotkey'),
+          content: SizedBox(
+            width: 300,
+            height: 100,
+            child: Center(
+              child: HotKeyRecorder(
+                onHotKeyRecorded: (hotKey) {
+                  setState(() {
+                    _recordedHotKey = hotKey;
+                    _hotkeyConfig = HotkeyConfig.fromHotKey(
+                      hotKey,
+                      mode: _hotkeyConfig.mode,
+                    );
+                  });
+                  Navigator.of(dialogContext).pop();
+                },
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Cancel'),
+            ),
+          ],
+        );
+      },
     );
   }
 }

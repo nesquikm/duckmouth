@@ -1,10 +1,14 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
+import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:mocktail/mocktail.dart';
 
 import 'package:duckmouth/app/app.dart';
 import 'package:duckmouth/core/services/clipboard_service.dart';
 import 'package:duckmouth/core/services/output_mode.dart';
+import 'package:duckmouth/features/hotkey/domain/hotkey_config.dart';
+import 'package:duckmouth/features/hotkey/domain/hotkey_service.dart';
+import 'package:duckmouth/features/hotkey/ui/hotkey_cubit.dart';
 import 'package:duckmouth/features/post_processing/domain/post_processing_config.dart';
 import 'package:duckmouth/features/post_processing/domain/post_processing_repository.dart';
 import 'package:duckmouth/features/post_processing/ui/post_processing_cubit.dart';
@@ -26,11 +30,19 @@ class MockPostProcessingRepository extends Mock
 
 class MockClipboardService extends Mock implements ClipboardService {}
 
+class MockHotkeyService extends Mock implements HotkeyService {}
+
+class FakeHotKey extends Fake implements HotKey {}
+
 void main() {
   late MockRecordingRepository mockRepo;
   late MockSttRepository mockSttRepo;
   late MockSettingsRepository mockSettingsRepo;
   late MockPostProcessingRepository mockPpRepo;
+
+  setUpAll(() {
+    registerFallbackValue(FakeHotKey());
+  });
 
   setUp(() {
     mockRepo = MockRecordingRepository();
@@ -46,6 +58,18 @@ void main() {
         .thenAnswer((_) async => const PostProcessingConfig());
     when(() => mockSettingsRepo.loadOutputMode())
         .thenAnswer((_) async => OutputMode.copy);
+    when(() => mockSettingsRepo.loadHotkeyConfig())
+        .thenAnswer((_) async => HotkeyConfig.defaultConfig);
+
+    final mockHotkeyService = MockHotkeyService();
+    when(() => mockHotkeyService.unregisterAll()).thenAnswer((_) async {});
+    when(
+      () => mockHotkeyService.register(
+        any(),
+        onKeyDown: any(named: 'onKeyDown'),
+        onKeyUp: any(named: 'onKeyUp'),
+      ),
+    ).thenAnswer((_) async {});
 
     final sl = GetIt.instance;
     sl.registerLazySingleton<ClipboardService>(MockClipboardService.new);
@@ -63,6 +87,9 @@ void main() {
         repository: mockPpRepo,
         config: const PostProcessingConfig(),
       ),
+    );
+    sl.registerFactory<HotkeyCubit>(
+      () => HotkeyCubit(service: mockHotkeyService),
     );
   });
 

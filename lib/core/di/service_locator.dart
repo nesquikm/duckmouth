@@ -5,6 +5,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:duckmouth/core/api/llm_client.dart';
 import 'package:duckmouth/core/api/openai_client.dart';
 import 'package:duckmouth/core/services/clipboard_service.dart';
+import 'package:duckmouth/features/hotkey/data/hotkey_service_impl.dart';
+import 'package:duckmouth/features/hotkey/domain/hotkey_service.dart';
+import 'package:duckmouth/features/hotkey/ui/hotkey_cubit.dart';
 import 'package:duckmouth/features/post_processing/data/post_processing_repository_impl.dart';
 import 'package:duckmouth/features/post_processing/domain/post_processing_config.dart';
 import 'package:duckmouth/features/post_processing/domain/post_processing_repository.dart';
@@ -75,6 +78,13 @@ Future<void> setupServiceLocator() async {
       baseUrl: 'https://api.openai.com',
       model: 'gpt-4o-mini',
     ),
+  );
+
+  // Hotkey
+  sl.registerLazySingleton<HotkeyService>(HotkeyServiceImpl.new);
+
+  sl.registerFactory<HotkeyCubit>(
+    () => HotkeyCubit(service: sl<HotkeyService>()),
   );
 
   // Post-processing

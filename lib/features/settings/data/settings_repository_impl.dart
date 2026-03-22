@@ -1,7 +1,10 @@
+import 'dart:convert';
+
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:duckmouth/core/services/output_mode.dart';
+import 'package:duckmouth/features/hotkey/domain/hotkey_config.dart';
 import 'package:duckmouth/features/post_processing/domain/post_processing_config.dart';
 import 'package:duckmouth/features/settings/domain/api_config.dart';
 import 'package:duckmouth/features/settings/domain/settings_repository.dart';
@@ -26,6 +29,11 @@ const _kPpApiKey = 'pp_api_key';
 
 /// Output mode key in SharedPreferences.
 const _kOutputMode = 'output_mode';
+
+/// Hotkey keys in SharedPreferences.
+const _kHotkeyKeyCode = 'hotkey_key_code';
+const _kHotkeyModifiers = 'hotkey_modifiers';
+const _kHotkeyMode = 'hotkey_mode';
 
 /// [SettingsRepository] backed by SharedPreferences (non-sensitive values)
 /// and FlutterSecureStorage (API keys).
@@ -114,5 +122,40 @@ class SettingsRepositoryImpl implements SettingsRepository {
   @override
   Future<void> saveOutputMode(OutputMode mode) async {
     await _prefs.setString(_kOutputMode, mode.name);
+  }
+
+  @override
+  Future<HotkeyConfig> loadHotkeyConfig() async {
+    final keyCode = _prefs.getInt(_kHotkeyKeyCode);
+    final modifiersJson = _prefs.getString(_kHotkeyModifiers);
+    final modeName = _prefs.getString(_kHotkeyMode);
+
+    if (keyCode == null) return HotkeyConfig.defaultConfig;
+
+    final modifiers = modifiersJson != null
+        ? List<String>.from(jsonDecode(modifiersJson) as List)
+        : HotkeyConfig.defaultConfig.modifiers;
+
+    final mode = modeName != null
+        ? HotkeyMode.values.firstWhere(
+            (m) => m.name == modeName,
+            orElse: () => HotkeyMode.toggle,
+          )
+        : HotkeyMode.toggle;
+
+    return HotkeyConfig(
+      keyCode: keyCode,
+      modifiers: modifiers,
+      mode: mode,
+    );
+  }
+
+  @override
+  Future<void> saveHotkeyConfig(HotkeyConfig config) async {
+    await Future.wait([
+      _prefs.setInt(_kHotkeyKeyCode, config.keyCode),
+      _prefs.setString(_kHotkeyModifiers, jsonEncode(config.modifiers)),
+      _prefs.setString(_kHotkeyMode, config.mode.name),
+    ]);
   }
 }

@@ -1,4 +1,5 @@
 import 'package:duckmouth/core/services/output_mode.dart';
+import 'package:duckmouth/features/hotkey/domain/hotkey_config.dart';
 import 'package:duckmouth/features/post_processing/domain/post_processing_config.dart';
 import 'package:duckmouth/features/settings/domain/api_config.dart';
 
@@ -23,4 +24,10 @@ abstract class SettingsRepository {
 
   /// Persist the given output mode.
   Future<void> saveOutputMode(OutputMode mode);
+
+  /// Load the saved hotkey configuration.
+  Future<HotkeyConfig> loadHotkeyConfig();
+
+  /// Persist the given hotkey configuration.
+  Future<void> saveHotkeyConfig(HotkeyConfig config);
 }

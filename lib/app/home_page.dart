@@ -4,6 +4,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:duckmouth/core/di/service_locator.dart';
 import 'package:duckmouth/core/services/clipboard_service.dart';
 import 'package:duckmouth/core/services/output_mode.dart';
+import 'package:duckmouth/features/hotkey/ui/hotkey_cubit.dart';
+import 'package:duckmouth/features/hotkey/ui/hotkey_state.dart';
 import 'package:duckmouth/features/post_processing/ui/post_processing_cubit.dart';
 import 'package:duckmouth/features/post_processing/ui/post_processing_state.dart';
 import 'package:duckmouth/features/recording/ui/recording_controls.dart';
@@ -27,6 +29,7 @@ class HomePage extends StatelessWidget {
         BlocProvider(create: (_) => sl<TranscriptionCubit>()),
         BlocProvider(create: (_) => sl<SettingsCubit>()..loadSettings()),
         BlocProvider(create: (_) => sl<PostProcessingCubit>()),
+        BlocProvider(create: (_) => sl<HotkeyCubit>()),
       ],
       child: Scaffold(
         appBar: AppBar(
@@ -52,6 +55,9 @@ class _SettingsButton extends StatelessWidget {
           context
               .read<PostProcessingCubit>()
               .updateConfig(state.postProcessingConfig);
+
+          // Register the hotkey whenever settings are loaded/saved.
+          context.read<HotkeyCubit>().registerHotkey(state.hotkeyConfig);
         }
       },
       child: IconButton(
@@ -101,6 +107,10 @@ class _HomeBody extends StatelessWidget {
             if (state is RecordingComplete) {
               context.read<TranscriptionCubit>().transcribe(state.filePath);
             }
+            // Reset hotkey recording state when recording stops externally.
+            if (state is RecordingIdle || state is RecordingComplete) {
+              context.read<HotkeyCubit>().resetRecordingState();
+            }
           },
         ),
         BlocListener<TranscriptionCubit, TranscriptionState>(
@@ -128,6 +138,15 @@ class _HomeBody extends StatelessWidget {
 
             if (textToOutput != null) {
               _handleOutput(context, textToOutput);
+            }
+          },
+        ),
+        BlocListener<HotkeyCubit, HotkeyState>(
+          listener: (context, state) {
+            if (state is HotkeyActionStart) {
+              context.read<RecordingCubit>().startRecording();
+            } else if (state is HotkeyActionStop) {
+              context.read<RecordingCubit>().stopRecording();
             }
           },
         ),

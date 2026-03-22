@@ -7,6 +7,8 @@ import 'package:duckmouth/core/api/llm_client.dart';
 import 'package:duckmouth/core/api/openai_client.dart';
 import 'package:duckmouth/core/di/service_locator.dart';
 import 'package:duckmouth/core/services/clipboard_service.dart';
+import 'package:duckmouth/features/hotkey/domain/hotkey_service.dart';
+import 'package:duckmouth/features/hotkey/ui/hotkey_cubit.dart';
 import 'package:duckmouth/features/post_processing/domain/post_processing_repository.dart';
 import 'package:duckmouth/features/post_processing/ui/post_processing_cubit.dart';
 import 'package:duckmouth/features/recording/domain/recording_repository.dart';
@@ -98,6 +100,16 @@ void main() {
   test('registers ClipboardService', () async {
     await setupServiceLocator();
     expect(sl.isRegistered<ClipboardService>(), isTrue);
+  });
+
+  test('registers HotkeyService', () async {
+    await setupServiceLocator();
+    expect(sl.isRegistered<HotkeyService>(), isTrue);
+  });
+
+  test('registers HotkeyCubit', () async {
+    await setupServiceLocator();
+    expect(sl.isRegistered<HotkeyCubit>(), isTrue);
   });
 
   group('updateOpenAiClient', () {

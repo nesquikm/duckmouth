@@ -2,6 +2,7 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
+import 'package:duckmouth/core/services/output_mode.dart';
 import 'package:duckmouth/features/post_processing/domain/post_processing_config.dart';
 import 'package:duckmouth/features/settings/domain/api_config.dart';
 import 'package:duckmouth/features/settings/domain/provider_preset.dart';
@@ -21,6 +22,7 @@ void main() {
   setUpAll(() {
     registerFallbackValue(FakeApiConfig());
     registerFallbackValue(FakePostProcessingConfig());
+    registerFallbackValue(OutputMode.copy);
   });
 
   setUp(() {
@@ -56,6 +58,8 @@ void main() {
         when(() => mockRepo.loadSttConfig()).thenAnswer((_) async => null);
         when(() => mockRepo.loadPostProcessingConfig())
             .thenAnswer((_) async => defaultPpConfig);
+        when(() => mockRepo.loadOutputMode())
+            .thenAnswer((_) async => OutputMode.copy);
         return SettingsCubit(repository: mockRepo);
       },
       act: (cubit) => cubit.loadSettings(),
@@ -74,6 +78,8 @@ void main() {
             .thenAnswer((_) async => savedConfig);
         when(() => mockRepo.loadPostProcessingConfig())
             .thenAnswer((_) async => defaultPpConfig);
+        when(() => mockRepo.loadOutputMode())
+            .thenAnswer((_) async => OutputMode.copy);
         return SettingsCubit(repository: mockRepo);
       },
       act: (cubit) => cubit.loadSettings(),
@@ -201,6 +207,60 @@ void main() {
         return SettingsCubit(repository: mockRepo);
       },
       act: (cubit) => cubit.savePostProcessingConfig(defaultPpConfig),
+      expect: () => [
+        const SettingsError(message: 'Exception: write error'),
+      ],
+    );
+
+    blocTest<SettingsCubit, SettingsState>(
+      'loadSettings emits SettingsLoaded with saved output mode',
+      build: () {
+        when(() => mockRepo.loadSttConfig()).thenAnswer((_) async => null);
+        when(() => mockRepo.loadPostProcessingConfig())
+            .thenAnswer((_) async => defaultPpConfig);
+        when(() => mockRepo.loadOutputMode())
+            .thenAnswer((_) async => OutputMode.paste);
+        return SettingsCubit(repository: mockRepo);
+      },
+      act: (cubit) => cubit.loadSettings(),
+      expect: () => [
+        const SettingsLoaded(
+          sttConfig: defaultConfig,
+          postProcessingConfig: defaultPpConfig,
+          outputMode: OutputMode.paste,
+        ),
+      ],
+    );
+
+    blocTest<SettingsCubit, SettingsState>(
+      'saveOutputMode persists and emits updated state',
+      build: () {
+        when(() => mockRepo.saveOutputMode(any()))
+            .thenAnswer((_) async {});
+        return SettingsCubit(repository: mockRepo);
+      },
+      seed: () => const SettingsLoaded(sttConfig: defaultConfig),
+      act: (cubit) => cubit.saveOutputMode(OutputMode.both),
+      expect: () => [
+        const SettingsLoaded(
+          sttConfig: defaultConfig,
+          postProcessingConfig: defaultPpConfig,
+          outputMode: OutputMode.both,
+        ),
+      ],
+      verify: (_) {
+        verify(() => mockRepo.saveOutputMode(OutputMode.both)).called(1);
+      },
+    );
+
+    blocTest<SettingsCubit, SettingsState>(
+      'saveOutputMode emits SettingsError on exception',
+      build: () {
+        when(() => mockRepo.saveOutputMode(any()))
+            .thenThrow(Exception('write error'));
+        return SettingsCubit(repository: mockRepo);
+      },
+      act: (cubit) => cubit.saveOutputMode(OutputMode.paste),
       expect: () => [
         const SettingsError(message: 'Exception: write error'),
       ],

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'package:duckmouth/core/services/output_mode.dart';
 import 'package:duckmouth/features/post_processing/domain/post_processing_config.dart';
 import 'package:duckmouth/features/settings/domain/api_config.dart';
 import 'package:duckmouth/features/settings/domain/provider_preset.dart';
@@ -23,10 +24,15 @@ class SettingsPage extends StatelessWidget {
             SettingsError(:final message) => Center(
                 child: Text('Error: $message'),
               ),
-            SettingsLoaded(:final sttConfig, :final postProcessingConfig) =>
+            SettingsLoaded(
+              :final sttConfig,
+              :final postProcessingConfig,
+              :final outputMode,
+            ) =>
               _SettingsForm(
                 config: sttConfig,
                 ppConfig: postProcessingConfig,
+                outputMode: outputMode,
               ),
           };
         },
@@ -39,10 +45,12 @@ class _SettingsForm extends StatefulWidget {
   const _SettingsForm({
     required this.config,
     required this.ppConfig,
+    required this.outputMode,
   });
 
   final ApiConfig config;
   final PostProcessingConfig ppConfig;
+  final OutputMode outputMode;
 
   @override
   State<_SettingsForm> createState() => _SettingsFormState();
@@ -54,6 +62,9 @@ class _SettingsFormState extends State<_SettingsForm> {
   late final TextEditingController _apiKeyController;
   late final TextEditingController _modelController;
   late ProviderPreset _selectedPreset;
+
+  // Output mode
+  late OutputMode _outputMode;
 
   // Post-processing controllers
   late bool _ppEnabled;
@@ -70,6 +81,8 @@ class _SettingsFormState extends State<_SettingsForm> {
     _apiKeyController = TextEditingController(text: widget.config.apiKey);
     _modelController = TextEditingController(text: widget.config.model);
     _selectedPreset = ProviderPreset.fromName(widget.config.providerName);
+
+    _outputMode = widget.outputMode;
 
     _ppEnabled = widget.ppConfig.enabled;
     _ppPromptController = TextEditingController(text: widget.ppConfig.prompt);
@@ -91,6 +104,9 @@ class _SettingsFormState extends State<_SettingsForm> {
       _apiKeyController.text = widget.config.apiKey;
       _modelController.text = widget.config.model;
       _selectedPreset = ProviderPreset.fromName(widget.config.providerName);
+    }
+    if (oldWidget.outputMode != widget.outputMode) {
+      _outputMode = widget.outputMode;
     }
     if (oldWidget.ppConfig != widget.ppConfig) {
       _ppEnabled = widget.ppConfig.enabled;
@@ -158,6 +174,7 @@ class _SettingsFormState extends State<_SettingsForm> {
 
     await cubit.saveSettings(config);
     await cubit.savePostProcessingConfig(ppConfig);
+    await cubit.saveOutputMode(_outputMode);
 
     if (mounted) {
       messenger.showSnackBar(
@@ -218,6 +235,34 @@ class _SettingsFormState extends State<_SettingsForm> {
               border: OutlineInputBorder(),
             ),
             enabled: isCustom,
+          ),
+
+          const SizedBox(height: 32),
+          const Divider(),
+          const SizedBox(height: 16),
+
+          // ── Output Mode Section ──
+          Text(
+            'Output Mode',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<OutputMode>(
+            initialValue: _outputMode,
+            decoration: const InputDecoration(
+              labelText: 'After transcription',
+              border: OutlineInputBorder(),
+            ),
+            items: OutputMode.values
+                .map(
+                  (m) => DropdownMenuItem(value: m, child: Text(m.label)),
+                )
+                .toList(),
+            onChanged: (value) {
+              if (value != null) {
+                setState(() => _outputMode = value);
+              }
+            },
           ),
 
           const SizedBox(height: 32),

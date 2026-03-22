@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:duckmouth/core/api/llm_client.dart';
 import 'package:duckmouth/core/api/openai_client.dart';
+import 'package:duckmouth/core/services/clipboard_service.dart';
 import 'package:duckmouth/features/post_processing/data/post_processing_repository_impl.dart';
 import 'package:duckmouth/features/post_processing/domain/post_processing_config.dart';
 import 'package:duckmouth/features/post_processing/domain/post_processing_repository.dart';
@@ -26,6 +27,9 @@ Future<void> setupServiceLocator() async {
   final prefs = await SharedPreferences.getInstance();
   sl.registerSingleton<SharedPreferences>(prefs);
   sl.registerSingleton<FlutterSecureStorage>(const FlutterSecureStorage());
+
+  // Clipboard
+  sl.registerLazySingleton<ClipboardService>(ClipboardServiceImpl.new);
 
   // Settings
   sl.registerLazySingleton<SettingsRepository>(

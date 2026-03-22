@@ -3,6 +3,8 @@ import 'package:get_it/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 
 import 'package:duckmouth/app/app.dart';
+import 'package:duckmouth/core/services/clipboard_service.dart';
+import 'package:duckmouth/core/services/output_mode.dart';
 import 'package:duckmouth/features/post_processing/domain/post_processing_config.dart';
 import 'package:duckmouth/features/post_processing/domain/post_processing_repository.dart';
 import 'package:duckmouth/features/post_processing/ui/post_processing_cubit.dart';
@@ -22,6 +24,8 @@ class MockSettingsRepository extends Mock implements SettingsRepository {}
 class MockPostProcessingRepository extends Mock
     implements PostProcessingRepository {}
 
+class MockClipboardService extends Mock implements ClipboardService {}
+
 void main() {
   late MockRecordingRepository mockRepo;
   late MockSttRepository mockSttRepo;
@@ -40,8 +44,11 @@ void main() {
         .thenAnswer((_) async => null);
     when(() => mockSettingsRepo.loadPostProcessingConfig())
         .thenAnswer((_) async => const PostProcessingConfig());
+    when(() => mockSettingsRepo.loadOutputMode())
+        .thenAnswer((_) async => OutputMode.copy);
 
     final sl = GetIt.instance;
+    sl.registerLazySingleton<ClipboardService>(MockClipboardService.new);
     sl.registerFactory<RecordingCubit>(
       () => RecordingCubit(repository: mockRepo),
     );

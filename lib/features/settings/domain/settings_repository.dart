@@ -1,3 +1,4 @@
+import 'package:duckmouth/core/services/output_mode.dart';
 import 'package:duckmouth/features/post_processing/domain/post_processing_config.dart';
 import 'package:duckmouth/features/settings/domain/api_config.dart';
 
@@ -16,4 +17,10 @@ abstract class SettingsRepository {
 
   /// Persist the given post-processing configuration.
   Future<void> savePostProcessingConfig(PostProcessingConfig config);
+
+  /// Load the saved output mode.
+  Future<OutputMode> loadOutputMode();
+
+  /// Persist the given output mode.
+  Future<void> saveOutputMode(OutputMode mode);
 }

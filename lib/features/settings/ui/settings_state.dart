@@ -1,3 +1,4 @@
+import 'package:duckmouth/core/services/output_mode.dart';
 import 'package:duckmouth/features/post_processing/domain/post_processing_config.dart';
 import 'package:duckmouth/features/settings/domain/api_config.dart';
 
@@ -16,18 +17,22 @@ class SettingsLoaded extends SettingsState {
   const SettingsLoaded({
     required this.sttConfig,
     this.postProcessingConfig = const PostProcessingConfig(),
+    this.outputMode = OutputMode.copy,
   });
 
   final ApiConfig sttConfig;
   final PostProcessingConfig postProcessingConfig;
+  final OutputMode outputMode;
 
   SettingsLoaded copyWith({
     ApiConfig? sttConfig,
     PostProcessingConfig? postProcessingConfig,
+    OutputMode? outputMode,
   }) {
     return SettingsLoaded(
       sttConfig: sttConfig ?? this.sttConfig,
       postProcessingConfig: postProcessingConfig ?? this.postProcessingConfig,
+      outputMode: outputMode ?? this.outputMode,
     );
   }
 
@@ -37,10 +42,11 @@ class SettingsLoaded extends SettingsState {
       other is SettingsLoaded &&
           runtimeType == other.runtimeType &&
           sttConfig == other.sttConfig &&
-          postProcessingConfig == other.postProcessingConfig;
+          postProcessingConfig == other.postProcessingConfig &&
+          outputMode == other.outputMode;
 
   @override
-  int get hashCode => Object.hash(sttConfig, postProcessingConfig);
+  int get hashCode => Object.hash(sttConfig, postProcessingConfig, outputMode);
 }
 
 /// An error occurred while loading or saving settings.

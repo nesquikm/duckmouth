@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:duckmouth/core/di/service_locator.dart';
+import 'package:duckmouth/core/services/clipboard_service.dart';
+import 'package:duckmouth/core/services/output_mode.dart';
 import 'package:duckmouth/features/post_processing/ui/post_processing_cubit.dart';
+import 'package:duckmouth/features/post_processing/ui/post_processing_state.dart';
 import 'package:duckmouth/features/recording/ui/recording_controls.dart';
 import 'package:duckmouth/features/recording/ui/recording_cubit.dart';
 import 'package:duckmouth/features/recording/ui/recording_state.dart';
@@ -69,6 +72,23 @@ class _SettingsButton extends StatelessWidget {
   }
 }
 
+void _handleOutput(BuildContext context, String text) {
+  final settingsState = context.read<SettingsCubit>().state;
+  final outputMode = settingsState is SettingsLoaded
+      ? settingsState.outputMode
+      : OutputMode.copy;
+
+  final clipboard = sl<ClipboardService>();
+
+  switch (outputMode) {
+    case OutputMode.copy:
+      clipboard.copyToClipboard(text);
+    case OutputMode.paste:
+    case OutputMode.both:
+      clipboard.pasteAtCursor(text);
+  }
+}
+
 class _HomeBody extends StatelessWidget {
   const _HomeBody();
 
@@ -87,6 +107,27 @@ class _HomeBody extends StatelessWidget {
           listener: (context, state) {
             if (state is TranscriptionSuccess) {
               context.read<PostProcessingCubit>().process(state.text);
+            }
+          },
+        ),
+        BlocListener<PostProcessingCubit, PostProcessingState>(
+          listener: (context, state) {
+            final String? textToOutput;
+            if (state is PostProcessingSuccess) {
+              textToOutput = state.processedText;
+            } else if (state is PostProcessingDisabled) {
+              // Post-processing is off — use the raw transcription text.
+              final transcriptionState =
+                  context.read<TranscriptionCubit>().state;
+              textToOutput = transcriptionState is TranscriptionSuccess
+                  ? transcriptionState.text
+                  : null;
+            } else {
+              textToOutput = null;
+            }
+
+            if (textToOutput != null) {
+              _handleOutput(context, textToOutput);
             }
           },
         ),

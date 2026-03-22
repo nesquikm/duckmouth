@@ -1,6 +1,7 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:duckmouth/core/services/output_mode.dart';
 import 'package:duckmouth/features/post_processing/domain/post_processing_config.dart';
 import 'package:duckmouth/features/settings/domain/api_config.dart';
 import 'package:duckmouth/features/settings/domain/settings_repository.dart';
@@ -22,6 +23,9 @@ const _kPpProviderName = 'pp_provider_name';
 
 /// Post-processing key in FlutterSecureStorage.
 const _kPpApiKey = 'pp_api_key';
+
+/// Output mode key in SharedPreferences.
+const _kOutputMode = 'output_mode';
 
 /// [SettingsRepository] backed by SharedPreferences (non-sensitive values)
 /// and FlutterSecureStorage (API keys).
@@ -95,5 +99,20 @@ class SettingsRepositoryImpl implements SettingsRepository {
       _prefs.setString(_kPpProviderName, config.llmConfig.providerName),
       _secureStorage.write(key: _kPpApiKey, value: config.llmConfig.apiKey),
     ]);
+  }
+
+  @override
+  Future<OutputMode> loadOutputMode() async {
+    final name = _prefs.getString(_kOutputMode);
+    if (name == null) return OutputMode.copy;
+    return OutputMode.values.firstWhere(
+      (m) => m.name == name,
+      orElse: () => OutputMode.copy,
+    );
+  }
+
+  @override
+  Future<void> saveOutputMode(OutputMode mode) async {
+    await _prefs.setString(_kOutputMode, mode.name);
   }
 }

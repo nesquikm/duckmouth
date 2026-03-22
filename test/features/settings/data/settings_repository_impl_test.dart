@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:duckmouth/core/services/output_mode.dart';
 import 'package:duckmouth/features/post_processing/domain/post_processing_config.dart';
 import 'package:duckmouth/features/settings/data/settings_repository_impl.dart';
 import 'package:duckmouth/features/settings/domain/api_config.dart';
@@ -153,6 +154,30 @@ void main() {
       verify(
         () => mockSecure.write(key: 'pp_api_key', value: 'secret'),
       ).called(1);
+    });
+  });
+
+  group('OutputMode persistence', () {
+    test('loadOutputMode returns copy when nothing saved', () async {
+      final result = await repo.loadOutputMode();
+      expect(result, OutputMode.copy);
+    });
+
+    test('loadOutputMode returns saved value', () async {
+      await prefs.setString('output_mode', 'paste');
+      final result = await repo.loadOutputMode();
+      expect(result, OutputMode.paste);
+    });
+
+    test('loadOutputMode returns copy for unknown value', () async {
+      await prefs.setString('output_mode', 'nonexistent');
+      final result = await repo.loadOutputMode();
+      expect(result, OutputMode.copy);
+    });
+
+    test('saveOutputMode persists the mode', () async {
+      await repo.saveOutputMode(OutputMode.both);
+      expect(prefs.getString('output_mode'), 'both');
     });
   });
 }

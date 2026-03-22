@@ -22,27 +22,18 @@ void main() {
       expect(hotKey.scope, HotKeyScope.system);
     });
 
-    test('toHotKey translates USB HID to Carbon key code', () {
+    test('toHotKey preserves USB HID code in PhysicalKeyboardKey', () {
       const config = HotkeyConfig(
         keyCode: 0x0007002C, // Space USB HID
         modifiers: ['control'],
       );
       final hotKey = config.toHotKey();
-      // Carbon code for Space is 49
-      expect(hotKey.physicalKey.usbHidUsage, 49);
+      // The PhysicalKeyboardKey stores the USB HID code;
+      // uni_platform converts to Carbon automatically during registration.
+      expect(hotKey.physicalKey.usbHidUsage, 0x0007002C);
     });
 
-    test('toHotKey translates letter A correctly', () {
-      const config = HotkeyConfig(
-        keyCode: 0x00070004, // A USB HID
-        modifiers: ['meta'],
-      );
-      final hotKey = config.toHotKey();
-      // Carbon code for A is 0
-      expect(hotKey.physicalKey.usbHidUsage, 0);
-    });
-
-    test('toHotKey falls back to raw code for unknown USB HID', () {
+    test('toHotKey preserves unknown USB HID code', () {
       const config = HotkeyConfig(
         keyCode: 0xDEADBEEF,
         modifiers: ['control'],

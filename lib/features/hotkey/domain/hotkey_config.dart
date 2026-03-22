@@ -45,21 +45,11 @@ class HotkeyConfig {
 
   /// Build a [HotKey] instance from this config.
   ///
-  /// Translates the USB HID key code to a Carbon key code before
-  /// creating the HotKey, since the native macOS plugin expects Carbon codes.
+  /// The [keyCode] is a USB HID usage code. The `hotkey_manager` plugin's
+  /// `uni_platform` extension automatically converts it to a macOS Carbon
+  /// key code via the `kMacOsToPhysicalKey` lookup table when registering.
   HotKey toHotKey() {
-    // Translate USB HID → Carbon. If no mapping exists, fall back to
-    // using the raw code as a PhysicalKeyboardKey (legacy behavior).
-    final carbonCode = KeyCodeTranslator.usbHidToCarbon(keyCode);
-    final PhysicalKeyboardKey key;
-    if (carbonCode != null) {
-      // Create a PhysicalKeyboardKey from the Carbon code.
-      // The hotkey_manager plugin passes this through to the native layer
-      // which expects Carbon virtual key codes.
-      key = PhysicalKeyboardKey(carbonCode);
-    } else {
-      key = PhysicalKeyboardKey(keyCode);
-    }
+    final key = PhysicalKeyboardKey(keyCode);
     final mods = modifiers.map(_modifierFromName).toList();
     return HotKey(key: key, modifiers: mods, scope: HotKeyScope.system);
   }

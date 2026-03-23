@@ -265,9 +265,11 @@ class _SettingsFormState extends State<_SettingsForm> {
     if (preset == null) return;
     setState(() {
       _selectedPreset = preset;
+      if (preset != ProviderPreset.custom) {
+        _baseUrlController.text = preset.baseUrl;
+        _modelController.text = preset.model;
+      }
     });
-    context.read<SettingsCubit>().selectPreset(preset);
-    // Preset change updates STT config; save immediately.
     _saveSttConfig();
   }
 

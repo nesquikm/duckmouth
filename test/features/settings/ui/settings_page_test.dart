@@ -252,6 +252,39 @@ void main() {
     });
   });
 
+  group('M24: STT preset change updates base URL and model', () {
+    testWidgets('Changing STT provider saves preset base URL and model',
+        (tester) async {
+      await pumpPage(tester);
+
+      // Find the STT provider dropdown (first ProviderPreset dropdown)
+      final providerDropdown = find.byWidgetPredicate(
+        (w) =>
+            w is DropdownButtonFormField<ProviderPreset> &&
+            w.initialValue == ProviderPreset.openAi,
+      );
+      expect(providerDropdown, findsWidgets);
+      await tester.tap(providerDropdown.first);
+      await tester.pump();
+
+      // Select Groq
+      await tester.tap(find.text('Groq').last);
+      await tester.pump();
+
+      // Wait for debounce from controller listeners
+      await tester.pump(const Duration(milliseconds: 600));
+
+      // Verify saveSettings was called with Groq's base URL and model
+      final captured = verify(() => mockCubit.saveSettings(captureAny()))
+          .captured;
+      expect(captured, isNotEmpty);
+      final savedConfig = captured.last as ApiConfig;
+      expect(savedConfig.baseUrl, 'https://api.groq.com/openai/v1');
+      expect(savedConfig.model, 'whisper-large-v3-turbo');
+      expect(savedConfig.providerName, 'groq');
+    });
+  });
+
   group('M22: Volume preview sound', () {
     Future<void> dragSliderByLabel(
       WidgetTester tester,

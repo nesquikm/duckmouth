@@ -152,8 +152,11 @@ class ModelDropdownState extends State<ModelDropdown> {
       },
       optionsViewOpenDirection: widget.optionsDirection,
       optionsViewBuilder: (context, onSelected, options) {
+        final alignment = widget.optionsDirection == OptionsViewOpenDirection.up
+            ? Alignment.bottomLeft
+            : Alignment.topLeft;
         return Align(
-          alignment: Alignment.topLeft,
+          alignment: alignment,
           child: Material(
             elevation: 4,
             child: ConstrainedBox(

@@ -75,7 +75,7 @@ void main() {
       );
 
       expect(result, isA<FetchModelsFailure>());
-      expect((result as FetchModelsFailure).reason, contains('Forbidden'));
+      expect((result as FetchModelsFailure).reason, contains('Access denied'));
     });
 
     test('returns failure with reason on 404', () async {

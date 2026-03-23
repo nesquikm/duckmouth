@@ -95,10 +95,10 @@ class ModelsClientImpl implements ModelsClient {
   static String _errorReason(int statusCode) {
     return switch (statusCode) {
       401 => 'Unauthorized \u2014 check API key',
-      403 => 'Forbidden \u2014 check API key permissions',
+      403 => 'Access denied \u2014 check API key permissions',
       404 => 'Not found \u2014 check endpoint URL',
       429 => 'Rate limited \u2014 try again later',
-      >= 500 => 'Server error ($statusCode) \u2014 try again later',
+      >= 500 => 'Server error ($statusCode)',
       _ => 'HTTP error $statusCode',
     };
   }

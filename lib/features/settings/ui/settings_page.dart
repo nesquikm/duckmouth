@@ -46,6 +46,7 @@ class SettingsPage extends StatelessWidget {
               :final audioFormatConfig,
               :final accessibilityStatus,
               :final selectedInputDeviceId,
+              :final themeMode,
             ) =>
               _SettingsForm(
                 config: sttConfig,
@@ -56,6 +57,7 @@ class SettingsPage extends StatelessWidget {
                 audioFormatConfig: audioFormatConfig,
                 accessibilityStatus: accessibilityStatus,
                 selectedInputDeviceId: selectedInputDeviceId,
+                themeMode: themeMode,
               ),
           };
         },
@@ -74,6 +76,7 @@ class _SettingsForm extends StatefulWidget {
     required this.audioFormatConfig,
     required this.accessibilityStatus,
     this.selectedInputDeviceId,
+    this.themeMode = AppThemeMode.system,
   });
 
   final ApiConfig config;
@@ -84,6 +87,7 @@ class _SettingsForm extends StatefulWidget {
   final AudioFormatConfig audioFormatConfig;
   final AccessibilityStatus accessibilityStatus;
   final String? selectedInputDeviceId;
+  final AppThemeMode themeMode;
 
   @override
   State<_SettingsForm> createState() => _SettingsFormState();
@@ -117,6 +121,9 @@ class _SettingsFormState extends State<_SettingsForm> {
   // Audio format
   late AudioFormatConfig _audioFormatConfig;
   late final TextEditingController _sampleRateController;
+
+  // Theme
+  late AppThemeMode _themeMode;
 
   // Input device
   String? _selectedDeviceId;
@@ -160,6 +167,8 @@ class _SettingsFormState extends State<_SettingsForm> {
     _sampleRateController = TextEditingController(
       text: widget.audioFormatConfig.sampleRate.toString(),
     );
+
+    _themeMode = widget.themeMode;
 
     _selectedDeviceId = widget.selectedInputDeviceId;
     _loadInputDevices();
@@ -242,6 +251,9 @@ class _SettingsFormState extends State<_SettingsForm> {
     }
     if (oldWidget.selectedInputDeviceId != widget.selectedInputDeviceId) {
       _selectedDeviceId = widget.selectedInputDeviceId;
+    }
+    if (oldWidget.themeMode != widget.themeMode) {
+      _themeMode = widget.themeMode;
     }
   }
 
@@ -670,6 +682,35 @@ class _SettingsFormState extends State<_SettingsForm> {
               setState(() => _soundConfig = _soundConfig.copyWith(completeVolume: v));
               _saveSoundConfig();
               sl<SoundService>().playTranscriptionComplete(volume: v);
+            },
+          ),
+
+          const SizedBox(height: 32),
+          const Divider(),
+          const SizedBox(height: 16),
+
+          // ── Appearance Section ──
+          Text(
+            'Appearance',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<AppThemeMode>(
+            initialValue: _themeMode,
+            decoration: const InputDecoration(
+              labelText: 'Theme',
+              border: OutlineInputBorder(),
+            ),
+            items: AppThemeMode.values
+                .map(
+                  (m) => DropdownMenuItem(value: m, child: Text(m.label)),
+                )
+                .toList(),
+            onChanged: (value) {
+              if (value != null) {
+                setState(() => _themeMode = value);
+                context.read<SettingsCubit>().saveThemeMode(value);
+              }
             },
           ),
 

@@ -905,12 +905,12 @@ The hotkey_manager plugin's native Swift layer expects Carbon key codes (e.g. `4
 - Gate passes
 
 **Acceptance Criteria:**
-- [ ] Theme dropdown in settings with System/Dark/Light (AC-26.1)
-- [ ] Theme applies immediately on selection (AC-26.2)
-- [ ] System mode follows OS appearance (AC-26.3)
-- [ ] Theme preference persisted (AC-26.4)
-- [ ] Default is System (AC-26.5)
-- [ ] Gate passes: `fvm flutter analyze && fvm flutter test`
+- [x] Theme dropdown in settings with System/Dark/Light (AC-26.1)
+- [x] Theme applies immediately on selection (AC-26.2)
+- [x] System mode follows OS appearance (AC-26.3)
+- [x] Theme preference persisted (AC-26.4)
+- [x] Default is System (AC-26.5)
+- [x] Gate passes: `fvm flutter analyze && fvm flutter test`
 
 **Gate:** `fvm flutter analyze && fvm flutter test`
 

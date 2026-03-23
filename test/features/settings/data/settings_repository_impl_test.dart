@@ -8,6 +8,7 @@ import 'package:duckmouth/features/post_processing/domain/post_processing_config
 import 'package:duckmouth/features/recording/domain/audio_format_config.dart';
 import 'package:duckmouth/features/settings/data/settings_repository_impl.dart';
 import 'package:duckmouth/features/settings/domain/api_config.dart';
+import 'package:duckmouth/features/settings/ui/settings_state.dart';
 
 void main() {
   late SharedPreferences prefs;
@@ -354,6 +355,32 @@ void main() {
       await repo.saveSelectedInputDevice(null);
       final result = await repo.loadSelectedInputDevice();
       expect(result, isNull);
+    });
+  });
+
+  group('Theme mode persistence', () {
+    test('loadThemeMode returns system when nothing saved', () async {
+      final result = await repo.loadThemeMode();
+      expect(result, AppThemeMode.system);
+    });
+
+    test('saveThemeMode/loadThemeMode round-trips', () async {
+      await repo.saveThemeMode(AppThemeMode.dark);
+      final result = await repo.loadThemeMode();
+      expect(result, AppThemeMode.dark);
+    });
+
+    test('loadThemeMode returns system for unknown value', () async {
+      await prefs.setString('theme_mode', 'nonexistent');
+      final result = await repo.loadThemeMode();
+      expect(result, AppThemeMode.system);
+    });
+
+    test('saveThemeMode persists all values', () async {
+      for (final mode in AppThemeMode.values) {
+        await repo.saveThemeMode(mode);
+        expect(prefs.getString('theme_mode'), mode.name);
+      }
     });
   });
 }

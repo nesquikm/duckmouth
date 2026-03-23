@@ -38,7 +38,7 @@ class HomePage extends StatelessWidget {
       providers: [
         BlocProvider(create: (_) => sl<RecordingCubit>()),
         BlocProvider(create: (_) => sl<TranscriptionCubit>()),
-        BlocProvider(create: (_) => sl<SettingsCubit>()..loadSettings()),
+        BlocProvider.value(value: context.read<SettingsCubit>()),
         BlocProvider(create: (_) => sl<PostProcessingCubit>()),
         BlocProvider(create: (_) => sl<HotkeyCubit>()),
         BlocProvider(create: (_) => sl<HistoryCubit>()..loadHistory()),

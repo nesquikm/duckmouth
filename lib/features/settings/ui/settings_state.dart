@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 import 'package:duckmouth/core/services/accessibility_service.dart';
 import 'package:duckmouth/core/services/output_mode.dart';
 import 'package:duckmouth/core/services/sound_config.dart';
@@ -5,6 +7,22 @@ import 'package:duckmouth/features/hotkey/domain/hotkey_config.dart';
 import 'package:duckmouth/features/post_processing/domain/post_processing_config.dart';
 import 'package:duckmouth/features/recording/domain/audio_format_config.dart';
 import 'package:duckmouth/features/settings/domain/api_config.dart';
+
+/// Theme mode options for the app.
+enum AppThemeMode {
+  system('System'),
+  dark('Dark'),
+  light('Light');
+
+  const AppThemeMode(this.label);
+  final String label;
+
+  ThemeMode toFlutterThemeMode() => switch (this) {
+        AppThemeMode.system => ThemeMode.system,
+        AppThemeMode.dark => ThemeMode.dark,
+        AppThemeMode.light => ThemeMode.light,
+      };
+}
 
 /// States for the settings feature.
 sealed class SettingsState {
@@ -27,6 +45,7 @@ class SettingsLoaded extends SettingsState {
     this.audioFormatConfig = const AudioFormatConfig(),
     this.accessibilityStatus = AccessibilityStatus.unknown,
     this.selectedInputDeviceId,
+    this.themeMode = AppThemeMode.system,
   });
 
   final ApiConfig sttConfig;
@@ -37,6 +56,7 @@ class SettingsLoaded extends SettingsState {
   final AudioFormatConfig audioFormatConfig;
   final AccessibilityStatus accessibilityStatus;
   final String? selectedInputDeviceId;
+  final AppThemeMode themeMode;
 
   SettingsLoaded copyWith({
     ApiConfig? sttConfig,
@@ -47,6 +67,7 @@ class SettingsLoaded extends SettingsState {
     AudioFormatConfig? audioFormatConfig,
     AccessibilityStatus? accessibilityStatus,
     String? Function()? selectedInputDeviceId,
+    AppThemeMode? themeMode,
   }) {
     return SettingsLoaded(
       sttConfig: sttConfig ?? this.sttConfig,
@@ -59,6 +80,7 @@ class SettingsLoaded extends SettingsState {
       selectedInputDeviceId: selectedInputDeviceId != null
           ? selectedInputDeviceId()
           : this.selectedInputDeviceId,
+      themeMode: themeMode ?? this.themeMode,
     );
   }
 
@@ -74,7 +96,8 @@ class SettingsLoaded extends SettingsState {
           soundConfig == other.soundConfig &&
           audioFormatConfig == other.audioFormatConfig &&
           accessibilityStatus == other.accessibilityStatus &&
-          selectedInputDeviceId == other.selectedInputDeviceId;
+          selectedInputDeviceId == other.selectedInputDeviceId &&
+          themeMode == other.themeMode;
 
   @override
   int get hashCode => Object.hash(
@@ -86,6 +109,7 @@ class SettingsLoaded extends SettingsState {
         audioFormatConfig,
         accessibilityStatus,
         selectedInputDeviceId,
+        themeMode,
       );
 }
 

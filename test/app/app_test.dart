@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
@@ -20,6 +21,7 @@ import 'package:duckmouth/features/recording/domain/recording_repository.dart';
 import 'package:duckmouth/features/recording/ui/recording_cubit.dart';
 import 'package:duckmouth/features/settings/domain/settings_repository.dart';
 import 'package:duckmouth/features/settings/ui/settings_cubit.dart';
+import 'package:duckmouth/features/settings/ui/settings_state.dart';
 import 'package:duckmouth/features/history/domain/history_repository.dart';
 import 'package:duckmouth/features/history/ui/history_cubit.dart';
 import 'package:duckmouth/features/transcription/domain/stt_repository.dart';
@@ -80,6 +82,8 @@ void main() {
         .thenAnswer((_) async => const AudioFormatConfig());
     when(() => mockSettingsRepo.loadSelectedInputDevice())
         .thenAnswer((_) async => null);
+    when(() => mockSettingsRepo.loadThemeMode())
+        .thenAnswer((_) async => AppThemeMode.system);
 
     final mockHotkeyService = MockHotkeyService();
     when(() => mockHotkeyService.unregisterAll()).thenAnswer((_) async {});
@@ -131,5 +135,31 @@ void main() {
     await tester.pumpWidget(const DuckmouthApp());
     expect(find.text('Duckmouth'), findsOneWidget);
     expect(find.text('Ready to record'), findsOneWidget);
+  });
+
+  testWidgets('DuckmouthApp uses ThemeMode.system by default', (tester) async {
+    await tester.pumpWidget(const DuckmouthApp());
+    final app = tester.widget<MaterialApp>(find.byType(MaterialApp));
+    expect(app.themeMode, ThemeMode.system);
+  });
+
+  testWidgets('DuckmouthApp uses ThemeMode.dark when cubit has dark theme',
+      (tester) async {
+    when(() => mockSettingsRepo.loadThemeMode())
+        .thenAnswer((_) async => AppThemeMode.dark);
+    await tester.pumpWidget(const DuckmouthApp());
+    await tester.pumpAndSettle();
+    final app = tester.widget<MaterialApp>(find.byType(MaterialApp));
+    expect(app.themeMode, ThemeMode.dark);
+  });
+
+  testWidgets('DuckmouthApp uses ThemeMode.light when cubit has light theme',
+      (tester) async {
+    when(() => mockSettingsRepo.loadThemeMode())
+        .thenAnswer((_) async => AppThemeMode.light);
+    await tester.pumpWidget(const DuckmouthApp());
+    await tester.pumpAndSettle();
+    final app = tester.widget<MaterialApp>(find.byType(MaterialApp));
+    expect(app.themeMode, ThemeMode.light);
   });
 }

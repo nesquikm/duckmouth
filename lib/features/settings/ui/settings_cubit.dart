@@ -45,6 +45,7 @@ class SettingsCubit extends Cubit<SettingsState> {
     AudioFormatConfig? audioFormatConfig,
     AccessibilityStatus? accessibilityStatus,
     String? Function()? selectedInputDeviceId,
+    AppThemeMode? themeMode,
   }) {
     final currentState = state;
     return SettingsLoaded(
@@ -81,6 +82,10 @@ class SettingsCubit extends Cubit<SettingsState> {
           : (currentState is SettingsLoaded
               ? currentState.selectedInputDeviceId
               : null),
+      themeMode: themeMode ??
+          (currentState is SettingsLoaded
+              ? currentState.themeMode
+              : AppThemeMode.system),
     );
   }
 
@@ -94,6 +99,7 @@ class SettingsCubit extends Cubit<SettingsState> {
       final soundConfig = await _repository.loadSoundConfig();
       final audioFormatConfig = await _repository.loadAudioFormatConfig();
       final selectedDevice = await _repository.loadSelectedInputDevice();
+      final themeMode = await _repository.loadThemeMode();
       final axStatus = await _accessibilityService.checkPermission();
       _maskApiKey(config?.apiKey);
       _maskApiKey(ppConfig.llmConfig.apiKey);
@@ -107,6 +113,7 @@ class SettingsCubit extends Cubit<SettingsState> {
         audioFormatConfig: audioFormatConfig,
         accessibilityStatus: axStatus,
         selectedInputDeviceId: selectedDevice,
+        themeMode: themeMode,
       ));
     } on Exception catch (e, st) {
       _log.severe('Failed to load settings', e, st);
@@ -204,6 +211,17 @@ class SettingsCubit extends Cubit<SettingsState> {
       emit(_currentOrDefault(selectedInputDeviceId: () => deviceId));
     } on Exception catch (e, st) {
       _log.severe('Failed to save settings', e, st);
+      emit(SettingsError(message: e.toString()));
+    }
+  }
+
+  /// Save the given [themeMode] and emit the updated state.
+  Future<void> saveThemeMode(AppThemeMode themeMode) async {
+    try {
+      await _repository.saveThemeMode(themeMode);
+      emit(_currentOrDefault(themeMode: themeMode));
+    } on Exception catch (e, st) {
+      _log.severe('Failed to save theme mode', e, st);
       emit(SettingsError(message: e.toString()));
     }
   }

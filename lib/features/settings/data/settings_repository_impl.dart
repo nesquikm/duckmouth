@@ -9,6 +9,7 @@ import 'package:duckmouth/features/post_processing/domain/post_processing_config
 import 'package:duckmouth/features/recording/domain/audio_format_config.dart';
 import 'package:duckmouth/features/settings/domain/api_config.dart';
 import 'package:duckmouth/features/settings/domain/settings_repository.dart';
+import 'package:duckmouth/features/settings/ui/settings_state.dart';
 
 /// Keys used in SharedPreferences.
 const _kBaseUrl = 'stt_base_url';
@@ -42,6 +43,9 @@ const _kSoundCompleteVolume = 'sound_complete_volume';
 
 /// Input device key in SharedPreferences.
 const _kSelectedInputDevice = 'selected_input_device';
+
+/// Theme mode key in SharedPreferences.
+const _kThemeMode = 'theme_mode';
 
 /// Audio format keys in SharedPreferences.
 const _kAudioPreset = 'audio_preset';
@@ -261,5 +265,20 @@ class SettingsRepositoryImpl implements SettingsRepository {
     } else {
       await _prefs.remove(_kSelectedInputDevice);
     }
+  }
+
+  @override
+  Future<AppThemeMode> loadThemeMode() async {
+    final name = _prefs.getString(_kThemeMode);
+    if (name == null) return AppThemeMode.system;
+    return AppThemeMode.values.firstWhere(
+      (m) => m.name == name,
+      orElse: () => AppThemeMode.system,
+    );
+  }
+
+  @override
+  Future<void> saveThemeMode(AppThemeMode mode) async {
+    await _prefs.setString(_kThemeMode, mode.name);
   }
 }

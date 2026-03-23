@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
@@ -24,6 +25,7 @@ import 'package:duckmouth/features/recording/domain/recording_repository.dart';
 import 'package:duckmouth/features/recording/ui/recording_cubit.dart';
 import 'package:duckmouth/features/settings/domain/settings_repository.dart';
 import 'package:duckmouth/features/settings/ui/settings_cubit.dart';
+import 'package:duckmouth/features/settings/ui/settings_state.dart';
 import 'package:duckmouth/features/transcription/domain/stt_repository.dart';
 import 'package:duckmouth/features/transcription/ui/transcription_cubit.dart';
 
@@ -95,6 +97,8 @@ void main() {
         .thenAnswer((_) async => const AudioFormatConfig());
     when(() => mockSettingsRepo.loadSelectedInputDevice())
         .thenAnswer((_) async => null);
+    when(() => mockSettingsRepo.loadThemeMode())
+        .thenAnswer((_) async => AppThemeMode.system);
     when(() => mockHotkeyService.unregisterAll()).thenAnswer((_) async {});
     when(
       () => mockHotkeyService.register(
@@ -161,7 +165,10 @@ void main() {
       theme: brightness == Brightness.light
           ? ThemeData.light()
           : ThemeData.dark(),
-      home: const HomePage(),
+      home: BlocProvider<SettingsCubit>(
+        create: (_) => GetIt.instance<SettingsCubit>()..loadSettings(),
+        child: const HomePage(),
+      ),
     );
   }
 

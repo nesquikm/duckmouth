@@ -5,6 +5,7 @@ import 'package:duckmouth/features/post_processing/domain/post_processing_config
 import 'package:duckmouth/features/recording/domain/audio_format_config.dart';
 import 'package:duckmouth/features/settings/domain/api_config.dart';
 import 'package:duckmouth/features/settings/domain/settings_repository.dart';
+import 'package:duckmouth/features/settings/ui/settings_state.dart';
 
 /// In-memory settings repository for integration tests.
 class FakeSettingsRepository implements SettingsRepository {
@@ -18,6 +19,7 @@ class FakeSettingsRepository implements SettingsRepository {
   SoundConfig _soundConfig = const SoundConfig();
   AudioFormatConfig _audioFormatConfig = const AudioFormatConfig();
   String? _selectedInputDevice;
+  AppThemeMode _themeMode = AppThemeMode.system;
 
   @override
   Future<ApiConfig?> loadSttConfig() async => _sttConfig;
@@ -73,5 +75,13 @@ class FakeSettingsRepository implements SettingsRepository {
   @override
   Future<void> saveSelectedInputDevice(String? deviceId) async {
     _selectedInputDevice = deviceId;
+  }
+
+  @override
+  Future<AppThemeMode> loadThemeMode() async => _themeMode;
+
+  @override
+  Future<void> saveThemeMode(AppThemeMode mode) async {
+    _themeMode = mode;
   }
 }

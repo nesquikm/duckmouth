@@ -35,6 +35,7 @@ void main() {
     registerFallbackValue(HotkeyConfig.defaultConfig);
     registerFallbackValue(const SoundConfig());
     registerFallbackValue(const AudioFormatConfig());
+    registerFallbackValue(AppThemeMode.system);
   });
 
   setUp(() {
@@ -44,6 +45,8 @@ void main() {
         .thenAnswer((_) async => AccessibilityStatus.unknown);
     when(() => mockRepo.loadSelectedInputDevice())
         .thenAnswer((_) async => null);
+    when(() => mockRepo.loadThemeMode())
+        .thenAnswer((_) async => AppThemeMode.system);
   });
 
   const defaultConfig = ApiConfig(
@@ -548,6 +551,81 @@ void main() {
       verify: (_) {
         verify(() => mockRepo.saveSelectedInputDevice('mic-42')).called(1);
       },
+    );
+
+    blocTest<SettingsCubit, SettingsState>(
+      'saveThemeMode persists and emits updated state with dark theme',
+      build: () {
+        when(() => mockRepo.saveThemeMode(any()))
+            .thenAnswer((_) async {});
+        return SettingsCubit(repository: mockRepo, accessibilityService: mockAccessibility);
+      },
+      seed: () => const SettingsLoaded(sttConfig: defaultConfig),
+      act: (cubit) => cubit.saveThemeMode(AppThemeMode.dark),
+      expect: () => [
+        const SettingsLoaded(
+          sttConfig: defaultConfig,
+          postProcessingConfig: defaultPpConfig,
+          hotkeyConfig: defaultHotkeyConfig,
+          themeMode: AppThemeMode.dark,
+        ),
+      ],
+      verify: (_) {
+        verify(() => mockRepo.saveThemeMode(AppThemeMode.dark)).called(1);
+      },
+    );
+
+    blocTest<SettingsCubit, SettingsState>(
+      'default themeMode is system',
+      build: () {
+        when(() => mockRepo.loadSttConfig()).thenAnswer((_) async => null);
+        when(() => mockRepo.loadPostProcessingConfig())
+            .thenAnswer((_) async => defaultPpConfig);
+        when(() => mockRepo.loadOutputMode())
+            .thenAnswer((_) async => OutputMode.copy);
+        when(() => mockRepo.loadHotkeyConfig())
+            .thenAnswer((_) async => defaultHotkeyConfig);
+        when(() => mockRepo.loadSoundConfig())
+            .thenAnswer((_) async => const SoundConfig());
+        when(() => mockRepo.loadAudioFormatConfig())
+            .thenAnswer((_) async => const AudioFormatConfig());
+        return SettingsCubit(repository: mockRepo, accessibilityService: mockAccessibility);
+      },
+      act: (cubit) => cubit.loadSettings(),
+      verify: (cubit) {
+        final state = cubit.state;
+        expect(state, isA<SettingsLoaded>());
+        expect((state as SettingsLoaded).themeMode, AppThemeMode.system);
+      },
+    );
+
+    blocTest<SettingsCubit, SettingsState>(
+      'loadSettings loads persisted theme mode',
+      build: () {
+        when(() => mockRepo.loadSttConfig()).thenAnswer((_) async => null);
+        when(() => mockRepo.loadPostProcessingConfig())
+            .thenAnswer((_) async => defaultPpConfig);
+        when(() => mockRepo.loadOutputMode())
+            .thenAnswer((_) async => OutputMode.copy);
+        when(() => mockRepo.loadHotkeyConfig())
+            .thenAnswer((_) async => defaultHotkeyConfig);
+        when(() => mockRepo.loadSoundConfig())
+            .thenAnswer((_) async => const SoundConfig());
+        when(() => mockRepo.loadAudioFormatConfig())
+            .thenAnswer((_) async => const AudioFormatConfig());
+        when(() => mockRepo.loadThemeMode())
+            .thenAnswer((_) async => AppThemeMode.light);
+        return SettingsCubit(repository: mockRepo, accessibilityService: mockAccessibility);
+      },
+      act: (cubit) => cubit.loadSettings(),
+      expect: () => [
+        const SettingsLoaded(
+          sttConfig: defaultConfig,
+          postProcessingConfig: defaultPpConfig,
+          hotkeyConfig: defaultHotkeyConfig,
+          themeMode: AppThemeMode.light,
+        ),
+      ],
     );
   });
 }

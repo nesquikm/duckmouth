@@ -4,6 +4,7 @@ import 'package:duckmouth/features/hotkey/domain/hotkey_config.dart';
 import 'package:duckmouth/features/post_processing/domain/post_processing_config.dart';
 import 'package:duckmouth/features/recording/domain/audio_format_config.dart';
 import 'package:duckmouth/features/settings/domain/api_config.dart';
+import 'package:duckmouth/features/settings/ui/settings_state.dart';
 
 /// Interface for persisting and retrieving application settings.
 abstract class SettingsRepository {
@@ -50,4 +51,10 @@ abstract class SettingsRepository {
 
   /// Persist the given input device ID.
   Future<void> saveSelectedInputDevice(String? deviceId);
+
+  /// Load the saved theme mode.
+  Future<AppThemeMode> loadThemeMode();
+
+  /// Persist the given theme mode.
+  Future<void> saveThemeMode(AppThemeMode mode);
 }

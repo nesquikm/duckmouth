@@ -81,7 +81,7 @@ void main() {
       expect(result.enabled, false);
       expect(result.prompt, contains('Fix any grammar'));
       expect(result.llmConfig.baseUrl, 'https://api.openai.com');
-      expect(result.llmConfig.model, 'gpt-4o-mini');
+      expect(result.llmConfig.model, 'gpt-4.1-mini');
       expect(result.llmConfig.apiKey, '');
     });
 

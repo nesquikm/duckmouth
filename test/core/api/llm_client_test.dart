@@ -31,7 +31,7 @@ void main() {
       final client = LlmClientImpl(
         apiKey: 'test-key',
         baseUrl: 'https://api.example.com',
-        model: 'gpt-4o-mini',
+        model: 'gpt-4.1-mini',
         httpClient: mockClient,
       );
 
@@ -47,7 +47,7 @@ void main() {
       expect(capturedRequest!.headers['Content-Type'], 'application/json');
 
       final body = jsonDecode(capturedBody!) as Map<String, dynamic>;
-      expect(body['model'], 'gpt-4o-mini');
+      expect(body['model'], 'gpt-4.1-mini');
       expect(body['messages'], hasLength(2));
       expect(body['messages'][0]['role'], 'system');
       expect(body['messages'][0]['content'], 'Fix grammar');
@@ -72,7 +72,7 @@ void main() {
       final client = LlmClientImpl(
         apiKey: 'test-key',
         baseUrl: 'https://api.example.com',
-        model: 'gpt-4o-mini',
+        model: 'gpt-4.1-mini',
         httpClient: mockClient,
       );
 
@@ -88,7 +88,7 @@ void main() {
       final client = LlmClientImpl(
         apiKey: 'bad-key',
         baseUrl: 'https://api.example.com',
-        model: 'gpt-4o-mini',
+        model: 'gpt-4.1-mini',
         httpClient: mockClient,
       );
 
@@ -106,7 +106,7 @@ void main() {
       final client = LlmClientImpl(
         apiKey: 'bad-key',
         baseUrl: 'https://api.example.com',
-        model: 'gpt-4o-mini',
+        model: 'gpt-4.1-mini',
         httpClient: mockClient,
       );
 
@@ -127,7 +127,7 @@ void main() {
       final client = LlmClientImpl(
         apiKey: 'test-key',
         baseUrl: 'https://api.example.com',
-        model: 'gpt-4o-mini',
+        model: 'gpt-4.1-mini',
         httpClient: mockClient,
       );
 
@@ -148,7 +148,7 @@ void main() {
       final client = LlmClientImpl(
         apiKey: 'test-key',
         baseUrl: 'https://api.example.com',
-        model: 'gpt-4o-mini',
+        model: 'gpt-4.1-mini',
         httpClient: mockClient,
       );
 
@@ -166,7 +166,7 @@ void main() {
       final client = LlmClientImpl(
         apiKey: 'test-key',
         baseUrl: 'https://api.example.com',
-        model: 'gpt-4o-mini',
+        model: 'gpt-4.1-mini',
         httpClient: mockClient,
       );
 
@@ -184,7 +184,7 @@ void main() {
       final client = LlmClientImpl(
         apiKey: 'test-key',
         baseUrl: 'https://api.example.com',
-        model: 'gpt-4o-mini',
+        model: 'gpt-4.1-mini',
         httpClient: mockClient,
       );
 

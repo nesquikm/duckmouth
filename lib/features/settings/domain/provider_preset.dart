@@ -6,7 +6,7 @@ enum ProviderPreset {
     label: 'OpenAI',
     baseUrl: 'https://api.openai.com',
     model: 'whisper-1',
-    llmModel: 'gpt-4o-mini',
+    llmModel: 'gpt-4.1-mini',
   ),
   groq(
     label: 'Groq',

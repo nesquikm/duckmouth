@@ -94,7 +94,7 @@ Future<void> setupServiceLocator() async {
     () => LlmClientImpl(
       apiKey: '',
       baseUrl: 'https://api.openai.com',
-      model: 'gpt-4o-mini',
+      model: 'gpt-4.1-mini',
     ),
   );
 

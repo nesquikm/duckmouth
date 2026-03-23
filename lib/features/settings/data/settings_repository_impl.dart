@@ -92,7 +92,7 @@ class SettingsRepositoryImpl implements SettingsRepository {
     final enabled = _prefs.getBool(_kPpEnabled) ?? false;
     final prompt = _prefs.getString(_kPpPrompt) ?? kDefaultPostProcessingPrompt;
     final baseUrl = _prefs.getString(_kPpBaseUrl) ?? 'https://api.openai.com';
-    final model = _prefs.getString(_kPpModel) ?? 'gpt-4o-mini';
+    final model = _prefs.getString(_kPpModel) ?? 'gpt-4.1-mini';
     final providerName = _prefs.getString(_kPpProviderName) ?? 'openAi';
     final apiKey = _prefs.getString(_kPpApiKey) ?? '';
 

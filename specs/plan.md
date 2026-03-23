@@ -572,15 +572,15 @@ The hotkey_manager plugin's native Swift layer expects Carbon key codes (e.g. `4
 - `brew uninstall --zap` removes app data directories
 
 **Acceptance Criteria:**
-- [ ] `scripts/build_dmg.sh` produces a working DMG in one command (AC-14.1, AC-14.8)
-- [ ] DMG has drag-to-install UX with Applications shortcut (AC-14.2)
-- [ ] App is ad-hoc signed inside the DMG (AC-14.3)
-- [ ] DMG hosted on GitHub Releases (AC-14.4)
-- [ ] Custom Homebrew tap repo with valid cask formula (AC-14.5)
-- [ ] Cask `postflight` strips quarantine via xattr (AC-14.6)
-- [ ] `brew tap && brew install` works, app launches clean (AC-14.7)
-- [ ] `zap` stanza cleans up app data (AC-14.9)
-- [ ] Gate passes: `fvm flutter analyze && fvm flutter test`
+- [x] `scripts/build_dmg.sh` produces a working DMG in one command (AC-14.1, AC-14.8)
+- [x] DMG has drag-to-install UX with Applications shortcut (AC-14.2)
+- [x] App is ad-hoc signed inside the DMG (AC-14.3)
+- [x] DMG hosted on GitHub Releases (AC-14.4)
+- [x] Custom Homebrew tap repo with valid cask formula (AC-14.5)
+- [x] Cask `postflight` strips quarantine via xattr (AC-14.6)
+- [x] `brew tap && brew install` works, app launches clean (AC-14.7)
+- [x] `zap` stanza cleans up app data (AC-14.9)
+- [x] Gate passes: `fvm flutter analyze && fvm flutter test`
 
 **Gate:** `fvm flutter analyze && fvm flutter test`
 
@@ -949,6 +949,61 @@ The hotkey_manager plugin's native Swift layer expects Carbon key codes (e.g. `4
 
 ---
 
+## M32: Tray Icon Click to Show Window
+
+**Goal:** Left-clicking the tray icon brings the app window to front (currently does nothing).
+**Prerequisites:** M7 (Global Hotkeys — tray already exists)
+
+**Tasks:**
+1. Register `registerSystemTrayEventHandler` in `SystemTrayManager.init()` to handle `kSystemTrayEventClick`
+2. Add debounce guard (300ms) to prevent duplicate show on double-click
+3. Wire click handler to call `_onShow` callback
+4. Write unit tests for click handling and debounce
+
+**Tests:**
+- Left-click triggers onShow callback
+- Right-click does not trigger onShow
+- Double-click only triggers onShow once
+- Gate passes
+
+**Acceptance Criteria:**
+- [ ] Left-click shows app window (AC-28.1)
+- [ ] Right-click context menu still works (AC-28.2)
+- [ ] Double-click debounced (AC-28.3)
+- [ ] Gate passes: `fvm flutter analyze && fvm flutter test`
+
+**Gate:** `fvm flutter analyze && fvm flutter test`
+
+---
+
+## M33: Tray Icon Recording Indicator
+
+**Goal:** Tray icon visually indicates when the app is recording via a red dot overlay.
+**Prerequisites:** M2 (Audio Recording), M28 (Custom App & Tray Icons)
+
+**Tasks:**
+1. Create `tray_icon_recording.png` asset — duck silhouette with red dot overlay
+2. Add `setRecording(bool)` method to `SystemTrayManager` that swaps icon via `setImage()`
+3. Call `setRecording(true/false)` from existing BLoC listeners in `home_page.dart`
+4. Write unit and integration tests
+
+**Tests:**
+- `setRecording(true)` swaps to recording icon
+- `setRecording(false)` swaps to default icon
+- Recording state in cubit triggers icon swap
+- Gate passes
+
+**Acceptance Criteria:**
+- [ ] Recording icon shown when recording (AC-29.1)
+- [ ] Default icon restored when recording stops (AC-29.2)
+- [ ] Recording icon visible in light and dark menu bar (AC-29.3)
+- [ ] Second icon asset exists (AC-29.4)
+- [ ] Gate passes: `fvm flutter analyze && fvm flutter test`
+
+**Gate:** `fvm flutter analyze && fvm flutter test`
+
+---
+
 ## Milestone Dependency Graph
 
 ```
@@ -974,4 +1029,6 @@ M1 → M28
 M2 + M7 → M29
 M4 + M21 → M30
 M30 → M31
+M7 → M32
+M2 + M28 → M33
 ```

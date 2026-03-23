@@ -303,6 +303,25 @@ Duckmouth is a macOS desktop app that captures speech via microphone, transcribe
 - AC-27.2: Both light and dark themes use the branded seed color via `ColorScheme.fromSeed()`
 - AC-27.3: All existing UI elements render correctly with the new color scheme
 
+### FR-28: Tray Icon Click to Show Window
+
+**Description:** Left-clicking the menu bar tray icon brings the app window to front. Currently only the right-click context menu works.
+
+**Acceptance Criteria:**
+- AC-28.1: Left-clicking the tray icon brings the app window to front
+- AC-28.2: Right-clicking still opens the context menu as before
+- AC-28.3: Double-click does not cause duplicate show actions
+
+### FR-29: Tray Icon Recording Indicator
+
+**Description:** The tray icon shows a visual indicator (red dot overlay) when the app is actively recording.
+
+**Acceptance Criteria:**
+- AC-29.1: Tray icon switches to a recording variant when recording starts
+- AC-29.2: Tray icon reverts to the default icon when recording stops
+- AC-29.3: The recording icon is visible in both light and dark macOS menu bar modes
+- AC-29.4: A second tray icon asset (`tray_icon_recording.png`) with a red dot overlay is used for the recording state
+
 ## 4. Out of Scope
 
 - Local Whisper inference (API-only for now)
@@ -435,3 +454,10 @@ Duckmouth is a macOS desktop app that captures speech via microphone, transcribe
 | AC-27.1     | `lib/core/theme/app_theme.dart` (seed color `0xFFE8A838`) | `test/core/theme/app_theme_test.dart` |
 | AC-27.2     | `lib/core/theme/app_theme.dart` (both light/dark use same seed) | `test/core/theme/app_theme_test.dart` |
 | AC-27.3     | All UI widgets | Visual verification + gate passes |
+| AC-28.1     | `lib/app/system_tray_manager.dart` (`registerSystemTrayEventHandler`) | `test/app/system_tray_manager_test.dart` |
+| AC-28.2     | `lib/app/system_tray_manager.dart` (right-click unchanged) | `test/app/system_tray_manager_test.dart` |
+| AC-28.3     | `lib/app/system_tray_manager.dart` (debounce/guard) | `test/app/system_tray_manager_test.dart` |
+| AC-29.1     | `lib/app/system_tray_manager.dart` (`setImage`) | `test/app/system_tray_manager_test.dart` |
+| AC-29.2     | `lib/app/system_tray_manager.dart` (`setImage`) | `test/app/system_tray_manager_test.dart` |
+| AC-29.3     | `assets/tray_icon_recording.png` | Manual verification |
+| AC-29.4     | `assets/tray_icon_recording.png` | Manual verification |

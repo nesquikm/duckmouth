@@ -486,7 +486,26 @@ fvm flutter test integration_test/
 - Light theme has `Brightness.light`
 - Dark theme has `Brightness.dark`
 
-## 24. Custom App & Tray Icon Tests
+## 24. Tray Icon Click Handler Tests
+
+### SystemTrayManager (`test/app/system_tray_manager_test.dart`)
+- Left-click event triggers the `onShow` callback
+- Right-click event does not trigger `onShow` (menu handles it)
+- Rapid double-click only triggers `onShow` once (debounce guard)
+- `onShow` callback not called if not registered
+
+## 25. Tray Icon Recording Indicator Tests
+
+### SystemTrayManager (`test/app/system_tray_manager_test.dart`)
+- `setRecording(true)` calls `setImage` with `tray_icon_recording.png` path
+- `setRecording(false)` calls `setImage` with `tray_icon.png` path
+- `setRecording(false)` when already idle is a no-op (no redundant `setImage` call)
+
+### Integration (`test/app/home_page_test.dart`)
+- Recording state triggers `setRecording(true)` on tray manager
+- Idle/processing state triggers `setRecording(false)` on tray manager
+
+## 26. Custom App & Tray Icon Tests
 
 ### Verification (manual)
 - App icon in Dock and Finder shows custom duck icon, not Flutter logo
@@ -497,7 +516,7 @@ fvm flutter test integration_test/
 
 **Note:** No Dart unit tests — icon assets are verified manually. The gate check (`fvm flutter analyze && fvm flutter test`) still applies to ensure no broken asset references.
 
-## 25. Trailing Space on Text Insertion Tests
+## 27. Trailing Space on Text Insertion Tests
 
 ### ClipboardService (`test/core/services/clipboard_service_test.dart`)
 - `pasteAtCursor("hello")` calls `insertTextWithFallback("hello ")` — trailing space appended

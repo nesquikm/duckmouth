@@ -2,7 +2,16 @@
 
 macOS speech-to-text app that lives in your menu bar. Record speech, transcribe it via any OpenAI-compatible API, optionally polish the result with an LLM, and get the text where you need it — clipboard, cursor, or both.
 
-Built with Flutter & Dart.
+Built with Flutter & Dart using [dev-process-toolkit](https://github.com/nesquikm/dev-process-toolkit) — a spec-driven development workflow for Claude Code.
+
+<p align="center">
+  <img src="docs/screenshots/0-main.png" width="400" alt="Main window — recording and transcription">
+  <img src="docs/screenshots/1-settings.png" width="400" alt="Settings — provider configuration">
+</p>
+<p align="center">
+  <img src="docs/screenshots/3-history.png" width="400" alt="Transcription history">
+  <img src="docs/screenshots/2-logs.png" width="400" alt="In-app log viewer">
+</p>
 
 ## Features
 
@@ -20,6 +29,8 @@ Built with Flutter & Dart.
 
 **Sound Feedback** — Distinct sounds for recording start, stop, and transcription complete. Per-sound volume control with preview.
 
+**In-App Log Viewer** — Built-in structured logging with real-time viewer, powered by [the_logger](https://pub.dev/packages/the_logger) and [the_logger_viewer_widget](https://pub.dev/packages/the_logger_viewer_widget). Filterable by level, logger name, and search text.
+
 **Auto-Save Settings** — Changes persist immediately. No save button needed.
 
 ## Supported Providers
@@ -33,7 +44,26 @@ Built with Flutter & Dart.
 | OpenRouter | -- | yes | openrouter/auto |
 | Custom | yes | yes | user-defined |
 
-## Getting Started
+## Install
+
+### Homebrew (recommended)
+
+```bash
+brew tap nesquikm/duckmouth
+brew install duckmouth
+```
+
+### Manual (DMG)
+
+Download the latest DMG from [Releases](https://github.com/nesquikm/duckmouth/releases), open it, and drag Duckmouth to Applications. Then strip the quarantine attribute (required for unsigned apps):
+
+```bash
+xattr -dr com.apple.quarantine /Applications/Duckmouth.app
+```
+
+**Universal binary** — works on both Apple Silicon (arm64) and Intel (x86_64).
+
+## Development
 
 ### Prerequisites
 
@@ -51,6 +81,9 @@ fvm flutter run -d macos
 
 # Build release
 fvm flutter build macos
+
+# Build DMG for distribution
+./scripts/build_dmg.sh
 ```
 
 ### Test
@@ -89,6 +122,12 @@ lib/
 ├── core/             # API clients, services, DI
 └── main.dart
 ```
+
+## Built With
+
+- [dev-process-toolkit](https://github.com/nesquikm/dev-process-toolkit) — spec-driven development workflow for Claude Code
+- [the_logger](https://pub.dev/packages/the_logger) — structured logging with masking and session management
+- [the_logger_viewer_widget](https://pub.dev/packages/the_logger_viewer_widget) — in-app log viewer with filtering and real-time streaming
 
 ## License
 

@@ -493,6 +493,18 @@ Menu bar tray icon at `assets/tray_icon.png`. Must be:
 
 Artwork is generated externally using Nano Banana. Prompts are stored in `specs/icon-prompts.md` for reproducibility.
 
+### Tray Icon Click Handler
+
+The `system_tray` package provides `registerSystemTrayEventHandler` for handling click events. Register a handler in `SystemTrayManager.init()` that calls the `_onShow` callback on left-click (`kSystemTrayEventClick`). Right-click (`kSystemTrayEventRightClick`) already opens the context menu by default.
+
+To prevent duplicate show actions on double-click, use a simple guard: ignore clicks within 300ms of the last handled click.
+
+### Recording Indicator Icon
+
+A second tray icon asset `assets/tray_icon_recording.png` — the same duck silhouette with a red dot overlay in the bottom-right corner. Same constraints as the base icon: monochrome white on transparent background, ~18x18px, except the dot uses a solid red (`#FF3B30`).
+
+Add `setRecording(bool isRecording)` to `SystemTrayManager` which calls `setImage()` to swap between `tray_icon.png` and `tray_icon_recording.png`. Called from the existing BLoC listeners in `home_page.dart` that already update the tooltip.
+
 ## 10. Hotkey Rapid Press Race Condition Fix
 
 ### Root Cause

@@ -253,6 +253,53 @@ void main() {
   });
 
   group('M24: STT preset change updates base URL and model', () {
+    testWidgets('Changing PP provider saves preset base URL and LLM model',
+        (tester) async {
+      // Enable post-processing first so the PP dropdown is active
+      final ppEnabledState = SettingsLoaded(
+        sttConfig: defaultSttConfig,
+        postProcessingConfig: const PostProcessingConfig(enabled: true),
+        outputMode: OutputMode.copy,
+        hotkeyConfig: HotkeyConfig.defaultConfig,
+        soundConfig: const SoundConfig(),
+        audioFormatConfig: const AudioFormatConfig(),
+        accessibilityStatus: AccessibilityStatus.unknown,
+      );
+      when(() => mockCubit.state).thenReturn(ppEnabledState);
+
+      await pumpPage(tester);
+
+      // Find the PP provider dropdown (labelled "LLM Provider")
+      final ppDropdown = find.byWidgetPredicate(
+        (w) =>
+            w is DropdownButtonFormField<ProviderPreset> &&
+            w.initialValue == ProviderPreset.openAi,
+      );
+      // The second provider dropdown is the PP one (scroll into view)
+      await tester.ensureVisible(ppDropdown.last);
+      await tester.pump();
+      await tester.tap(ppDropdown.last);
+      await tester.pump();
+
+      // Select Groq
+      await tester.tap(find.text('Groq').last);
+      await tester.pump();
+
+      // Wait for debounce
+      await tester.pump(const Duration(milliseconds: 600));
+
+      // Verify savePostProcessingConfig was called with Groq's LLM model
+      final captured =
+          verify(() => mockCubit.savePostProcessingConfig(captureAny()))
+              .captured;
+      expect(captured, isNotEmpty);
+      final savedPp = captured.last as PostProcessingConfig;
+      expect(
+          savedPp.llmConfig.baseUrl, 'https://api.groq.com/openai/v1');
+      expect(savedPp.llmConfig.model, 'llama-3.3-70b-versatile');
+      expect(savedPp.llmConfig.providerName, 'groq');
+    });
+
     testWidgets('Changing STT provider saves preset base URL and model',
         (tester) async {
       await pumpPage(tester);

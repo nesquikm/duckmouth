@@ -14,6 +14,24 @@ enum ProviderPreset {
     model: 'whisper-large-v3-turbo',
     llmModel: 'llama-3.3-70b-versatile',
   ),
+  xAi(
+    label: 'xAI (Grok)',
+    baseUrl: 'https://api.x.ai/v1',
+    model: '',
+    llmModel: 'grok-4-1-fast-non-reasoning',
+  ),
+  googleGemini(
+    label: 'Google Gemini',
+    baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
+    model: '',
+    llmModel: 'gemini-3-flash',
+  ),
+  openRouter(
+    label: 'OpenRouter',
+    baseUrl: 'https://openrouter.ai/api/v1',
+    model: '',
+    llmModel: 'openrouter/auto',
+  ),
   custom(
     label: 'Custom',
     baseUrl: '',

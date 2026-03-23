@@ -27,6 +27,7 @@ void main() {
     String apiKey = 'test-key',
     ModelType modelType = ModelType.stt,
     bool enabled = true,
+    String? hintText,
   }) {
     return MaterialApp(
       home: Scaffold(
@@ -37,6 +38,7 @@ void main() {
           modelType: modelType,
           controller: controller,
           enabled: enabled,
+          hintText: hintText,
         ),
       ),
     );
@@ -299,5 +301,48 @@ void main() {
     // Should still be editable
     await tester.enterText(textField, 'new-model');
     expect(controller.text, 'new-model');
+  });
+
+  testWidgets('shows hintText when provided and no failure', (tester) async {
+    when(() => mockClient.fetchModels(
+          baseUrl: any(named: 'baseUrl'),
+          apiKey: any(named: 'apiKey'),
+        )).thenAnswer(
+      (_) async => const FetchModelsSuccess(['grok-4-1-fast-non-reasoning']),
+    );
+
+    await tester.pumpWidget(
+      buildWidget(hintText: 'This provider has no STT models'),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('This provider has no STT models'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('failure reason overrides hintText', (tester) async {
+    when(() => mockClient.fetchModels(
+          baseUrl: any(named: 'baseUrl'),
+          apiKey: any(named: 'apiKey'),
+        )).thenAnswer(
+      (_) async =>
+          const FetchModelsFailure('Unauthorized \u2014 check API key'),
+    );
+
+    await tester.pumpWidget(
+      buildWidget(hintText: 'This provider has no STT models'),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Unauthorized \u2014 check API key'),
+      findsOneWidget,
+    );
+    expect(
+      find.text('This provider has no STT models'),
+      findsNothing,
+    );
   });
 }

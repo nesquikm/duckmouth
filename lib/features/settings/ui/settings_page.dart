@@ -402,6 +402,9 @@ class _SettingsFormState extends State<_SettingsForm> {
             modelType: ModelType.stt,
             controller: _modelController,
             enabled: true,
+            hintText: _selectedPreset.model.isEmpty
+                ? 'This provider has no STT models'
+                : null,
           ),
 
           const SizedBox(height: 32),

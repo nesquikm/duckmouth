@@ -18,6 +18,7 @@ class ModelDropdown extends StatefulWidget {
     required this.controller,
     required this.enabled,
     this.label = 'Model',
+    this.hintText,
   });
 
   final ModelsClient modelsClient;
@@ -27,6 +28,9 @@ class ModelDropdown extends StatefulWidget {
   final TextEditingController controller;
   final bool enabled;
   final String label;
+
+  /// Optional hint text shown below the field (e.g. "This provider has no STT models").
+  final String? hintText;
 
   @override
   State<ModelDropdown> createState() => ModelDropdownState();
@@ -108,7 +112,7 @@ class ModelDropdownState extends State<ModelDropdown> {
           )
         : null;
 
-    final helperText = _failureReason;
+    final helperText = _failureReason ?? widget.hintText;
 
     return RawAutocomplete<String>(
       textEditingController: widget.controller,

@@ -747,14 +747,14 @@ The hotkey_manager plugin's native Swift layer expects Carbon key codes (e.g. `4
 - `ModelFilter` doesn't incorrectly exclude `grok-*`, `gemini-*`, `openrouter/*` model names
 
 **Acceptance Criteria:**
-- [ ] xAI preset available with correct defaults (AC-21.1)
-- [ ] Google Gemini preset available with correct defaults (AC-21.2)
-- [ ] OpenRouter preset available with correct defaults (AC-21.3)
-- [ ] All presets visible in provider dropdown (AC-21.4)
-- [ ] STT-less providers show appropriate hint (AC-21.5)
-- [ ] Model fetch works for all new providers (AC-21.6)
-- [ ] STT and LLM calls work with supporting providers (AC-21.7)
-- [ ] Gate passes: `fvm flutter analyze && fvm flutter test`
+- [x] xAI preset available with correct defaults (AC-21.1)
+- [x] Google Gemini preset available with correct defaults (AC-21.2)
+- [x] OpenRouter preset available with correct defaults (AC-21.3)
+- [x] All presets visible in provider dropdown (AC-21.4)
+- [x] STT-less providers show appropriate hint (AC-21.5)
+- [x] Model fetch works for all new providers (AC-21.6)
+- [x] STT and LLM calls work with supporting providers (AC-21.7)
+- [x] Gate passes: `fvm flutter analyze && fvm flutter test`
 
 **Gate:** `fvm flutter analyze && fvm flutter test`
 

@@ -841,10 +841,75 @@ The hotkey_manager plugin's native Swift layer expects Carbon key codes (e.g. `4
 - Gate passes (no broken asset references)
 
 **Acceptance Criteria:**
-- [ ] Custom app icon at all macOS sizes (AC-24.1)
-- [ ] Custom monochrome tray icon (AC-24.2)
-- [ ] Icon prompts saved in `specs/icon-prompts.md` (AC-24.3)
-- [ ] DMG branding updated if applicable (AC-24.4)
+- [x] Custom app icon at all macOS sizes (AC-24.1)
+- [x] Custom monochrome tray icon (AC-24.2)
+- [x] Icon prompts saved in `specs/icon-prompts.md` (AC-24.3)
+- [x] DMG branding updated if applicable (AC-24.4)
+- [x] Gate passes: `fvm flutter analyze && fvm flutter test`
+
+**Gate:** `fvm flutter analyze && fvm flutter test`
+
+---
+
+## M29: Hotkey Rapid Press Race Condition Fix
+
+**Goal:** Fix race condition where rapid hotkey press/release leaves the app stuck in recording state.
+**Prerequisites:** M7 (Global Hotkeys), M2 (Audio Recording)
+
+**Tasks:**
+1. Add `_startInProgress` and `_pendingStop` flags to `RecordingCubit`
+2. Guard `stopRecording()` to set `_pendingStop` if start is in progress
+3. Auto-call `stopRecording()` in `startRecording()`'s `finally` block when `_pendingStop` is true
+4. Reset `_pendingStop` on new `startRecording()` call
+5. Add tests for rapid press/release scenarios
+6. Verify normal start/stop flow is unaffected
+
+**Tests:**
+- Stop during start sets pending flag, auto-stops after start completes
+- Final state is not stuck in `RecordingInProgress`
+- Normal flow unaffected
+- Toggle mode rapid double-tap works
+- Gate passes
+
+**Acceptance Criteria:**
+- [ ] Rapid push-to-talk does not hang (AC-25.1)
+- [ ] Pending stop fires after start completes (AC-25.2)
+- [ ] Toggle mode handles rapid input (AC-25.3)
+- [ ] Gate passes: `fvm flutter analyze && fvm flutter test`
+
+**Gate:** `fvm flutter analyze && fvm flutter test`
+
+---
+
+## M30: Theme Selection
+
+**Goal:** Add theme mode selector (System/Dark/Light) to settings.
+**Prerequisites:** M4 (Settings), M21 (Auto-save Settings)
+
+**Tasks:**
+1. Add `AppThemeMode` enum and `themeMode` field to `SettingsLoaded` state
+2. Add persistence for `theme_mode` in `SettingsRepositoryImpl` (SharedPreferences)
+3. Add `saveThemeMode()` to `SettingsCubit`
+4. Move `SettingsCubit` provider up from `HomePage` to `DuckmouthApp` level
+5. Wrap `MaterialApp` in `BlocBuilder<SettingsCubit>` to apply `ThemeMode` reactively
+6. Add theme mode dropdown to settings page in an "Appearance" section
+7. Wire dropdown to auto-save on change
+8. Write tests for cubit, persistence, settings UI, and app widget
+
+**Tests:**
+- Default theme mode is system
+- Theme mode persisted and loaded correctly
+- Selecting dark/light applies immediately
+- Settings dropdown shows three options
+- App widget reacts to cubit state changes
+- Gate passes
+
+**Acceptance Criteria:**
+- [ ] Theme dropdown in settings with System/Dark/Light (AC-26.1)
+- [ ] Theme applies immediately on selection (AC-26.2)
+- [ ] System mode follows OS appearance (AC-26.3)
+- [ ] Theme preference persisted (AC-26.4)
+- [ ] Default is System (AC-26.5)
 - [ ] Gate passes: `fvm flutter analyze && fvm flutter test`
 
 **Gate:** `fvm flutter analyze && fvm flutter test`
@@ -873,4 +938,6 @@ M17 + M20 → M24 → M25
 M16 → M26
 M6 → M27
 M1 → M28
+M2 + M7 → M29
+M4 + M21 → M30
 ```

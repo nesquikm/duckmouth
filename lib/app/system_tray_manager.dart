@@ -11,7 +11,7 @@ class SystemTrayManager {
   Future<void> init() async {
     _systemTray = SystemTray();
     await _systemTray!.initSystemTray(
-      title: 'Duckmouth',
+      title: '',
       iconPath: 'assets/tray_icon.png',
       toolTip: 'Duckmouth — Idle',
     );

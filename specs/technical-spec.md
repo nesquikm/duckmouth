@@ -493,7 +493,95 @@ Menu bar tray icon at `assets/tray_icon.png`. Must be:
 
 Artwork is generated externally using Nano Banana. Prompts are stored in `specs/icon-prompts.md` for reproducibility.
 
-## 10. Distribution
+## 10. Hotkey Rapid Press Race Condition Fix
+
+### Root Cause
+
+`RecordingCubit.startRecording()` is async — it awaits permission checks and `_repository.start()`. In push-to-talk mode, a very fast key-down/key-up fires `startRecording()` then `stopRecording()` before start completes. `stopRecording()` calls `_repository.stop()` on a recorder that hasn't started, returning `null`. Then `startRecording()` finishes and emits `RecordingInProgress` — but there's no way to stop it.
+
+### Fix
+
+Add a `_pendingStop` flag and a `_startInProgress` guard in `RecordingCubit`:
+
+```dart
+bool _startInProgress = false;
+bool _pendingStop = false;
+
+Future<void> startRecording() async {
+  _startInProgress = true;
+  _pendingStop = false;
+  try {
+    // ... existing permission + start logic ...
+    _tryEmit(const RecordingInProgress(Duration.zero));
+    // ... duration subscription ...
+  } on Exception catch (...) {
+    // ... error handling ...
+  } finally {
+    _startInProgress = false;
+    if (_pendingStop) {
+      _pendingStop = false;
+      await stopRecording();
+    }
+  }
+}
+
+Future<void> stopRecording() async {
+  if (_startInProgress) {
+    _pendingStop = true;
+    return;
+  }
+  // ... existing stop logic ...
+}
+```
+
+### Behavior
+
+| Scenario | Result |
+|---|---|
+| Normal press/release | Start completes, then stop runs |
+| Rapid press/release (stop during start) | `_pendingStop` set, stop auto-fires after start completes |
+| Double-tap toggle mode | Second tap sets `_pendingStop`, recording stops cleanly |
+
+## 11. Theme Selection
+
+### Data Model
+
+Add `themeMode` to `AppSettings`:
+
+```dart
+enum AppThemeMode { system, light, dark }
+```
+
+Persisted as a string in SharedPreferences key `theme_mode`. Default: `system`.
+
+### Architecture
+
+`SettingsCubit` exposes `themeMode` in `SettingsLoaded` state. `DuckmouthApp` wraps `MaterialApp` in a `BlocBuilder<SettingsCubit, SettingsState>` to reactively apply `ThemeMode`:
+
+```dart
+// app.dart
+BlocBuilder<SettingsCubit, SettingsState>(
+  builder: (context, state) {
+    final themeMode = state is SettingsLoaded
+        ? state.themeMode
+        : ThemeMode.system;
+    return MaterialApp(
+      theme: AppTheme.light,
+      darkTheme: AppTheme.dark,
+      themeMode: themeMode,
+      home: const HomePage(),
+    );
+  },
+)
+```
+
+This requires `SettingsCubit` to be provided above `DuckmouthApp` or at the `MaterialApp` level. Currently it's inside `HomePage` — it needs to move up to `DuckmouthApp`.
+
+### Settings UI
+
+A `DropdownButtonFormField<AppThemeMode>` in the settings page, auto-saved on change (consistent with existing pattern). Placed in a new "Appearance" section at the top of settings.
+
+## 12. Distribution
 
 ### DMG Packaging
 

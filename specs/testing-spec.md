@@ -445,7 +445,34 @@ fvm flutter test integration_test/
 - Masking tests still work
 - Session start logging still works
 
-## 21. Custom App & Tray Icon Tests
+## 21. Hotkey Rapid Press Race Condition Tests
+
+### RecordingCubit (`test/features/recording/ui/recording_cubit_test.dart`)
+- `stopRecording()` called while `startRecording()` is in progress sets `_pendingStop` and does not call `_repository.stop()`
+- After `startRecording()` completes with `_pendingStop = true`, `stopRecording()` is auto-called
+- Final state after rapid press/release is `RecordingComplete` or `RecordingIdle` (not stuck in `RecordingInProgress`)
+- Normal start/stop flow is unaffected (no regression)
+- Toggle mode: rapid double-tap stops cleanly
+- `_pendingStop` is reset on new `startRecording()` call
+
+## 22. Theme Selection Tests
+
+### SettingsCubit
+- Default `themeMode` is `AppThemeMode.system`
+- Changing theme mode emits updated state with new mode
+- Theme mode persisted to SharedPreferences on change
+- Theme mode loaded from SharedPreferences on `loadSettings()`
+
+### Settings page
+- Theme mode dropdown shows three options: System, Dark, Light
+- Selecting a theme triggers immediate save (auto-save pattern)
+
+### App widget (`test/app/app_test.dart`)
+- `MaterialApp` uses `ThemeMode.system` by default
+- `MaterialApp` uses `ThemeMode.dark` when cubit state is dark
+- `MaterialApp` uses `ThemeMode.light` when cubit state is light
+
+## 23. Custom App & Tray Icon Tests
 
 ### Verification (manual)
 - App icon in Dock and Finder shows custom duck icon, not Flutter logo

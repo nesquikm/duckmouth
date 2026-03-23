@@ -272,6 +272,26 @@ Duckmouth is a macOS desktop app that captures speech via microphone, transcribe
 - AC-24.3: Icon generation prompts are stored in `specs/icon-prompts.md` for reproducibility
 - AC-24.4: DMG background/branding uses the new icon (if build script references it)
 
+### FR-25: Hotkey Rapid Press Race Condition Fix
+
+**Description:** Fix a race condition where pressing and releasing the global hotkey very quickly causes the app to get stuck in "recording" state. The stop command arrives before the async start has completed, leaving the recorder running with no way to stop it.
+
+**Acceptance Criteria:**
+- AC-25.1: Rapid press-and-release of push-to-talk hotkey does not leave the app stuck in recording state
+- AC-25.2: If `stopRecording()` is called while `startRecording()` is still in progress, the recording is stopped as soon as start completes
+- AC-25.3: Rapid toggling in toggle mode does not produce inconsistent state
+
+### FR-26: Theme Selection
+
+**Description:** Add a theme mode selector to settings: System (follow OS), Dark, Light.
+
+**Acceptance Criteria:**
+- AC-26.1: Settings page has a theme mode dropdown with System, Dark, Light options
+- AC-26.2: Selecting Dark/Light applies the theme immediately
+- AC-26.3: System mode follows macOS appearance (current default behavior)
+- AC-26.4: Theme preference persisted via SharedPreferences
+- AC-26.5: Default is System (preserves current behavior)
+
 ## 4. Out of Scope
 
 - Local Whisper inference (API-only for now)
@@ -391,3 +411,11 @@ Duckmouth is a macOS desktop app that captures speech via microphone, transcribe
 | AC-24.2     | `assets/tray_icon.png` | Manual verification |
 | AC-24.3     | `specs/icon-prompts.md` | File exists with prompts |
 | AC-24.4     | `scripts/build_dmg.sh` (if applicable) | Manual verification |
+| AC-25.1     | `lib/features/recording/ui/recording_cubit.dart` | `test/features/recording/ui/recording_cubit_test.dart` |
+| AC-25.2     | `lib/features/recording/ui/recording_cubit.dart` (`_pendingStop`) | `test/features/recording/ui/recording_cubit_test.dart` |
+| AC-25.3     | `lib/features/recording/ui/recording_cubit.dart` | `test/features/recording/ui/recording_cubit_test.dart` |
+| AC-26.1     | `lib/features/settings/ui/settings_page.dart` | `test/features/settings/ui/settings_page_test.dart` |
+| AC-26.2     | `lib/app/app.dart` (`BlocBuilder<SettingsCubit>`) | `test/app/app_test.dart` |
+| AC-26.3     | `lib/app/app.dart` (`ThemeMode.system` default) | `test/app/app_test.dart` |
+| AC-26.4     | `lib/features/settings/data/settings_repository_impl.dart` | `test/features/settings/data/settings_repository_impl_test.dart` |
+| AC-26.5     | `lib/features/settings/data/settings_repository_impl.dart` | `test/features/settings/data/settings_repository_impl_test.dart` |

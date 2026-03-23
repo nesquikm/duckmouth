@@ -41,7 +41,9 @@ class ClipboardServiceImpl implements ClipboardService {
 
   @override
   Future<void> pasteAtCursor(String text) async {
-    _log.fine('Paste at cursor (${text.length} chars)');
-    await _accessibilityService.insertTextWithFallback(text);
+    final output =
+        text.isNotEmpty && !RegExp(r'\s$').hasMatch(text) ? '$text ' : text;
+    _log.fine('Paste at cursor (${output.length} chars)');
+    await _accessibilityService.insertTextWithFallback(output);
   }
 }

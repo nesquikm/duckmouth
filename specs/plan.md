@@ -811,10 +811,10 @@ The hotkey_manager plugin's native Swift layer expects Carbon key codes (e.g. `4
 - Gate passes
 
 **Acceptance Criteria:**
-- [ ] Inserted text has trailing space (AC-23.1)
-- [ ] Clipboard copy unchanged (AC-23.2)
-- [ ] No extra space if text already ends with whitespace (AC-23.3)
-- [ ] Gate passes: `fvm flutter analyze && fvm flutter test`
+- [x] Inserted text has trailing space (AC-23.1)
+- [x] Clipboard copy unchanged (AC-23.2)
+- [x] No extra space if text already ends with whitespace (AC-23.3)
+- [x] Gate passes: `fvm flutter analyze && fvm flutter test`
 
 **Gate:** `fvm flutter analyze && fvm flutter test`
 

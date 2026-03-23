@@ -87,29 +87,29 @@ void main() {
 
     testWidgets('pasteAtCursor delegates to AccessibilityService',
         (tester) async {
-      when(() => mockAccessibility.insertTextWithFallback('test text'))
+      when(() => mockAccessibility.insertTextWithFallback('test text '))
           .thenAnswer((_) async => InsertionMethod.axDirectInsert);
 
       await service.pasteAtCursor('test text');
 
-      verify(() => mockAccessibility.insertTextWithFallback('test text'))
+      verify(() => mockAccessibility.insertTextWithFallback('test text '))
           .called(1);
     });
 
     testWidgets('pasteAtCursor works when fallback reaches CGEvent',
         (tester) async {
-      when(() => mockAccessibility.insertTextWithFallback('test text'))
+      when(() => mockAccessibility.insertTextWithFallback('test text '))
           .thenAnswer((_) async => InsertionMethod.cgEventPaste);
 
       await service.pasteAtCursor('test text');
 
-      verify(() => mockAccessibility.insertTextWithFallback('test text'))
+      verify(() => mockAccessibility.insertTextWithFallback('test text '))
           .called(1);
     });
 
     testWidgets('pasteAtCursor propagates exception when all methods fail',
         (tester) async {
-      when(() => mockAccessibility.insertTextWithFallback('test text'))
+      when(() => mockAccessibility.insertTextWithFallback('test text '))
           .thenThrow(
         const AccessibilityInsertionException('all methods failed'),
       );
@@ -118,6 +118,79 @@ void main() {
         () => service.pasteAtCursor('test text'),
         throwsA(isA<AccessibilityInsertionException>()),
       );
+    });
+
+    testWidgets('pasteAtCursor appends trailing space to text',
+        (tester) async {
+      when(() => mockAccessibility.insertTextWithFallback('hello '))
+          .thenAnswer((_) async => InsertionMethod.axDirectInsert);
+
+      await service.pasteAtCursor('hello');
+
+      verify(() => mockAccessibility.insertTextWithFallback('hello '))
+          .called(1);
+    });
+
+    testWidgets('pasteAtCursor does not double-space text ending with space',
+        (tester) async {
+      when(() => mockAccessibility.insertTextWithFallback('hello '))
+          .thenAnswer((_) async => InsertionMethod.axDirectInsert);
+
+      await service.pasteAtCursor('hello ');
+
+      verify(() => mockAccessibility.insertTextWithFallback('hello '))
+          .called(1);
+    });
+
+    testWidgets('pasteAtCursor does not add space after newline',
+        (tester) async {
+      when(() => mockAccessibility.insertTextWithFallback('hello\n'))
+          .thenAnswer((_) async => InsertionMethod.axDirectInsert);
+
+      await service.pasteAtCursor('hello\n');
+
+      verify(() => mockAccessibility.insertTextWithFallback('hello\n'))
+          .called(1);
+    });
+
+    testWidgets('pasteAtCursor does not add space after tab',
+        (tester) async {
+      when(() => mockAccessibility.insertTextWithFallback('hello\t'))
+          .thenAnswer((_) async => InsertionMethod.axDirectInsert);
+
+      await service.pasteAtCursor('hello\t');
+
+      verify(() => mockAccessibility.insertTextWithFallback('hello\t'))
+          .called(1);
+    });
+  });
+
+  group('ClipboardServiceImpl (copyToClipboard not affected by trailing space)',
+      () {
+    late ClipboardServiceImpl service;
+
+    setUp(() {
+      final mockAccessibility = MockAccessibilityService();
+      service = ClipboardServiceImpl(accessibilityService: mockAccessibility);
+    });
+
+    testWidgets('copyToClipboard does not append trailing space',
+        (tester) async {
+      String? clipboardContent;
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (call) async {
+          if (call.method == 'Clipboard.setData') {
+            final args = call.arguments as Map<dynamic, dynamic>;
+            clipboardContent = args['text'] as String?;
+            return null;
+          }
+          return null;
+        },
+      );
+
+      await service.copyToClipboard('hello');
+      expect(clipboardContent, 'hello');
     });
   });
 }

@@ -341,6 +341,11 @@ fvm flutter test integration_test/
 - `brew audit --cask duckmouth` passes (syntax, required fields)
 - Formula version matches latest GitHub Release tag
 - SHA256 in formula matches the published DMG
+- `postflight` block present and strips quarantine attribute (`xattr -dr com.apple.quarantine`)
+- `zap` stanza lists correct app data paths
+- After `brew install`, app launches without Gatekeeper prompt (quarantine stripped by postflight)
+- After `brew upgrade`, app still launches (postflight re-strips quarantine on each install)
+- `brew uninstall --zap` removes app data directories
 
 **Note:** These are manual verification steps and shell-based checks, not Dart unit tests. The gate check (`fvm flutter analyze && fvm flutter test`) still applies to any Dart code changes but the distribution pipeline itself is verified manually or via CI.
 
@@ -472,7 +477,16 @@ fvm flutter test integration_test/
 - `MaterialApp` uses `ThemeMode.dark` when cubit state is dark
 - `MaterialApp` uses `ThemeMode.light` when cubit state is light
 
-## 23. Custom App & Tray Icon Tests
+## 23. Branded Color Scheme Tests
+
+### AppTheme unit tests (`test/core/theme/app_theme_test.dart`)
+- Light theme seed color is `Color(0xFFE8A838)`
+- Dark theme seed color is `Color(0xFFE8A838)`
+- Both themes have `useMaterial3: true`
+- Light theme has `Brightness.light`
+- Dark theme has `Brightness.dark`
+
+## 24. Custom App & Tray Icon Tests
 
 ### Verification (manual)
 - App icon in Dock and Finder shows custom duck icon, not Flutter logo
@@ -483,7 +497,7 @@ fvm flutter test integration_test/
 
 **Note:** No Dart unit tests — icon assets are verified manually. The gate check (`fvm flutter analyze && fvm flutter test`) still applies to ensure no broken asset references.
 
-## 22. Trailing Space on Text Insertion Tests
+## 25. Trailing Space on Text Insertion Tests
 
 ### ClipboardService (`test/core/services/clipboard_service_test.dart`)
 - `pasteAtCursor("hello")` calls `insertTextWithFallback("hello ")` — trailing space appended

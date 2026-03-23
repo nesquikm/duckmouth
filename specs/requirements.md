@@ -158,16 +158,18 @@ Duckmouth is a macOS desktop app that captures speech via microphone, transcribe
 
 ### FR-14: DMG Distribution & Homebrew Tap
 
-**Description:** Package the app as a standalone DMG for direct download and as a Homebrew cask for `brew install` distribution. No Apple Developer account or code signing — uses ad-hoc signing and quarantine stripping via Homebrew.
+**Description:** Package the app as a standalone DMG for direct download and as a Homebrew cask for `brew install` distribution. No Apple Developer account or code signing — uses ad-hoc signing. Quarantine is stripped via a `postflight` block in the cask formula (Homebrew 5.0.0 deprecated `--no-quarantine` and requires signing+notarization for core casks — a custom tap is the only viable path for unsigned apps).
 
 **Acceptance Criteria:**
 - AC-14.1: Build script produces a `.dmg` file from `fvm flutter build macos --release` output
 - AC-14.2: DMG opens with app icon and Applications folder shortcut (drag-to-install UX)
 - AC-14.3: App is ad-hoc signed (`codesign -s -`) to prevent "damaged app" errors
 - AC-14.4: DMG can be hosted on GitHub Releases
-- AC-14.5: Homebrew tap repository with cask formula pointing to GitHub Release asset
-- AC-14.6: `brew install --cask <tap>/duckmouth` installs the app and strips quarantine
-- AC-14.7: Build script is documented and runnable in a single command
+- AC-14.5: Custom Homebrew tap repository (`homebrew-duckmouth`) with cask formula pointing to GitHub Release asset (core `homebrew/cask` requires notarization — not applicable without Apple Developer ID)
+- AC-14.6: Cask formula includes `postflight` block that strips quarantine via `xattr -dr com.apple.quarantine` (replaces deprecated `--no-quarantine` flag)
+- AC-14.7: `brew tap <owner>/duckmouth && brew install duckmouth` installs the app and launches without Gatekeeper prompt
+- AC-14.8: Build script is documented and runnable in a single command
+- AC-14.9: `zap` stanza in cask formula cleans up app data on `brew uninstall --zap`
 
 ### FR-15: Model Selection Fix
 
@@ -292,6 +294,15 @@ Duckmouth is a macOS desktop app that captures speech via microphone, transcribe
 - AC-26.4: Theme preference persisted via SharedPreferences
 - AC-26.5: Default is System (preserves current behavior)
 
+### FR-27: Branded Color Scheme
+
+**Description:** Use app icon colors (duck amber) as the Material 3 seed color instead of default purple, so light and dark themes match the Duckmouth branding.
+
+**Acceptance Criteria:**
+- AC-27.1: Seed color is derived from the app icon's duck amber (`#E8A838`)
+- AC-27.2: Both light and dark themes use the branded seed color via `ColorScheme.fromSeed()`
+- AC-27.3: All existing UI elements render correctly with the new color scheme
+
 ## 4. Out of Scope
 
 - Local Whisper inference (API-only for now)
@@ -365,9 +376,11 @@ Duckmouth is a macOS desktop app that captures speech via microphone, transcribe
 | AC-14.2     | `scripts/build_dmg.sh` (create-dmg config) | Manual verification |
 | AC-14.3     | `scripts/build_dmg.sh` (codesign -s -) | Manual verification |
 | AC-14.4     | GitHub Releases (manual or CI) | Manual verification |
-| AC-14.5     | `homebrew-duckmouth/Casks/duckmouth.rb` (separate repo) | `brew audit --cask duckmouth` |
-| AC-14.6     | Homebrew cask formula | Manual verification |
-| AC-14.7     | `scripts/build_dmg.sh`, `README` section | Manual verification |
+| AC-14.5     | `homebrew-duckmouth/Casks/duckmouth.rb` (custom tap — core homebrew/cask requires notarization) | `brew audit --cask duckmouth` |
+| AC-14.6     | `homebrew-duckmouth/Casks/duckmouth.rb` (`postflight` xattr strip — replaces deprecated `--no-quarantine`) | Manual verification |
+| AC-14.7     | `brew tap OWNER/duckmouth && brew install duckmouth` | Manual verification |
+| AC-14.8     | `scripts/build_dmg.sh`, `README` section | Manual verification |
+| AC-14.9     | `homebrew-duckmouth/Casks/duckmouth.rb` (`zap` stanza) | `brew uninstall --zap` manual verification |
 | AC-15.1     | `lib/features/settings/ui/settings_page.dart` (enabled: true for model dropdowns) | `test/features/settings/ui/model_dropdown_test.dart` |
 | AC-15.2     | `lib/features/settings/ui/model_dropdown.dart` (RawAutocomplete) | `test/features/settings/ui/model_dropdown_test.dart` |
 | AC-15.3     | `lib/features/settings/ui/settings_page.dart` (`_onPpPresetChanged` uses `preset.llmModel`) | `test/features/settings/domain/provider_preset_test.dart` |
@@ -419,3 +432,6 @@ Duckmouth is a macOS desktop app that captures speech via microphone, transcribe
 | AC-26.3     | `lib/app/app.dart` (`ThemeMode.system` default) | `test/app/app_test.dart` |
 | AC-26.4     | `lib/features/settings/data/settings_repository_impl.dart` | `test/features/settings/data/settings_repository_impl_test.dart` |
 | AC-26.5     | `lib/features/settings/data/settings_repository_impl.dart` | `test/features/settings/data/settings_repository_impl_test.dart` |
+| AC-27.1     | `lib/core/theme/app_theme.dart` (seed color `0xFFE8A838`) | `test/core/theme/app_theme_test.dart` |
+| AC-27.2     | `lib/core/theme/app_theme.dart` (both light/dark use same seed) | `test/core/theme/app_theme_test.dart` |
+| AC-27.3     | All UI widgets | Visual verification + gate passes |

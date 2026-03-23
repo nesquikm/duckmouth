@@ -581,6 +581,10 @@ This requires `SettingsCubit` to be provided above `DuckmouthApp` or at the `Mat
 
 A `DropdownButtonFormField<AppThemeMode>` in the settings page, auto-saved on change (consistent with existing pattern). Placed in a new "Appearance" section at the top of settings.
 
+### Branded Seed Color
+
+`AppTheme` uses `ColorScheme.fromSeed()` with the duck amber color `0xFFE8A838` extracted from the app icon. Material 3 derives the full palette (primary, secondary, tertiary, surface, error, etc.) for both light and dark brightness variants. This replaces the default Material purple (`0xFF6750A4`).
+
 ## 12. Distribution
 
 ### DMG Packaging
@@ -621,6 +625,8 @@ create-dmg \
 
 ### Homebrew Tap
 
+> **Homebrew 5.0.0 (Nov 2025) constraints:** Core `homebrew/cask` now requires codesigning + notarization. The `--no-quarantine` flag is deprecated. Unsigned casks in core will be removed by Sept 2026. A **custom tap** is the only viable path for ad-hoc signed apps.
+
 A separate GitHub repository `homebrew-duckmouth` hosts the cask formula:
 
 ```ruby
@@ -635,9 +641,30 @@ cask "duckmouth" do
   homepage "https://github.com/OWNER/duckmouth"
 
   app "Duckmouth.app"
+
+  # Strip quarantine for unsigned app (replaces deprecated --no-quarantine)
+  postflight do
+    system_command "/usr/bin/xattr",
+                   args: ["-dr", "com.apple.quarantine", "#{appdir}/Duckmouth.app"],
+                   sudo: false
+  end
+
+  zap trash: [
+    "~/Library/Application Support/com.duckmouth.duckmouth",
+    "~/Library/Preferences/com.duckmouth.duckmouth.plist",
+    "~/Library/Caches/com.duckmouth.duckmouth",
+  ]
 end
 ```
 
-**Install:** `brew install --cask OWNER/duckmouth/duckmouth`
+**Install:**
+```bash
+brew tap OWNER/duckmouth
+brew install duckmouth
+```
 
-Homebrew automatically runs `xattr -cr` on cask installs, stripping the quarantine attribute so Gatekeeper doesn't block unsigned apps.
+**Known limitations of unsigned distribution:**
+- Apple Silicon Macs are stricter about blocking unsigned code than Intel
+- Each `brew upgrade` re-quarantines the app — the `postflight` block handles this automatically
+- Users installing the DMG directly (without Homebrew) must manually run `xattr -dr com.apple.quarantine /Applications/Duckmouth.app` or allow in System Settings → Privacy & Security
+- **Long-term fix:** Apple Developer ID ($99/yr) enables signing + notarization → eligible for core `homebrew/cask` and eliminates all Gatekeeper friction

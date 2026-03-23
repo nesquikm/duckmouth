@@ -545,7 +545,7 @@ The hotkey_manager plugin's native Swift layer expects Carbon key codes (e.g. `4
 
 ## M19: DMG Distribution & Homebrew Tap
 
-**Goal:** Package the app as a distributable DMG and create a Homebrew tap for easy installation. No Apple Developer account — uses ad-hoc signing only.
+**Goal:** Package the app as a distributable DMG and create a custom Homebrew tap for easy installation. No Apple Developer account — uses ad-hoc signing. Custom tap required because Homebrew 5.0.0 (Nov 2025) requires signing+notarization for core `homebrew/cask`.
 **Prerequisites:** M1 (working app build)
 
 **Tasks:**
@@ -554,25 +554,32 @@ The hotkey_manager plugin's native Swift layer expects Carbon key codes (e.g. `4
 3. Extract version from `pubspec.yaml` automatically in build script
 4. Test DMG: mount, drag-install to Applications, launch app
 5. Create GitHub Release with DMG artifact (manual first, automate later)
-6. Create `homebrew-duckmouth` repository with cask formula (`Casks/duckmouth.rb`)
+6. Create `homebrew-duckmouth` custom tap repository with cask formula (`Casks/duckmouth.rb`)
 7. Cask formula points to GitHub Release download URL, includes SHA256
-8. Test `brew install --cask` flow — verify quarantine stripped, app launches without Gatekeeper warning
-9. Add distribution instructions to project README
+8. Add `postflight` block to cask formula — strips quarantine via `xattr -dr com.apple.quarantine` (replaces deprecated `--no-quarantine` flag)
+9. Add `zap` stanza to cask formula for clean uninstall of app data
+10. Test `brew tap OWNER/duckmouth && brew install duckmouth` flow — verify postflight strips quarantine, app launches without Gatekeeper prompt
+11. Test `brew upgrade` re-strips quarantine correctly
+12. Add distribution instructions to project README (include manual DMG install workaround: `xattr -dr com.apple.quarantine`)
 
 **Tests:**
 - Build script runs without errors and produces DMG in `build/dmg/`
 - DMG contains `.app` bundle with Applications symlink
 - App inside DMG is ad-hoc signed (`codesign -v` passes)
 - `brew audit --cask duckmouth` passes
-- Installed via Homebrew — app launches without Gatekeeper prompt
+- Installed via Homebrew — postflight strips quarantine, app launches without Gatekeeper prompt
+- After `brew upgrade`, app still launches (postflight re-strips quarantine)
+- `brew uninstall --zap` removes app data directories
 
 **Acceptance Criteria:**
-- [ ] `scripts/build_dmg.sh` produces a working DMG in one command (AC-14.1, AC-14.7)
+- [ ] `scripts/build_dmg.sh` produces a working DMG in one command (AC-14.1, AC-14.8)
 - [ ] DMG has drag-to-install UX with Applications shortcut (AC-14.2)
 - [ ] App is ad-hoc signed inside the DMG (AC-14.3)
 - [ ] DMG hosted on GitHub Releases (AC-14.4)
-- [ ] Homebrew tap repo with valid cask formula (AC-14.5)
-- [ ] `brew install --cask` works and strips quarantine (AC-14.6)
+- [ ] Custom Homebrew tap repo with valid cask formula (AC-14.5)
+- [ ] Cask `postflight` strips quarantine via xattr (AC-14.6)
+- [ ] `brew tap && brew install` works, app launches clean (AC-14.7)
+- [ ] `zap` stanza cleans up app data (AC-14.9)
 - [ ] Gate passes: `fvm flutter analyze && fvm flutter test`
 
 **Gate:** `fvm flutter analyze && fvm flutter test`
@@ -916,6 +923,32 @@ The hotkey_manager plugin's native Swift layer expects Carbon key codes (e.g. `4
 
 ---
 
+## M31: Branded Color Scheme
+
+**Goal:** Replace default Material purple seed color with duck amber from the app icon so both themes match Duckmouth branding.
+**Prerequisites:** M30 (Theme Selection)
+
+**Tasks:**
+1. Change seed color in `AppTheme` from `0xFF6750A4` to `0xFFE8A838`
+2. Write unit tests for `AppTheme` verifying seed color and brightness
+3. Visual verification that light and dark themes look correct
+
+**Tests:**
+- Light theme uses branded seed color
+- Dark theme uses branded seed color
+- Both themes use Material 3
+- Gate passes
+
+**Acceptance Criteria:**
+- [x] Seed color is duck amber `0xFFE8A838` (AC-27.1)
+- [x] Both light and dark themes use branded seed (AC-27.2)
+- [x] All UI elements render correctly (AC-27.3)
+- [x] Gate passes: `fvm flutter analyze && fvm flutter test`
+
+**Gate:** `fvm flutter analyze && fvm flutter test`
+
+---
+
 ## Milestone Dependency Graph
 
 ```
@@ -940,4 +973,5 @@ M6 → M27
 M1 → M28
 M2 + M7 → M29
 M4 + M21 → M30
+M30 → M31
 ```

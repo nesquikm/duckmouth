@@ -1,6 +1,7 @@
 import 'package:get_it/get_it.dart';
 
 import 'package:duckmouth/core/api/llm_client.dart';
+import 'package:duckmouth/core/api/models_client.dart';
 import 'package:duckmouth/core/api/openai_client.dart';
 import 'package:duckmouth/core/services/accessibility_service.dart';
 import 'package:duckmouth/core/services/clipboard_service.dart';
@@ -24,6 +25,7 @@ import 'fakes/fake_clipboard_service.dart';
 import 'fakes/fake_history_repository.dart';
 import 'fakes/fake_hotkey_service.dart';
 import 'fakes/fake_llm_client.dart';
+import 'fakes/fake_models_client.dart';
 import 'fakes/fake_openai_client.dart';
 import 'fakes/fake_post_processing_repository.dart';
 import 'fakes/fake_recording_repository.dart';
@@ -114,6 +116,7 @@ class TestHarness {
     // and updateLlmClient() don't crash when re-registering repos.
     _sl.registerFactory<OpenAiClient>(() => FakeOpenAiClient());
     _sl.registerFactory<LlmClient>(() => FakeLlmClient());
+    _sl.registerFactory<ModelsClient>(() => FakeModelsClient());
 
     // STT — register our fake repo. Note: updateOpenAiClient() will
     // re-register SttRepository with SttRepositoryImpl(FakeOpenAiClient()),

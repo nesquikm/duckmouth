@@ -184,6 +184,21 @@ void main() {
       expect(result, isA<FetchModelsFailure>());
     });
 
+    test('returns success with empty list when data array is empty', () async {
+      final httpClient = mockHttp(
+        (_) async => http.Response(jsonEncode({'data': []}), 200),
+      );
+      client = ModelsClientImpl(httpClient: httpClient);
+
+      final result = await client.fetchModels(
+        baseUrl: 'https://api.openai.com/v1',
+        apiKey: 'test-key',
+      );
+
+      expect(result, isA<FetchModelsSuccess>());
+      expect((result as FetchModelsSuccess).models, isEmpty);
+    });
+
     test('constructs URL without adding /v1/ prefix', () async {
       final httpClient = mockHttp((request) async {
         expect(

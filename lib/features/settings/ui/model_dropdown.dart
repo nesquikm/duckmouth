@@ -41,11 +41,19 @@ class ModelDropdownState extends State<ModelDropdown> {
   List<String> _models = [];
   bool _loading = false;
   String? _failureReason;
+  late final FocusNode _focusNode;
 
   @override
   void initState() {
     super.initState();
+    _focusNode = FocusNode();
     _fetchModels();
+  }
+
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
   }
 
   @override
@@ -116,7 +124,7 @@ class ModelDropdownState extends State<ModelDropdown> {
 
     return RawAutocomplete<String>(
       textEditingController: widget.controller,
-      focusNode: FocusNode(),
+      focusNode: _focusNode,
       optionsBuilder: (textEditingValue) {
         if (_models.isEmpty) return const Iterable<String>.empty();
         final query = textEditingValue.text.toLowerCase();

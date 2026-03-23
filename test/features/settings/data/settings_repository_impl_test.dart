@@ -128,13 +128,6 @@ void main() {
     });
   });
 
-  group('ProviderPreset', () {
-    test('OpenAI preset has correct defaults', () {
-      // Verified through API config constants in provider_preset.dart
-      expect(true, isTrue);
-    });
-  });
-
   group('PostProcessingConfig persistence', () {
     test('loadPostProcessingConfig returns defaults when nothing saved',
         () async {

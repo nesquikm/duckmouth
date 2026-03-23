@@ -779,6 +779,7 @@ class _SettingsFormState extends State<_SettingsForm> {
             controller: _ppModelController,
             label: 'LLM Model',
             enabled: _ppEnabled,
+            optionsDirection: OptionsViewOpenDirection.up,
           ),
 
         ],

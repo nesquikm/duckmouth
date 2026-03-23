@@ -19,6 +19,7 @@ class ModelDropdown extends StatefulWidget {
     required this.enabled,
     this.label = 'Model',
     this.hintText,
+    this.optionsDirection = OptionsViewOpenDirection.down,
   });
 
   final ModelsClient modelsClient;
@@ -31,6 +32,9 @@ class ModelDropdown extends StatefulWidget {
 
   /// Optional hint text shown below the field (e.g. "This provider has no STT models").
   final String? hintText;
+
+  /// Direction the autocomplete suggestions open (default: down).
+  final OptionsViewOpenDirection optionsDirection;
 
   @override
   State<ModelDropdown> createState() => ModelDropdownState();
@@ -146,6 +150,7 @@ class ModelDropdownState extends State<ModelDropdown> {
           onSubmitted: (_) => onFieldSubmitted(),
         );
       },
+      optionsViewOpenDirection: widget.optionsDirection,
       optionsViewBuilder: (context, onSelected, options) {
         return Align(
           alignment: Alignment.topLeft,

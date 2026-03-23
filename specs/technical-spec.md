@@ -389,12 +389,111 @@ Masking strings are added/removed in `SettingsCubit` when API keys change.
 | shared_preferences | latest | Non-sensitive settings persistence |
 | uuid | latest | Unique IDs for history entries |
 | path_provider | latest | App data directory |
-| the_logger | path | Structured logging with console output, masking, sessions |
+| the_logger | ^0.0.20 | Structured logging with console output, masking, sessions, real-time streaming |
+| the_logger_viewer_widget | ^0.0.2 | Embeddable in-app log viewer with filtering, search, session navigation |
 | logging | latest | Dart standard logging (peer dependency of the_logger) |
 | mocktail | 1.0.4 | Test mocking (dev) |
 | bloc_test | 10.0.0 | BLoC testing (dev) |
 
-## 7. Distribution
+## 7. In-App Log Viewer
+
+### Dependency Change
+
+`the_logger` switches from a local path dependency (`path: ../the/the_logger`) to a pub.dev dependency (`^0.0.20`). Version 0.0.20 adds real-time log streaming via broadcast stream, which `the_logger_viewer_widget` requires for live updates.
+
+`the_logger_viewer_widget` (`^0.0.2`) is added as a pub.dev dependency. It provides a drop-in `TheLoggerViewerWidget` and `TheLoggerViewerPage` that read logs directly from `TheLogger`.
+
+### Navigation
+
+A `_LogsButton` icon button is added to the home page AppBar (alongside History and Settings). It pushes `TheLoggerViewerPage` via `Navigator.push`.
+
+```dart
+// In home_page.dart AppBar actions:
+const [_LogsButton(), _HistoryButton(), _SettingsButton()]
+```
+
+### Widget Integration
+
+No custom cubit or state management needed — `TheLoggerViewerWidget` manages its own state internally. It connects to `TheLogger`'s broadcast stream for real-time updates and reads historical logs from the database.
+
+```dart
+class _LogsButton extends StatelessWidget {
+  const _LogsButton();
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      icon: const Icon(Icons.bug_report),
+      tooltip: 'Logs',
+      onPressed: () => TheLoggerViewerWidget.show(context),
+    );
+  }
+}
+```
+
+### Features (provided by package)
+
+- Responsive layout: table on wide screens (>=600dp), list on narrow
+- Color-coded log levels with Material 3 theming
+- Multi-level filtering: severity, text search, logger name
+- Search term highlighting
+- Session navigation with dropdown
+- Expandable record details with JSON formatting
+- Clipboard copy
+- Export with custom callback support
+- Real-time streaming updates
+
+## 8. Trailing Space on Text Insertion
+
+When inserting text at the cursor via `pasteAtCursor`, a trailing space is appended so the user can continue typing without manually spacing. This applies only to cursor insertion — clipboard copy is not modified.
+
+**Implementation:** In `ClipboardServiceImpl.pasteAtCursor()`, before calling `insertTextWithFallback`:
+
+```dart
+@override
+Future<void> pasteAtCursor(String text) async {
+  final textToInsert =
+      text.isNotEmpty && !text.endsWith(' ') && !text.endsWith('\n')
+          ? '$text '
+          : text;
+  _log.fine('Paste at cursor (${textToInsert.length} chars)');
+  await _accessibilityService.insertTextWithFallback(textToInsert);
+}
+```
+
+**Guard:** No space is added if the text is empty, already ends with a space, or ends with a newline.
+
+## 9. Custom App & Tray Icons
+
+### App Icon
+
+macOS app icons live in `macos/Runner/Assets.xcassets/AppIcon.appiconset/`. The `Contents.json` maps sizes to filenames. Required sizes (all PNG):
+
+| Filename | Size | Usage |
+|---|---|---|
+| `app_icon_16.png` | 16x16 | Finder list, Spotlight |
+| `app_icon_32.png` | 32x32 | Finder list @2x, Dock small |
+| `app_icon_64.png` | 64x64 | Dock @2x small |
+| `app_icon_128.png` | 128x128 | Finder preview |
+| `app_icon_256.png` | 256x256 | Finder preview @2x |
+| `app_icon_512.png` | 512x512 | App Store |
+| `app_icon_1024.png` | 1024x1024 | App Store @2x |
+
+Generate from a single 1024px source and downscale. `Contents.json` does not need changes — filenames are already correct. **Background must be opaque** (solid or gradient fill) — macOS app icons must not have transparency.
+
+### Tray Icon
+
+Menu bar tray icon at `assets/tray_icon.png`. Must be:
+- Monochrome white on **transparent** background (required for macOS template images — system auto-tints for light/dark mode)
+- ~18x18px (macOS menu bar standard)
+- Simple silhouette readable at small size
+- Works as a macOS template image (system auto-tints for light/dark mode)
+
+### Icon Generation
+
+Artwork is generated externally using Nano Banana. Prompts are stored in `specs/icon-prompts.md` for reproducibility.
+
+## 10. Distribution
 
 ### DMG Packaging
 

@@ -760,6 +760,97 @@ The hotkey_manager plugin's native Swift layer expects Carbon key codes (e.g. `4
 
 ---
 
+## M26: In-App Log Viewer
+
+**Goal:** Add an in-app log viewer using `the_logger_viewer_widget`, accessible from the home page AppBar. Upgrade `the_logger` to pub.dev `^0.0.20` for streaming support.
+**Prerequisites:** M16 (Structured Logging)
+
+**Tasks:**
+1. Change `the_logger` from path dependency to pub.dev `^0.0.20` in `pubspec.yaml`
+2. Add `the_logger_viewer_widget: ^0.0.2` to `pubspec.yaml`
+3. Run `fvm flutter pub get` and verify resolution
+4. Add `_LogsButton` widget to home page AppBar actions (pushes `TheLoggerViewerPage`)
+5. Verify existing logging setup tests pass with `the_logger` 0.0.20
+6. Write widget test for Logs button navigation in `test/app/home_page_test.dart`
+
+**Tests:**
+- Home AppBar shows Logs icon button
+- Tapping Logs button navigates to `TheLoggerViewerPage`
+- Existing logging setup tests pass after dependency upgrade
+- Gate passes
+
+**Acceptance Criteria:**
+- [x] `the_logger` is pub.dev `^0.0.20` (not path) (AC-22.1)
+- [x] `the_logger_viewer_widget: ^0.0.2` in pubspec.yaml (AC-22.2)
+- [x] "Logs" button in home AppBar opens log viewer page (AC-22.3)
+- [x] Log viewer shows real-time streaming updates (AC-22.4)
+- [x] Filtering by level, search, and logger name works (AC-22.5)
+- [x] Session navigation works (AC-22.6)
+- [x] Available in release builds (AC-22.7)
+- [x] Gate passes: `fvm flutter analyze && fvm flutter test`
+
+**Gate:** `fvm flutter analyze && fvm flutter test`
+
+---
+
+## M27: Trailing Space on Text Insertion
+
+**Goal:** Append a trailing space when inserting text at the cursor so the user can continue typing immediately.
+**Prerequisites:** M6 (Text Output)
+
+**Tasks:**
+1. Add trailing space logic to `ClipboardServiceImpl.pasteAtCursor()` with whitespace guard
+2. Update existing clipboard service tests for new behavior
+3. Add new test cases for trailing space, no-double-space, and newline guard
+
+**Tests:**
+- `pasteAtCursor` appends space to text without trailing whitespace
+- `pasteAtCursor` does not double-space text ending with space
+- `pasteAtCursor` does not add space after newline
+- `copyToClipboard` is not affected
+- Gate passes
+
+**Acceptance Criteria:**
+- [ ] Inserted text has trailing space (AC-23.1)
+- [ ] Clipboard copy unchanged (AC-23.2)
+- [ ] No extra space if text already ends with whitespace (AC-23.3)
+- [ ] Gate passes: `fvm flutter analyze && fvm flutter test`
+
+**Gate:** `fvm flutter analyze && fvm flutter test`
+
+---
+
+## M28: Custom App & Tray Icons
+
+**Goal:** Replace default Flutter icons with custom Duckmouth branding for both the app icon and menu bar tray icon.
+**Prerequisites:** M1 (Foundation & App Shell)
+
+**Tasks:**
+1. Write icon generation prompts to `specs/icon-prompts.md`
+2. Generate app icon artwork via Nano Banana (1024px source)
+3. Generate tray icon artwork via Nano Banana (monochrome silhouette)
+4. Downscale app icon to all required sizes (16, 32, 64, 128, 256, 512, 1024px) and replace files in `macos/Runner/Assets.xcassets/AppIcon.appiconset/`
+5. Replace `assets/tray_icon.png` with new monochrome tray icon
+6. Verify icons render correctly in Dock, Finder, and menu bar
+7. Verify DMG build still works with new icon
+
+**Tests:**
+- Manual: app icon visible in Dock and Finder
+- Manual: tray icon visible in menu bar (light and dark mode)
+- Manual: all sizes render cleanly
+- Gate passes (no broken asset references)
+
+**Acceptance Criteria:**
+- [ ] Custom app icon at all macOS sizes (AC-24.1)
+- [ ] Custom monochrome tray icon (AC-24.2)
+- [ ] Icon prompts saved in `specs/icon-prompts.md` (AC-24.3)
+- [ ] DMG branding updated if applicable (AC-24.4)
+- [ ] Gate passes: `fvm flutter analyze && fvm flutter test`
+
+**Gate:** `fvm flutter analyze && fvm flutter test`
+
+---
+
 ## Milestone Dependency Graph
 
 ```
@@ -779,4 +870,7 @@ M1 → M19
 M17 → M20 → M21 → M22
 M4 → M23
 M17 + M20 → M24 → M25
+M16 → M26
+M6 → M27
+M1 → M28
 ```

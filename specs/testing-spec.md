@@ -423,6 +423,48 @@ fvm flutter test integration_test/
 - Selecting Google Gemini for STT shows "This provider has no STT models" hint
 - Selecting OpenRouter for STT shows "This provider has no STT models" hint
 
+## 20. In-App Log Viewer Tests
+
+### Dependency upgrade
+- `fvm flutter pub get` succeeds with `the_logger: ^0.0.20` and `the_logger_viewer_widget: ^0.0.2` from pub.dev
+- No path dependencies remain for `the_logger`
+- Existing logging setup tests still pass after upgrade
+
+### Navigation (`test/app/home_page_test.dart`)
+- Home AppBar contains a "Logs" icon button (`Icons.bug_report`)
+- Tapping "Logs" button pushes a route containing `TheLoggerViewerPage`
+- Log viewer page has an AppBar with title "Log Viewer"
+- Back navigation returns to home page
+
+### Widget integration
+- `TheLoggerViewerWidget` renders without error when `TheLogger` is initialized
+- No custom cubit tests needed — widget manages its own state (tested by the package)
+
+### Existing test compatibility
+- All `test/core/logging/logging_setup_test.dart` tests pass with `the_logger` 0.0.20
+- Masking tests still work
+- Session start logging still works
+
+## 21. Custom App & Tray Icon Tests
+
+### Verification (manual)
+- App icon in Dock and Finder shows custom duck icon, not Flutter logo
+- Menu bar tray icon shows custom duck silhouette, not Flutter arrow
+- Tray icon is visible in both light and dark macOS menu bar modes
+- All icon sizes render clearly without artifacts (spot-check 16px and 1024px)
+- `specs/icon-prompts.md` exists with generation prompts
+
+**Note:** No Dart unit tests — icon assets are verified manually. The gate check (`fvm flutter analyze && fvm flutter test`) still applies to ensure no broken asset references.
+
+## 22. Trailing Space on Text Insertion Tests
+
+### ClipboardService (`test/core/services/clipboard_service_test.dart`)
+- `pasteAtCursor("hello")` calls `insertTextWithFallback("hello ")` — trailing space appended
+- `pasteAtCursor("hello ")` calls `insertTextWithFallback("hello ")` — no double space
+- `pasteAtCursor("hello\n")` calls `insertTextWithFallback("hello\n")` — no space after newline
+- `pasteAtCursor("")` calls `insertTextWithFallback("")` — empty string unchanged
+- `copyToClipboard("hello")` sets clipboard to `"hello"` — no trailing space added
+
 ### Model fetch with new providers (mocked HTTP)
 - xAI `/models` response parsed correctly (model IDs like `grok-4-1-fast-non-reasoning`)
 - Google Gemini `/models` response parsed correctly (model IDs like `gemini-3-flash`)

@@ -903,10 +903,19 @@ packages:
   the_logger:
     dependency: "direct main"
     description:
-      path: "../the/the_logger"
-      relative: true
-    source: path
-    version: "0.0.19"
+      name: the_logger
+      sha256: "34f2d7f236656da97915a2b1290aad85fb6230d877e4d50c5eea97c938ec0705"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.0.21"
+  the_logger_viewer_widget:
+    dependency: "direct main"
+    description:
+      name: the_logger_viewer_widget
+      sha256: f641120865293b4b8c89033a3304c996d78fa0d3d56b003a37b308cc5ef4b258
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.0.3"
   typed_data:
     dependency: transitive
     description:

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:logging/logging.dart';
@@ -21,6 +23,7 @@ import 'package:duckmouth/features/recording/ui/recording_cubit.dart';
 import 'package:duckmouth/features/recording/ui/recording_state.dart';
 import 'package:duckmouth/features/settings/ui/settings_cubit.dart';
 import 'package:duckmouth/features/settings/ui/settings_page.dart';
+import 'package:the_logger_viewer_widget/the_logger_viewer_widget.dart';
 import 'package:duckmouth/features/settings/ui/settings_state.dart';
 import 'package:duckmouth/features/transcription/ui/transcription_cubit.dart';
 import 'package:duckmouth/features/transcription/ui/transcription_display.dart';
@@ -43,10 +46,33 @@ class HomePage extends StatelessWidget {
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Duckmouth'),
-          actions: const [_HistoryButton(), _SettingsButton()],
+          actions: const [_LogsButton(), _HistoryButton(), _SettingsButton()],
         ),
         body: const _HomeBody(),
       ),
+    );
+  }
+}
+
+class _LogsButton extends StatelessWidget {
+  const _LogsButton();
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      icon: const Icon(Icons.article_outlined),
+      tooltip: 'Logs',
+      onPressed: () {
+        Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (_) => TheLoggerViewerPage(
+              onExport: (filePath) {
+                Process.run('open', ['-R', filePath]);
+              },
+            ),
+          ),
+        );
+      },
     );
   }
 }

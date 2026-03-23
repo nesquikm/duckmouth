@@ -26,6 +26,7 @@ import 'package:duckmouth/features/settings/domain/settings_repository.dart';
 import 'package:duckmouth/features/settings/ui/settings_cubit.dart';
 import 'package:duckmouth/features/transcription/domain/stt_repository.dart';
 import 'package:duckmouth/features/transcription/ui/transcription_cubit.dart';
+import 'package:the_logger_viewer_widget/the_logger_viewer_widget.dart';
 
 class MockRecordingRepository extends Mock implements RecordingRepository {}
 
@@ -316,6 +317,26 @@ void main() {
 
       // Should be back to idle
       expect(find.text('Ready to record'), findsOneWidget);
+    });
+
+    testWidgets('AppBar shows Logs icon button', (tester) async {
+      await tester.pumpWidget(buildApp());
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.article_outlined), findsOneWidget);
+      expect(find.byTooltip('Logs'), findsOneWidget);
+    });
+
+    testWidgets('tapping Logs button navigates to TheLoggerViewerPage',
+        (tester) async {
+      await tester.pumpWidget(buildApp());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byTooltip('Logs'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(TheLoggerViewerPage), findsOneWidget);
+      expect(find.text('Log Viewer'), findsOneWidget);
     });
 
     testWidgets('shows empty recording error for blank transcription',

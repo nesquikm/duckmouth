@@ -240,6 +240,38 @@ Duckmouth is a macOS desktop app that captures speech via microphone, transcribe
 - AC-21.6: Model fetch (`/models` endpoint) works for all new providers and populates the dropdown dynamically
 - AC-21.7: STT and LLM API calls work with each provider that supports them
 
+### FR-22: In-App Log Viewer
+
+**Description:** Embed an in-app log viewer using the `the_logger_viewer_widget` package, accessible as a dedicated nav item from the home page AppBar. Requires upgrading `the_logger` to `^0.0.20` (pub.dev) for streaming support.
+
+**Acceptance Criteria:**
+- AC-22.1: `the_logger` dependency changed from path to pub.dev `^0.0.20`
+- AC-22.2: `the_logger_viewer_widget` added as pub.dev dependency `^0.0.2`
+- AC-22.3: "Logs" icon button in home AppBar opens a full-screen log viewer page
+- AC-22.4: Log viewer shows real-time streaming log updates
+- AC-22.5: Log viewer supports filtering by level, search text, and logger name
+- AC-22.6: Log viewer supports session navigation
+- AC-22.7: Log viewer available in both debug and release builds
+
+### FR-23: Trailing Space on Text Insertion
+
+**Description:** Append a trailing space to text when inserting at the cursor, so the user can continue typing immediately without manually adding a space.
+
+**Acceptance Criteria:**
+- AC-23.1: Text inserted via `pasteAtCursor` has a trailing space appended
+- AC-23.2: Text copied to clipboard (without paste) is NOT modified — trailing space only applies to cursor insertion
+- AC-23.3: If text already ends with whitespace, no extra space is added
+
+### FR-24: Custom App & Tray Icons
+
+**Description:** Replace the default Flutter icon with a custom Duckmouth icon for the app icon and menu bar tray icon. Icon artwork is generated externally (Nano Banana) from a prompt stored in the repo.
+
+**Acceptance Criteria:**
+- AC-24.1: App icon shows a custom Duckmouth duck icon (not the Flutter logo) at all required macOS sizes (16, 32, 64, 128, 256, 512, 1024px)
+- AC-24.2: Menu bar tray icon shows a custom monochrome duck silhouette (not the Flutter arrow) as a macOS template image (~18x18px)
+- AC-24.3: Icon generation prompts are stored in `specs/icon-prompts.md` for reproducibility
+- AC-24.4: DMG background/branding uses the new icon (if build script references it)
+
 ## 4. Out of Scope
 
 - Local Whisper inference (API-only for now)
@@ -345,3 +377,17 @@ Duckmouth is a macOS desktop app that captures speech via microphone, transcribe
 | AC-21.5     | `lib/features/settings/ui/model_dropdown.dart` | `test/features/settings/ui/model_dropdown_test.dart` |
 | AC-21.6     | `lib/core/api/models_client.dart` | `test/core/api/models_client_test.dart` |
 | AC-21.7     | `lib/core/api/openai_client.dart`, `lib/core/api/llm_client.dart` | `test/core/api/openai_client_test.dart`, `test/core/api/llm_client_test.dart` |
+| AC-22.1     | `pubspec.yaml` (`the_logger: ^0.0.20`) | `fvm flutter pub get` succeeds |
+| AC-22.2     | `pubspec.yaml` (`the_logger_viewer_widget: ^0.0.2`) | `fvm flutter pub get` succeeds |
+| AC-22.3     | `lib/app/home_page.dart` (`_LogsButton`) | `test/app/home_page_test.dart` |
+| AC-22.4     | `TheLoggerViewerWidget` (provided by package) | `test/app/home_page_test.dart` |
+| AC-22.5     | `TheLoggerViewerWidget` (provided by package) | Package tests |
+| AC-22.6     | `TheLoggerViewerWidget` (provided by package) | Package tests |
+| AC-22.7     | No conditional imports or `kDebugMode` guards | Manual verification |
+| AC-23.1     | `lib/core/services/clipboard_service.dart` (`pasteAtCursor`) | `test/core/services/clipboard_service_test.dart` |
+| AC-23.2     | `lib/core/services/clipboard_service.dart` (`copyToClipboard` unchanged) | `test/core/services/clipboard_service_test.dart` |
+| AC-23.3     | `lib/core/services/clipboard_service.dart` (whitespace guard) | `test/core/services/clipboard_service_test.dart` |
+| AC-24.1     | `macos/Runner/Assets.xcassets/AppIcon.appiconset/` | Manual verification |
+| AC-24.2     | `assets/tray_icon.png` | Manual verification |
+| AC-24.3     | `specs/icon-prompts.md` | File exists with prompts |
+| AC-24.4     | `scripts/build_dmg.sh` (if applicable) | Manual verification |

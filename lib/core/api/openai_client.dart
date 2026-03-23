@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:logging/logging.dart';
 
 /// Default configuration constants for the OpenAI-compatible API.
-const kDefaultBaseUrl = 'https://api.openai.com';
+const kDefaultBaseUrl = 'https://api.openai.com/v1';
 const kDefaultModel = 'whisper-1';
 
 /// Abstract interface for an OpenAI-compatible API client.
@@ -35,7 +35,7 @@ class OpenAiClientImpl implements OpenAiClient {
   @override
   Future<String> transcribe(String audioFilePath) async {
     _log.info('Transcribing $audioFilePath (model: $_model)');
-    final uri = Uri.parse('$_baseUrl/v1/audio/transcriptions');
+    final uri = Uri.parse('$_baseUrl/audio/transcriptions');
 
     final request = http.MultipartRequest('POST', uri)
       ..headers['Authorization'] = 'Bearer $_apiKey'

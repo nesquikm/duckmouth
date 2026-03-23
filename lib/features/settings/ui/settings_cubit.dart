@@ -15,7 +15,7 @@ import 'package:duckmouth/features/settings/ui/settings_state.dart';
 
 /// Default configuration used when no settings have been saved.
 const _kDefaultConfig = ApiConfig(
-  baseUrl: 'https://api.openai.com',
+  baseUrl: 'https://api.openai.com/v1',
   apiKey: '',
   model: 'whisper-1',
   providerName: 'openAi',

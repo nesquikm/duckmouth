@@ -23,7 +23,7 @@ void main() {
   });
 
   Widget buildWidget({
-    String baseUrl = 'https://api.openai.com',
+    String baseUrl = 'https://api.openai.com/v1',
     String apiKey = 'test-key',
     ModelType modelType = ModelType.stt,
     bool enabled = true,
@@ -46,7 +46,10 @@ void main() {
     when(() => mockClient.fetchModels(
           baseUrl: any(named: 'baseUrl'),
           apiKey: any(named: 'apiKey'),
-        )).thenAnswer((_) async => ['whisper-1', 'whisper-large-v3-turbo']);
+        )).thenAnswer(
+      (_) async =>
+          const FetchModelsSuccess(['whisper-1', 'whisper-large-v3-turbo']),
+    );
 
     await tester.pumpWidget(buildWidget());
     await tester.pumpAndSettle();
@@ -57,7 +60,7 @@ void main() {
   });
 
   testWidgets('shows loading indicator while fetching', (tester) async {
-    final completer = Completer<List<String>>();
+    final completer = Completer<FetchModelsResult>();
     when(() => mockClient.fetchModels(
           baseUrl: any(named: 'baseUrl'),
           apiKey: any(named: 'apiKey'),
@@ -71,7 +74,7 @@ void main() {
     // Should still have a TextField.
     expect(find.byType(TextField), findsOneWidget);
 
-    completer.complete(['whisper-1']);
+    completer.complete(const FetchModelsSuccess(['whisper-1']));
     await tester.pumpAndSettle();
   });
 
@@ -80,7 +83,10 @@ void main() {
     when(() => mockClient.fetchModels(
           baseUrl: any(named: 'baseUrl'),
           apiKey: any(named: 'apiKey'),
-        )).thenAnswer((_) async => ['whisper-1', 'whisper-large-v3-turbo']);
+        )).thenAnswer(
+      (_) async =>
+          const FetchModelsSuccess(['whisper-1', 'whisper-large-v3-turbo']),
+    );
 
     controller.text = '';
     await tester.pumpWidget(buildWidget());
@@ -98,7 +104,10 @@ void main() {
     when(() => mockClient.fetchModels(
           baseUrl: any(named: 'baseUrl'),
           apiKey: any(named: 'apiKey'),
-        )).thenAnswer((_) async => ['whisper-1', 'whisper-large-v3-turbo', 'gpt-4o']);
+        )).thenAnswer(
+      (_) async => const FetchModelsSuccess(
+          ['gpt-4o', 'whisper-1', 'whisper-large-v3-turbo']),
+    );
 
     controller.text = '';
     await tester.pumpWidget(buildWidget());
@@ -114,17 +123,42 @@ void main() {
     expect(find.text('gpt-4o'), findsNothing);
   });
 
-  testWidgets('shows helper text on fetch failure', (tester) async {
+  testWidgets('shows specific failure reason in helper text', (tester) async {
     when(() => mockClient.fetchModels(
           baseUrl: any(named: 'baseUrl'),
           apiKey: any(named: 'apiKey'),
-        )).thenAnswer((_) async => []);
+        )).thenAnswer(
+      (_) async =>
+          const FetchModelsFailure('Unauthorized \u2014 check API key'),
+    );
 
     await tester.pumpWidget(buildWidget());
     await tester.pumpAndSettle();
 
     expect(find.byType(TextField), findsOneWidget);
-    expect(find.text('Could not load models — type manually'), findsOneWidget);
+    expect(
+      find.text('Unauthorized \u2014 check API key'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('shows generic failure reason on empty result', (tester) async {
+    when(() => mockClient.fetchModels(
+          baseUrl: any(named: 'baseUrl'),
+          apiKey: any(named: 'apiKey'),
+        )).thenAnswer(
+      (_) async =>
+          const FetchModelsFailure('Network error \u2014 check connection'),
+    );
+
+    await tester.pumpWidget(buildWidget());
+    await tester.pumpAndSettle();
+
+    expect(find.byType(TextField), findsOneWidget);
+    expect(
+      find.text('Network error \u2014 check connection'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('shows text field when baseUrl is empty', (tester) async {
@@ -151,28 +185,33 @@ void main() {
 
   testWidgets('refreshes when baseUrl changes', (tester) async {
     when(() => mockClient.fetchModels(
-          baseUrl: 'https://api.openai.com',
+          baseUrl: 'https://api.openai.com/v1',
           apiKey: 'test-key',
-        )).thenAnswer((_) async => ['whisper-1']);
+        )).thenAnswer(
+      (_) async => const FetchModelsSuccess(['whisper-1']),
+    );
 
     when(() => mockClient.fetchModels(
-          baseUrl: 'https://api.groq.com/openai',
+          baseUrl: 'https://api.groq.com/openai/v1',
           apiKey: 'test-key',
-        )).thenAnswer((_) async => ['whisper-large-v3-turbo']);
+        )).thenAnswer(
+      (_) async => const FetchModelsSuccess(['whisper-large-v3-turbo']),
+    );
 
     await tester.pumpWidget(buildWidget());
     await tester.pumpAndSettle();
 
     verify(() => mockClient.fetchModels(
-          baseUrl: 'https://api.openai.com',
+          baseUrl: 'https://api.openai.com/v1',
           apiKey: 'test-key',
         )).called(1);
 
-    await tester.pumpWidget(buildWidget(baseUrl: 'https://api.groq.com/openai'));
+    await tester
+        .pumpWidget(buildWidget(baseUrl: 'https://api.groq.com/openai/v1'));
     await tester.pumpAndSettle();
 
     verify(() => mockClient.fetchModels(
-          baseUrl: 'https://api.groq.com/openai',
+          baseUrl: 'https://api.groq.com/openai/v1',
           apiKey: 'test-key',
         )).called(1);
   });
@@ -181,12 +220,17 @@ void main() {
     when(() => mockClient.fetchModels(
           baseUrl: any(named: 'baseUrl'),
           apiKey: 'key-1',
-        )).thenAnswer((_) async => ['whisper-1']);
+        )).thenAnswer(
+      (_) async => const FetchModelsSuccess(['whisper-1']),
+    );
 
     when(() => mockClient.fetchModels(
           baseUrl: any(named: 'baseUrl'),
           apiKey: 'key-2',
-        )).thenAnswer((_) async => ['whisper-1', 'whisper-large-v3-turbo']);
+        )).thenAnswer(
+      (_) async =>
+          const FetchModelsSuccess(['whisper-1', 'whisper-large-v3-turbo']),
+    );
 
     await tester.pumpWidget(buildWidget(apiKey: 'key-1'));
     await tester.pumpAndSettle();
@@ -205,7 +249,10 @@ void main() {
     when(() => mockClient.fetchModels(
           baseUrl: any(named: 'baseUrl'),
           apiKey: any(named: 'apiKey'),
-        )).thenAnswer((_) async => ['whisper-1', 'whisper-large-v3-turbo']);
+        )).thenAnswer(
+      (_) async =>
+          const FetchModelsSuccess(['whisper-1', 'whisper-large-v3-turbo']),
+    );
 
     await tester.pumpWidget(buildWidget());
     await tester.pumpAndSettle();
@@ -213,11 +260,14 @@ void main() {
     expect(find.text('whisper-1'), findsOneWidget);
   });
 
-  testWidgets('free-text fallback allows typing', (tester) async {
+  testWidgets('free-text fallback allows typing on failure', (tester) async {
     when(() => mockClient.fetchModels(
           baseUrl: any(named: 'baseUrl'),
           apiKey: any(named: 'apiKey'),
-        )).thenAnswer((_) async => []);
+        )).thenAnswer(
+      (_) async =>
+          const FetchModelsFailure('Not found \u2014 check endpoint URL'),
+    );
 
     controller.text = '';
     await tester.pumpWidget(buildWidget());
@@ -228,5 +278,26 @@ void main() {
 
     await tester.enterText(textField, 'my-custom-model');
     expect(controller.text, 'my-custom-model');
+  });
+
+  testWidgets('model field stays editable on error', (tester) async {
+    when(() => mockClient.fetchModels(
+          baseUrl: any(named: 'baseUrl'),
+          apiKey: any(named: 'apiKey'),
+        )).thenAnswer(
+      (_) async =>
+          const FetchModelsFailure('Unauthorized \u2014 check API key'),
+    );
+
+    controller.text = 'gpt-4o';
+    await tester.pumpWidget(buildWidget());
+    await tester.pumpAndSettle();
+
+    final textField = find.byType(TextField);
+    expect(textField, findsOneWidget);
+
+    // Should still be editable
+    await tester.enterText(textField, 'new-model');
+    expect(controller.text, 'new-model');
   });
 }

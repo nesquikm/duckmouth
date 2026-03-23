@@ -93,7 +93,7 @@ Future<void> setupServiceLocator() async {
   sl.registerFactory<LlmClient>(
     () => LlmClientImpl(
       apiKey: '',
-      baseUrl: 'https://api.openai.com',
+      baseUrl: 'https://api.openai.com/v1',
       model: 'gpt-5.4-mini',
     ),
   );

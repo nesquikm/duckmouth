@@ -47,14 +47,14 @@ void main() {
   });
 
   const defaultConfig = ApiConfig(
-    baseUrl: 'https://api.openai.com',
+    baseUrl: 'https://api.openai.com/v1',
     apiKey: '',
     model: 'whisper-1',
     providerName: 'openAi',
   );
 
   const savedConfig = ApiConfig(
-    baseUrl: 'https://api.groq.com/openai',
+    baseUrl: 'https://api.groq.com/openai/v1',
     apiKey: 'test-key',
     model: 'whisper-large-v3-turbo',
     providerName: 'groq',
@@ -182,7 +182,7 @@ void main() {
       expect: () => [
         SettingsLoaded(
           sttConfig: ApiConfig(
-            baseUrl: 'https://api.openai.com',
+            baseUrl: 'https://api.openai.com/v1',
             apiKey: savedConfig.apiKey,
             model: 'whisper-1',
             providerName: 'openAi',
@@ -199,7 +199,7 @@ void main() {
       expect: () => [
         const SettingsLoaded(
           sttConfig: ApiConfig(
-            baseUrl: 'https://api.groq.com/openai',
+            baseUrl: 'https://api.groq.com/openai/v1',
             apiKey: '',
             model: 'whisper-large-v3-turbo',
             providerName: 'groq',

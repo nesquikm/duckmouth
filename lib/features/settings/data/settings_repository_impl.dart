@@ -49,6 +49,16 @@ const _kAudioFormat = 'audio_format';
 const _kAudioSampleRate = 'audio_sample_rate';
 const _kAudioBitRate = 'audio_bit_rate';
 
+/// Known old-format base URLs that need `/v1` appended.
+const _kOldFormatUrls = {
+  'https://api.openai.com': 'https://api.openai.com/v1',
+  'https://api.groq.com/openai': 'https://api.groq.com/openai/v1',
+};
+
+/// Migrate a base URL from old format (without version path) to new format.
+/// Returns the URL unchanged if it doesn't match a known old-format value.
+String _migrateBaseUrl(String url) => _kOldFormatUrls[url] ?? url;
+
 /// [SettingsRepository] backed by SharedPreferences (non-sensitive values)
 /// including API keys.
 class SettingsRepositoryImpl implements SettingsRepository {
@@ -60,7 +70,7 @@ class SettingsRepositoryImpl implements SettingsRepository {
 
   @override
   Future<ApiConfig?> loadSttConfig() async {
-    final baseUrl = _prefs.getString(_kBaseUrl);
+    final rawBaseUrl = _prefs.getString(_kBaseUrl);
     final model = _prefs.getString(_kModel);
     final providerName = _prefs.getString(_kProviderName);
 
@@ -68,9 +78,10 @@ class SettingsRepositoryImpl implements SettingsRepository {
     if (providerName == null) return null;
 
     final apiKey = _prefs.getString(_kApiKey) ?? '';
+    final baseUrl = _migrateBaseUrl(rawBaseUrl ?? '');
 
     return ApiConfig(
-      baseUrl: baseUrl ?? '',
+      baseUrl: baseUrl,
       apiKey: apiKey,
       model: model ?? '',
       providerName: providerName,
@@ -91,7 +102,8 @@ class SettingsRepositoryImpl implements SettingsRepository {
   Future<PostProcessingConfig> loadPostProcessingConfig() async {
     final enabled = _prefs.getBool(_kPpEnabled) ?? false;
     final prompt = _prefs.getString(_kPpPrompt) ?? kDefaultPostProcessingPrompt;
-    final baseUrl = _prefs.getString(_kPpBaseUrl) ?? 'https://api.openai.com';
+    final rawBaseUrl = _prefs.getString(_kPpBaseUrl) ?? 'https://api.openai.com/v1';
+    final baseUrl = _migrateBaseUrl(rawBaseUrl);
     final model = _prefs.getString(_kPpModel) ?? 'gpt-5.4-mini';
     final providerName = _prefs.getString(_kPpProviderName) ?? 'openAi';
     final apiKey = _prefs.getString(_kPpApiKey) ?? '';

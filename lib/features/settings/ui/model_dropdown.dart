@@ -36,7 +36,7 @@ class ModelDropdown extends StatefulWidget {
 class ModelDropdownState extends State<ModelDropdown> {
   List<String> _models = [];
   bool _loading = false;
-  bool _failed = false;
+  String? _failureReason;
 
   @override
   void initState() {
@@ -58,42 +58,41 @@ class ModelDropdownState extends State<ModelDropdown> {
       setState(() {
         _models = [];
         _loading = false;
-        _failed = false;
+        _failureReason = null;
       });
       return;
     }
 
     setState(() {
       _loading = true;
-      _failed = false;
+      _failureReason = null;
     });
 
-    final all = await widget.modelsClient.fetchModels(
+    final result = await widget.modelsClient.fetchModels(
       baseUrl: widget.baseUrl,
       apiKey: widget.apiKey,
     );
 
     if (!mounted) return;
 
-    if (all.isEmpty) {
-      setState(() {
-        _loading = false;
-        _failed = true;
-        _models = [];
-      });
-      return;
+    switch (result) {
+      case FetchModelsFailure(:final reason):
+        setState(() {
+          _loading = false;
+          _failureReason = reason;
+          _models = [];
+        });
+      case FetchModelsSuccess(:final models):
+        final filtered = switch (widget.modelType) {
+          ModelType.stt => ModelFilter.filterStt(models),
+          ModelType.llm => ModelFilter.filterLlm(models),
+        };
+        setState(() {
+          _loading = false;
+          _failureReason = null;
+          _models = filtered.isEmpty ? models : filtered;
+        });
     }
-
-    final filtered = switch (widget.modelType) {
-      ModelType.stt => ModelFilter.filterStt(all),
-      ModelType.llm => ModelFilter.filterLlm(all),
-    };
-
-    setState(() {
-      _loading = false;
-      _failed = false;
-      _models = filtered.isEmpty ? all : filtered;
-    });
   }
 
   @override
@@ -109,8 +108,7 @@ class ModelDropdownState extends State<ModelDropdown> {
           )
         : null;
 
-    final helperText =
-        _failed ? 'Could not load models — type manually' : null;
+    final helperText = _failureReason;
 
     return RawAutocomplete<String>(
       textEditingController: widget.controller,

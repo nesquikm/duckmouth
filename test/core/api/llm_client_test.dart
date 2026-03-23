@@ -30,7 +30,7 @@ void main() {
 
       final client = LlmClientImpl(
         apiKey: 'test-key',
-        baseUrl: 'https://api.example.com',
+        baseUrl: 'https://api.example.com/v1',
         model: 'gpt-5.4-mini',
         httpClient: mockClient,
       );
@@ -71,7 +71,7 @@ void main() {
 
       final client = LlmClientImpl(
         apiKey: 'test-key',
-        baseUrl: 'https://api.example.com',
+        baseUrl: 'https://api.example.com/v1',
         model: 'gpt-5.4-mini',
         httpClient: mockClient,
       );
@@ -87,7 +87,7 @@ void main() {
 
       final client = LlmClientImpl(
         apiKey: 'bad-key',
-        baseUrl: 'https://api.example.com',
+        baseUrl: 'https://api.example.com/v1',
         model: 'gpt-5.4-mini',
         httpClient: mockClient,
       );
@@ -105,7 +105,7 @@ void main() {
 
       final client = LlmClientImpl(
         apiKey: 'bad-key',
-        baseUrl: 'https://api.example.com',
+        baseUrl: 'https://api.example.com/v1',
         model: 'gpt-5.4-mini',
         httpClient: mockClient,
       );
@@ -126,7 +126,7 @@ void main() {
 
       final client = LlmClientImpl(
         apiKey: 'test-key',
-        baseUrl: 'https://api.example.com',
+        baseUrl: 'https://api.example.com/v1',
         model: 'gpt-5.4-mini',
         httpClient: mockClient,
       );
@@ -147,7 +147,7 @@ void main() {
 
       final client = LlmClientImpl(
         apiKey: 'test-key',
-        baseUrl: 'https://api.example.com',
+        baseUrl: 'https://api.example.com/v1',
         model: 'gpt-5.4-mini',
         httpClient: mockClient,
       );
@@ -165,7 +165,7 @@ void main() {
 
       final client = LlmClientImpl(
         apiKey: 'test-key',
-        baseUrl: 'https://api.example.com',
+        baseUrl: 'https://api.example.com/v1',
         model: 'gpt-5.4-mini',
         httpClient: mockClient,
       );
@@ -183,7 +183,7 @@ void main() {
 
       final client = LlmClientImpl(
         apiKey: 'test-key',
-        baseUrl: 'https://api.example.com',
+        baseUrl: 'https://api.example.com/v1',
         model: 'gpt-5.4-mini',
         httpClient: mockClient,
       );

@@ -41,7 +41,7 @@ class PostProcessingConfig {
     this.enabled = false,
     this.prompt = kDefaultPostProcessingPrompt,
     this.llmConfig = const ApiConfig(
-      baseUrl: 'https://api.openai.com',
+      baseUrl: 'https://api.openai.com/v1',
       apiKey: '',
       model: 'gpt-5.4-mini',
       providerName: 'openAi',

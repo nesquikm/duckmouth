@@ -21,7 +21,7 @@ void main() {
     enabled: true,
     prompt: 'Fix grammar',
     llmConfig: ApiConfig(
-      baseUrl: 'https://api.openai.com',
+      baseUrl: 'https://api.openai.com/v1',
       apiKey: 'key',
       model: 'gpt-5.4-mini',
       providerName: 'openAi',

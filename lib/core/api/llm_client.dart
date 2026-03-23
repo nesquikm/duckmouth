@@ -31,7 +31,7 @@ class LlmClientImpl implements LlmClient {
   @override
   Future<String> chatCompletion(String systemPrompt, String userMessage) async {
     _log.info('Chat completion (model: $_model)');
-    final uri = Uri.parse('$_baseUrl/v1/chat/completions');
+    final uri = Uri.parse('$_baseUrl/chat/completions');
 
     final body = jsonEncode({
       'model': _model,

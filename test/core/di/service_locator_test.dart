@@ -118,7 +118,7 @@ void main() {
       await setupServiceLocator();
 
       const config = ApiConfig(
-        baseUrl: 'https://api.groq.com/openai',
+        baseUrl: 'https://api.groq.com/openai/v1',
         apiKey: 'test-key',
         model: 'whisper-large-v3-turbo',
         providerName: 'groq',
@@ -136,7 +136,7 @@ void main() {
       await setupServiceLocator();
 
       const config = ApiConfig(
-        baseUrl: 'https://api.openai.com',
+        baseUrl: 'https://api.openai.com/v1',
         apiKey: 'llm-key',
         model: 'gpt-4o',
         providerName: 'openAi',

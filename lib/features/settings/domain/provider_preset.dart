@@ -4,13 +4,13 @@ import 'package:duckmouth/features/settings/domain/api_config.dart';
 enum ProviderPreset {
   openAi(
     label: 'OpenAI',
-    baseUrl: 'https://api.openai.com',
+    baseUrl: 'https://api.openai.com/v1',
     model: 'whisper-1',
     llmModel: 'gpt-5.4-mini',
   ),
   groq(
     label: 'Groq',
-    baseUrl: 'https://api.groq.com/openai',
+    baseUrl: 'https://api.groq.com/openai/v1',
     model: 'whisper-large-v3-turbo',
     llmModel: 'llama-3.3-70b-versatile',
   ),

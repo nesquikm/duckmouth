@@ -32,7 +32,7 @@ void main() {
 
       final client = OpenAiClientImpl(
         apiKey: 'test-key',
-        baseUrl: 'https://api.example.com',
+        baseUrl: 'https://api.example.com/v1',
         model: 'whisper-1',
         httpClient: mockClient,
       );

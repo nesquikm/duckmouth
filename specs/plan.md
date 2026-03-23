@@ -382,7 +382,7 @@ Each milestone is independently gatable. Don't proceed to M(n+1) until M(n) gate
 5. Write E2E scenario: **STT error & retry** — recording completes → transcription fails → error shown → tap retry → transcription succeeds
 6. Write E2E scenario: **Post-processing disabled** — recording → transcription → post-processing skipped → raw text shown and copied
 7. Write E2E scenario: **Post-processing error & retry** — transcription succeeds → post-processing fails → error shown → tap retry → succeeds
-8. Write E2E scenario: **Settings round-trip** — navigate to settings → change STT config → save → verify new config persisted
+8. Write E2E scenario: **Settings round-trip** — navigate to settings → change STT config (auto-saved) → verify new config persisted
 9. Write E2E scenario: **History** — complete a transcription → navigate to history → verify entry visible → swipe to delete → verify removal
 10. Add `integration_test` to gate check documentation (optional: separate from unit gate since it requires macOS runner)
 
@@ -490,7 +490,7 @@ The hotkey_manager plugin's native Swift layer expects Carbon key codes (e.g. `4
 **Prerequisites:** M4 (Settings & API Configuration)
 
 **Tasks:**
-1. Create `lib/core/api/models_client.dart` — HTTP client that calls `GET {baseUrl}/v1/models` and returns `List<String>` of model IDs
+1. Create `lib/core/api/models_client.dart` — HTTP client that calls `GET {baseUrl}/models` and returns model IDs (note: base URL includes version path, e.g. `https://api.openai.com/v1`)
 2. Create `lib/core/api/model_filter.dart` — heuristic filters to classify models as STT (contains `whisper`) vs LLM (excludes embedding/tts/image patterns)
 3. Create `lib/features/settings/ui/model_dropdown.dart` — reusable widget: dropdown when models loaded, free-text fallback on error, loading spinner while fetching
 4. Replace STT model `TextField` in `settings_page.dart` with `ModelDropdown` using STT filter
@@ -579,6 +579,187 @@ The hotkey_manager plugin's native Swift layer expects Carbon key codes (e.g. `4
 
 ---
 
+## M20: Model Selection Fix
+
+**Goal:** Always allow free-text model entry via autocomplete combo-box; fix PP preset defaulting to whisper models.
+**Prerequisites:** M17
+
+**Tasks:**
+1. Add `llmModel` field to `ProviderPreset` enum (openAi → `gpt-4o-mini`, groq → `llama-3.3-70b-versatile`)
+2. Rewrite `ModelDropdown` from `DropdownButtonFormField` to `RawAutocomplete<String>` — always renders a `TextField` for free typing, with fetched models as suggestions
+3. Enable model text field for all presets (not just custom)
+4. Fix `_onPpPresetChanged` to use `preset.llmModel` instead of `preset.model`
+5. Update tests for autocomplete widget and llmModel field
+
+**Tests:**
+- ModelDropdown always shows TextField (not locked dropdown)
+- Free-text typing works even after successful model fetch
+- Autocomplete suggestions filter by typed text
+- PP preset change sets LLM model (not whisper model)
+
+**Acceptance Criteria:**
+- [x] User can always type a custom model name for both STT and PP (AC-15.1)
+- [x] Fetched models appear as autocomplete suggestions (AC-15.2)
+- [x] Groq PP preset defaults to `llama-3.3-70b-versatile` (not whisper) (AC-15.3)
+- [x] Provider presets have separate `model` and `llmModel` fields (AC-15.4)
+- [x] Gate passes: `fvm flutter analyze && fvm flutter test`
+
+**Gate:** `fvm flutter analyze && fvm flutter test`
+
+---
+
+## M21: Auto-save Settings
+
+**Goal:** Remove Save button; persist each setting immediately on change with debounce for text fields.
+**Prerequisites:** M20
+
+**Tasks:**
+1. Add debounce timer and save-helper methods (`_saveSttConfig`, `_savePpConfig`, `_saveSoundConfig`, `_saveAudioFormatConfig`)
+2. Wire text controllers with listeners for debounced auto-save (500ms)
+3. Wire dropdowns, switches, and sliders to call cubit save methods immediately on change
+4. Guard `didUpdateWidget` to only overwrite controllers when value differs (prevent save loops)
+5. Remove `_onSave()` method and Save button
+6. Update tests to verify auto-save behavior
+
+**Tests:**
+- Changing a dropdown triggers immediate save via cubit
+- Text field changes trigger debounced save
+- Save button is absent from the UI
+
+**Acceptance Criteria:**
+- [x] No Save button in settings (AC-16.1)
+- [x] All settings persist immediately (dropdowns/switches) or after 500ms debounce (text fields) (AC-16.2, AC-16.3)
+- [x] No save loops from cubit state re-emission (AC-16.4)
+- [x] Gate passes: `fvm flutter analyze && fvm flutter test`
+
+**Gate:** `fvm flutter analyze && fvm flutter test`
+
+---
+
+## M22: Volume Preview Sound
+
+**Goal:** Play the corresponding sound when a volume slider is released, so the user can hear the selected volume.
+**Prerequisites:** M21
+
+**Tasks:**
+1. Add `onChangeEnd` parameter to `_VolumeSlider` widget, wire to `Slider.onChangeEnd`
+2. On release: play the matching sound (start → Tink, stop → Pop, complete → Glass) at the selected volume
+3. Trigger save on `onChangeEnd` (not debounced `onChanged`) for volume values
+
+**Tests:**
+- Releasing a volume slider plays the corresponding sound at the correct volume
+
+**Acceptance Criteria:**
+- [x] Releasing "Recording start volume" slider plays Tink at selected volume (AC-17.1)
+- [x] Releasing "Recording stop volume" slider plays Pop at selected volume (AC-17.1)
+- [x] Releasing "Transcription complete volume" slider plays Glass at selected volume (AC-17.1)
+- [x] Volume saved on slider release (AC-17.2)
+- [x] Gate passes: `fvm flutter analyze && fvm flutter test`
+
+**Gate:** `fvm flutter analyze && fvm flutter test`
+
+---
+
+## M23: Dark Mode Banner Colors
+
+**Goal:** Fix accessibility permission banners to use theme-aware colors visible in both light and dark modes.
+**Prerequisites:** M4
+
+**Tasks:**
+1. In `_AccessibilityPermissionBanner` (settings_page.dart): check brightness, use dark-appropriate background/icon colors
+2. In `_AccessibilityBanner` (home_page.dart): same dark-mode-aware color treatment
+3. Add explicit `iconColor` for proper contrast in both modes
+
+**Tests:**
+- Banner renders different colors in light vs dark theme
+
+**Acceptance Criteria:**
+- [x] "Accessibility permission granted" banner is clearly visible in dark mode (AC-18.1)
+- [x] Warning and unknown banners also adapt to dark mode (AC-18.1)
+- [x] Icon colors have proper contrast in both themes (AC-18.2)
+- [x] Gate passes: `fvm flutter analyze && fvm flutter test`
+
+**Gate:** `fvm flutter analyze && fvm flutter test`
+
+---
+
+## M24: Model Fetch Diagnostics & Base URL Migration
+
+**Goal:** Show specific error messages when model fetch fails (not just "Could not load models"). Move `/v1` from hardcoded API clients into provider base URLs to support providers with different path structures (e.g. Google Gemini).
+**Prerequisites:** M17 (Dynamic Model Discovery), M20 (Model Selection Fix)
+
+**Tasks:**
+1. Create `FetchModelsResult` sealed class with `FetchModelsSuccess(List<String> models)` and `FetchModelsFailure(String reason)` variants
+2. Update `ModelsClient.fetchModels` to return `FetchModelsResult` — map HTTP status codes to specific error messages (401 → "Unauthorized — check API key", 404 → "Not found — check endpoint URL", network error → "Network error — check connection", malformed JSON → "Unexpected response format")
+3. Update `ModelDropdown` to display `FetchModelsFailure.reason` in helper text instead of generic "Could not load models — type manually"
+4. Remove hardcoded `/v1/` from `OpenAiClientImpl` (`$baseUrl/v1/audio/transcriptions` → `$baseUrl/audio/transcriptions`)
+5. Remove hardcoded `/v1/` from `LlmClientImpl` (`$baseUrl/v1/chat/completions` → `$baseUrl/chat/completions`)
+6. Remove hardcoded `/v1/` from `ModelsClientImpl` (`$baseUrl/v1/models` → `$baseUrl/models`)
+7. Update `ProviderPreset` base URLs: OpenAI → `https://api.openai.com/v1`, Groq → `https://api.groq.com/openai/v1`
+8. Add migration in `SettingsRepositoryImpl` — on load, if saved `baseUrl` matches a known old-format value (e.g. `https://api.openai.com`), append `/v1`; if already migrated, leave unchanged
+9. Update all tests for new result type, updated base URLs, and migration logic
+
+**Tests:**
+- `FetchModelsResult` sealed class: success with model list, failure with reason string
+- `ModelsClient` returns specific error messages for 401, 403, 404, 429, 5xx, network error, malformed JSON
+- `ModelDropdown` displays failure reason from result (not generic message)
+- API clients construct correct URLs without `/v1/` prefix (e.g. `https://api.openai.com/v1/models`)
+- Provider presets have updated base URLs with version path
+- Settings migration appends `/v1` to old-format OpenAI/Groq URLs
+- Migration is idempotent (doesn't double-append)
+- Migration does not touch custom/unknown URLs
+
+**Acceptance Criteria:**
+- [x] Model fetch errors show specific reason in helper text (AC-19.1, AC-19.2, AC-19.3)
+- [x] Model field stays editable on error (AC-19.4)
+- [x] `ModelsClient` returns result type with error detail (AC-19.5)
+- [x] API clients use `baseUrl` directly without adding `/v1/` (AC-20.1)
+- [x] Provider preset URLs include version path (AC-20.2)
+- [x] Saved settings migrated on load (AC-20.3)
+- [x] Custom base URLs work unchanged (AC-20.4)
+- [x] All existing functionality works unchanged (AC-20.5)
+- [x] Gate passes: `fvm flutter analyze && fvm flutter test`
+
+**Gate:** `fvm flutter analyze && fvm flutter test`
+
+---
+
+## M25: Additional Provider Presets
+
+**Goal:** Add xAI (Grok), Google Gemini, and OpenRouter as provider presets. Models are fetched dynamically; default model names are initial suggestions only.
+**Prerequisites:** M24 (base URL migration must be done first so non-`/v1` providers work)
+
+**Tasks:**
+1. Add `xAi` preset to `ProviderPreset`: label `"xAI (Grok)"`, baseUrl `https://api.x.ai/v1`, model `""` (no STT), llmModel `grok-4-1-fast-non-reasoning`
+2. Add `googleGemini` preset to `ProviderPreset`: label `"Google Gemini"`, baseUrl `https://generativelanguage.googleapis.com/v1beta/openai`, model `""` (no STT), llmModel `gemini-3-flash`
+3. Add `openRouter` preset to `ProviderPreset`: label `"OpenRouter"`, baseUrl `https://openrouter.ai/api/v1`, model `""` (no STT), llmModel `openrouter/auto`
+4. Update `ModelDropdown` to show hint text `"This provider has no STT models"` when the preset's default STT model is empty and `modelType` is `ModelType.stt`
+5. Verify `ModelFilter` doesn't incorrectly exclude new provider model names (e.g. `grok-*`, `gemini-*`)
+6. Update all preset-related tests for 6 presets (OpenAI, Groq, xAI, Google Gemini, OpenRouter, Custom)
+
+**Tests:**
+- Each new preset has correct label, baseUrl, model, llmModel values
+- `fromName` resolves `xAi`, `googleGemini`, `openRouter` correctly
+- `toApiConfig` works for all new presets
+- Provider dropdown includes all 6 presets in both STT and PP sections
+- Selecting xAI/Gemini/OpenRouter for STT shows "no STT models" hint
+- Model fetch returns models from each new provider (mocked HTTP responses)
+- `ModelFilter` doesn't incorrectly exclude `grok-*`, `gemini-*`, `openrouter/*` model names
+
+**Acceptance Criteria:**
+- [ ] xAI preset available with correct defaults (AC-21.1)
+- [ ] Google Gemini preset available with correct defaults (AC-21.2)
+- [ ] OpenRouter preset available with correct defaults (AC-21.3)
+- [ ] All presets visible in provider dropdown (AC-21.4)
+- [ ] STT-less providers show appropriate hint (AC-21.5)
+- [ ] Model fetch works for all new providers (AC-21.6)
+- [ ] STT and LLM calls work with supporting providers (AC-21.7)
+- [ ] Gate passes: `fvm flutter analyze && fvm flutter test`
+
+**Gate:** `fvm flutter analyze && fvm flutter test`
+
+---
+
 ## Milestone Dependency Graph
 
 ```
@@ -595,4 +776,7 @@ M4 → M16
 M4 → M17
 M6 + M12 + M16 → M18
 M1 → M19
+M17 → M20 → M21 → M22
+M4 → M23
+M17 + M20 → M24 → M25
 ```

@@ -258,8 +258,8 @@ All fakes implement existing abstract interfaces (type-safe, no `when()` setup):
 
 #### Settings round-trip
 1. Navigate to settings
-2. Change STT config (endpoint, model)
-3. Save → navigate back → reopen settings
+2. Change STT config (endpoint, model) — auto-saved
+3. Navigate back → reopen settings
 4. Verify config persisted
 
 #### Model discovery in settings
@@ -300,21 +300,131 @@ fvm flutter test integration_test/
 ## 12. Dynamic Model Discovery Tests
 
 ### ModelsClient (`test/core/api/models_client_test.dart`)
-- Fetches and parses `/v1/models` response correctly
-- Returns empty list on HTTP error (4xx, 5xx)
-- Returns empty list on network/timeout error
-- Handles malformed JSON gracefully
+- Fetches and parses `/models` response correctly (note: no `/v1/` prefix — base URL includes version path)
+- Returns `FetchModelsSuccess` with model list on 200 OK
+- Returns `FetchModelsFailure` with "Unauthorized — check API key" on HTTP 401
+- Returns `FetchModelsFailure` with "Access denied — check API key permissions" on HTTP 403
+- Returns `FetchModelsFailure` with "Not found — check endpoint URL" on HTTP 404
+- Returns `FetchModelsFailure` with "Rate limited — try again later" on HTTP 429
+- Returns `FetchModelsFailure` with "Server error (500)" on HTTP 5xx
+- Returns `FetchModelsFailure` with "Network error — check connection" on network/timeout
+- Returns `FetchModelsFailure` with "Unexpected response format" on malformed JSON
+- Empty baseUrl or apiKey: returns empty success (no fetch attempted)
 
 ### Model filtering (`test/core/api/model_filter_test.dart`)
 - Filters STT models: includes `whisper-1`, `whisper-large-v3-turbo`, excludes `gpt-4o`
-- Filters LLM models: includes `gpt-4o`, `llama-3`, excludes `whisper-1`, `text-embedding-*`, `tts-*`, `dall-e-*`
+- Filters LLM models: includes `gpt-4o`, `llama-3`, `grok-4-1-fast-non-reasoning`, `gemini-3-flash`, excludes `whisper-1`, `text-embedding-*`, `tts-*`, `dall-e-*`
 - Case-insensitive matching
 
 ### Model dropdown widget (`test/features/settings/ui/model_dropdown_test.dart`)
-- Shows loading indicator while fetching
-- Shows dropdown with fetched models on success
-- Falls back to text field on fetch failure
+- Shows loading indicator (spinner suffix) while fetching
+- Always renders a TextField (autocomplete combo-box, not locked dropdown)
+- Shows autocomplete suggestions from fetched models on success
+- Shows specific error reason in helper text on failure (e.g. "401 Unauthorized — check API key")
+- Shows "This provider has no STT models" hint when provider default STT model is empty
 - Refreshes when base URL changes
 - Refreshes when API key changes
-- Selected model preserved if still in list after refresh
-- Free-text fallback allows typing arbitrary model name
+- Current model text preserved after fetch
+- Free-text typing always works (even after successful fetch)
+- Disabled field does not accept input
+
+## 13. DMG Distribution Tests
+
+### Build script (`scripts/build_dmg.sh`)
+- Script is executable and runs without errors on a clean checkout
+- Produces a `.dmg` file in `build/dmg/`
+- DMG filename includes version from `pubspec.yaml`
+- `.app` bundle inside DMG is ad-hoc signed (verify with `codesign -v`)
+- DMG mounts and contains the app + Applications symlink
+
+### Homebrew cask formula
+- `brew audit --cask duckmouth` passes (syntax, required fields)
+- Formula version matches latest GitHub Release tag
+- SHA256 in formula matches the published DMG
+
+**Note:** These are manual verification steps and shell-based checks, not Dart unit tests. The gate check (`fvm flutter analyze && fvm flutter test`) still applies to any Dart code changes but the distribution pipeline itself is verified manually or via CI.
+
+## 14. Model Selection Fix Tests
+
+### ProviderPreset (`test/features/settings/domain/provider_preset_test.dart`)
+- Each preset has correct `llmModel` value (openAi → `gpt-5.4-mini`, groq → `llama-3.3-70b-versatile`, xAi → `grok-4-1-fast-non-reasoning`, googleGemini → `gemini-3-flash`, openRouter → `openrouter/auto`, custom → empty)
+- `toApiConfig` still uses `model` (STT) by default
+
+### Settings page model integration
+- PP preset change sets `llmModel` (not `model`) in PP model controller
+- STT model field enabled for all presets (not just custom)
+- PP model field enabled when post-processing is enabled (not just custom)
+
+## 15. Auto-Save Settings Tests
+
+### Settings page behavior
+- Save button absent from UI
+- Changing a dropdown/switch calls the corresponding cubit save method immediately
+- Text field changes trigger debounced save after 500ms
+- `didUpdateWidget` does not overwrite controller when text matches (loop prevention)
+
+### Settings cubit
+- All existing `save*()` methods work correctly (no changes needed — already tested)
+
+## 16. Volume Preview Sound Tests
+
+### `_VolumeSlider` behavior
+- Releasing a slider triggers `onChangeEnd` callback
+- Start volume slider plays `playRecordingStart` at selected volume
+- Stop volume slider plays `playRecordingStop` at selected volume
+- Complete volume slider plays `playTranscriptionComplete` at selected volume
+- Sound config saved on slider release
+
+## 17. Dark Mode Banner Colors Tests
+
+### `_AccessibilityPermissionBanner` (settings page)
+- Granted state: light green background in light mode, dark green in dark mode
+- Denied state: light orange background in light mode, dark orange in dark mode
+- Icon colors differ between light and dark modes
+
+### `_AccessibilityBanner` (home page)
+- Orange warning banner uses dark-appropriate colors in dark mode
+
+## 18. Base URL Path Migration Tests
+
+### API client URL construction
+- `OpenAiClientImpl` constructs `$baseUrl/audio/transcriptions` (no `/v1/` inserted)
+- `LlmClientImpl` constructs `$baseUrl/chat/completions` (no `/v1/` inserted)
+- `ModelsClientImpl` constructs `$baseUrl/models` (no `/v1/` inserted)
+- All existing API tests pass with updated base URLs (e.g. `https://api.openai.com/v1`)
+
+### Provider preset base URLs
+- OpenAI preset baseUrl is `https://api.openai.com/v1`
+- Groq preset baseUrl is `https://api.groq.com/openai/v1`
+- xAI preset baseUrl is `https://api.x.ai/v1`
+- Google Gemini preset baseUrl is `https://generativelanguage.googleapis.com/v1beta/openai`
+- OpenRouter preset baseUrl is `https://openrouter.ai/api/v1`
+
+### Settings migration (`test/features/settings/data/settings_repository_impl_test.dart`)
+- Saved `https://api.openai.com` migrated to `https://api.openai.com/v1` on load
+- Saved `https://api.groq.com/openai` migrated to `https://api.groq.com/openai/v1` on load
+- Already-migrated URL (e.g. `https://api.openai.com/v1`) is not double-appended
+- Custom URLs (e.g. `http://localhost:11434/v1`) are not modified
+- Migration applies to both STT and PP base URLs
+
+## 19. Additional Provider Presets Tests
+
+### ProviderPreset (`test/features/settings/domain/provider_preset_test.dart`)
+- xAI preset: label "xAI (Grok)", baseUrl `https://api.x.ai/v1`, model `""`, llmModel `grok-4-1-fast-non-reasoning`
+- Google Gemini preset: label "Google Gemini", baseUrl `https://generativelanguage.googleapis.com/v1beta/openai`, model `""`, llmModel `gemini-3-flash`
+- OpenRouter preset: label "OpenRouter", baseUrl `https://openrouter.ai/api/v1`, model `""`, llmModel `openrouter/auto`
+- `fromName` resolves `xAi`, `googleGemini`, `openRouter` correctly
+- `toApiConfig` works for all new presets
+
+### Settings UI
+- Provider dropdown shows 6 options (OpenAI, Groq, xAI, Google Gemini, OpenRouter, Custom) in STT section
+- Provider dropdown shows 6 options in PP section
+- Selecting xAI for STT shows "This provider has no STT models" hint
+- Selecting Google Gemini for STT shows "This provider has no STT models" hint
+- Selecting OpenRouter for STT shows "This provider has no STT models" hint
+
+### Model fetch with new providers (mocked HTTP)
+- xAI `/models` response parsed correctly (model IDs like `grok-4-1-fast-non-reasoning`)
+- Google Gemini `/models` response parsed correctly (model IDs like `gemini-3-flash`)
+- OpenRouter `/models` response parsed correctly
+- ModelFilter doesn't incorrectly exclude new provider model names

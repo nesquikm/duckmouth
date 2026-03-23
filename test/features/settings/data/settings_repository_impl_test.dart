@@ -26,7 +26,7 @@ void main() {
     });
 
     test('loadSttConfig returns saved config', () async {
-      await prefs.setString('stt_base_url', 'https://api.groq.com/openai');
+      await prefs.setString('stt_base_url', 'https://api.groq.com/openai/v1');
       await prefs.setString('stt_model', 'whisper-large-v3-turbo');
       await prefs.setString('stt_provider_name', 'groq');
       await prefs.setString('stt_api_key', 'secret-key');
@@ -34,7 +34,7 @@ void main() {
       final result = await repo.loadSttConfig();
 
       expect(result, isNotNull);
-      expect(result!.baseUrl, 'https://api.groq.com/openai');
+      expect(result!.baseUrl, 'https://api.groq.com/openai/v1');
       expect(result.apiKey, 'secret-key');
       expect(result.model, 'whisper-large-v3-turbo');
       expect(result.providerName, 'groq');
@@ -51,7 +51,7 @@ void main() {
 
     test('saveSttConfig persists all fields', () async {
       const config = ApiConfig(
-        baseUrl: 'https://api.openai.com',
+        baseUrl: 'https://api.openai.com/v1',
         apiKey: 'my-key',
         model: 'whisper-1',
         providerName: 'openAi',
@@ -59,10 +59,72 @@ void main() {
 
       await repo.saveSttConfig(config);
 
-      expect(prefs.getString('stt_base_url'), 'https://api.openai.com');
+      expect(prefs.getString('stt_base_url'), 'https://api.openai.com/v1');
       expect(prefs.getString('stt_model'), 'whisper-1');
       expect(prefs.getString('stt_provider_name'), 'openAi');
       expect(prefs.getString('stt_api_key'), 'my-key');
+    });
+  });
+
+  group('Base URL migration', () {
+    test('migrates old OpenAI base URL on STT config load', () async {
+      await prefs.setString('stt_base_url', 'https://api.openai.com');
+      await prefs.setString('stt_provider_name', 'openAi');
+
+      final result = await repo.loadSttConfig();
+
+      expect(result!.baseUrl, 'https://api.openai.com/v1');
+    });
+
+    test('migrates old Groq base URL on STT config load', () async {
+      await prefs.setString('stt_base_url', 'https://api.groq.com/openai');
+      await prefs.setString('stt_provider_name', 'groq');
+
+      final result = await repo.loadSttConfig();
+
+      expect(result!.baseUrl, 'https://api.groq.com/openai/v1');
+    });
+
+    test('migration is idempotent — does not double-append', () async {
+      await prefs.setString('stt_base_url', 'https://api.openai.com/v1');
+      await prefs.setString('stt_provider_name', 'openAi');
+
+      final result = await repo.loadSttConfig();
+
+      expect(result!.baseUrl, 'https://api.openai.com/v1');
+    });
+
+    test('migration does not touch custom URLs', () async {
+      await prefs.setString('stt_base_url', 'https://my-custom-api.com');
+      await prefs.setString('stt_provider_name', 'custom');
+
+      final result = await repo.loadSttConfig();
+
+      expect(result!.baseUrl, 'https://my-custom-api.com');
+    });
+
+    test('migrates old OpenAI base URL on PP config load', () async {
+      await prefs.setString('pp_base_url', 'https://api.openai.com');
+
+      final result = await repo.loadPostProcessingConfig();
+
+      expect(result.llmConfig.baseUrl, 'https://api.openai.com/v1');
+    });
+
+    test('migrates old Groq base URL on PP config load', () async {
+      await prefs.setString('pp_base_url', 'https://api.groq.com/openai');
+
+      final result = await repo.loadPostProcessingConfig();
+
+      expect(result.llmConfig.baseUrl, 'https://api.groq.com/openai/v1');
+    });
+
+    test('PP migration is idempotent', () async {
+      await prefs.setString('pp_base_url', 'https://api.openai.com/v1');
+
+      final result = await repo.loadPostProcessingConfig();
+
+      expect(result.llmConfig.baseUrl, 'https://api.openai.com/v1');
     });
   });
 
@@ -80,7 +142,7 @@ void main() {
 
       expect(result.enabled, false);
       expect(result.prompt, contains('Fix any grammar'));
-      expect(result.llmConfig.baseUrl, 'https://api.openai.com');
+      expect(result.llmConfig.baseUrl, 'https://api.openai.com/v1');
       expect(result.llmConfig.model, 'gpt-5.4-mini');
       expect(result.llmConfig.apiKey, '');
     });

@@ -59,7 +59,7 @@ specs/                            # SDD spec files
 |----------|--------|-----------|
 | Framework | Flutter 3.41.5 | Cross-platform potential, rich plugin ecosystem |
 | State management | BLoC/Cubit | Predictable, testable state; bloc_test support |
-| API abstraction | OpenAI-compatible | Single client for multiple providers (OpenAI, Groq, custom) |
+| API abstraction | OpenAI-compatible | Single client for multiple providers (OpenAI, Groq, xAI, Google Gemini, OpenRouter, custom) |
 | Directory structure | Feature-first | Scales well, clear module boundaries |
 | Menu bar | system_tray or tray_manager plugin | Native macOS system tray integration |
 | Global hotkeys | hotkey_manager plugin + custom recorder | Native registration via hotkey_manager; custom recorder dialog replaces broken HotKeyRecorder widget |
@@ -78,11 +78,24 @@ specs/                            # SDD spec files
 - `duration`: Duration (recording length)
 - `provider`: String (API provider used)
 
+### ProviderPreset
+- `label`: String (display name)
+- `baseUrl`: String (API base URL, including version path — clients append `/models`, `/audio/transcriptions`, `/chat/completions` directly)
+- `model`: String (default STT model; empty if provider has no STT)
+- `llmModel`: String (default LLM model for post-processing)
+- Values:
+  - `openAi`: baseUrl `https://api.openai.com/v1`, model `whisper-1`, llmModel `gpt-5.4-mini`
+  - `groq`: baseUrl `https://api.groq.com/openai/v1`, model `whisper-large-v3-turbo`, llmModel `llama-3.3-70b-versatile`
+  - `xAi`: baseUrl `https://api.x.ai/v1`, model `""` (no STT), llmModel `grok-4-1-fast-non-reasoning`
+  - `googleGemini`: baseUrl `https://generativelanguage.googleapis.com/v1beta/openai`, model `""` (no STT), llmModel `gemini-3-flash`
+  - `openRouter`: baseUrl `https://openrouter.ai/api/v1`, model `""` (no STT), llmModel `openrouter/auto`
+  - `custom`: baseUrl `""`, model `""`, llmModel `""`
+
 ### ApiConfig
 - `endpoint`: String (base URL)
 - `apiKey`: String (stored in Keychain)
 - `model`: String
-- `providerPreset`: ProviderPreset? (OpenAI, Groq, custom)
+- `providerPreset`: ProviderPreset? (OpenAI, Groq, xAI, Google Gemini, OpenRouter, custom)
 
 ### RecordingState
 - `status`: RecordingStatus (idle, recording, processing)
@@ -126,22 +139,97 @@ specs/                            # SDD spec files
 ## 3. API / Interface Design
 
 ### STT API (OpenAI-compatible)
-- `POST /v1/audio/transcriptions`
+- `POST {baseUrl}/audio/transcriptions`
 - Body: multipart form with audio file, model name
 - Response: `{ "text": "transcribed text" }`
+- Supported by: OpenAI, Groq. Not supported by: xAI, Google Gemini, OpenRouter.
 
 ### LLM Post-Processing API (OpenAI-compatible)
-- `POST /v1/chat/completions`
+- `POST {baseUrl}/chat/completions`
 - Body: messages array with system prompt + transcription
 - Response: standard chat completions response
+- Supported by: all providers (OpenAI, Groq, xAI, Google Gemini, OpenRouter)
 
 ### Models API (OpenAI-compatible)
-- `GET /v1/models`
+- `GET {baseUrl}/models`
 - Response: `{ "object": "list", "data": [{ "id": "model-name", "object": "model", "created": 1686935002, "owned_by": "owner" }, ...] }`
 - No server-side filtering — client filters by model ID heuristics:
   - **STT models:** ID contains `whisper` (case-insensitive)
   - **LLM models:** all models not matching STT/embedding/tts/image patterns
-- Endpoint is widely supported: OpenAI, Groq, Ollama, vLLM, LM Studio, OpenRouter
+- Endpoint is widely supported: OpenAI, Groq, xAI, Google Gemini (via OpenAI compat), OpenRouter, Ollama, vLLM, LM Studio
+
+### FetchModelsResult (sealed class)
+
+`ModelsClient.fetchModels` returns a sealed result type instead of a bare `List<String>`:
+
+```dart
+sealed class FetchModelsResult {}
+class FetchModelsSuccess extends FetchModelsResult {
+  final List<String> models;
+}
+class FetchModelsFailure extends FetchModelsResult {
+  final String reason; // e.g. "401 Unauthorized — check API key"
+}
+```
+
+Error reason mapping:
+- HTTP 401 → "Unauthorized — check API key"
+- HTTP 403 → "Access denied — check API key permissions"
+- HTTP 404 → "Not found — check endpoint URL"
+- HTTP 429 → "Rate limited — try again later"
+- HTTP 5xx → "Server error (NNN)"
+- Network/timeout → "Network error — check connection"
+- Malformed JSON → "Unexpected response format"
+- Empty credentials → no fetch attempted (not an error)
+
+### Base URL Path Convention
+
+API clients (`OpenAiClient`, `LlmClient`, `ModelsClient`) append endpoint paths directly to `baseUrl` without inserting `/v1/`. The version path is part of the base URL itself:
+
+| Provider | Base URL | Example full URL |
+|---|---|---|
+| OpenAI | `https://api.openai.com/v1` | `https://api.openai.com/v1/models` |
+| Groq | `https://api.groq.com/openai/v1` | `https://api.groq.com/openai/v1/chat/completions` |
+| xAI | `https://api.x.ai/v1` | `https://api.x.ai/v1/models` |
+| Google Gemini | `https://generativelanguage.googleapis.com/v1beta/openai` | `https://generativelanguage.googleapis.com/v1beta/openai/models` |
+| OpenRouter | `https://openrouter.ai/api/v1` | `https://openrouter.ai/api/v1/chat/completions` |
+
+**Migration:** On settings load, if a saved `baseUrl` matches a known old-format value (e.g. `https://api.openai.com` without `/v1`), append the version path automatically. Migration is idempotent.
+
+### Model Dropdown (Autocomplete Combo-Box)
+
+**Widget:** `lib/features/settings/ui/model_dropdown.dart` — `ModelDropdown`
+
+Uses `RawAutocomplete<String>` to always render a `TextField` that accepts free typing. Fetched models appear as autocomplete suggestions filtered by the user's input.
+
+**Behavior:**
+- Fetches models from `/v1/models` when `baseUrl` and `apiKey` are both non-empty
+- Shows loading spinner as a suffix icon while fetching
+- On success: models shown as dropdown suggestions, user can still type freely
+- On failure: helper text shows specific error reason from `FetchModelsFailure.reason` (e.g. "Unauthorized — check API key"), field still editable
+- `ModelType.stt` → filters for whisper models; `ModelType.llm` → filters out non-chat models
+- Always enabled when the widget's `enabled` prop is true (not locked by preset selection)
+
+### Settings Auto-Save
+
+Settings are persisted immediately without a Save button:
+- **Dropdowns, switches, sliders:** call the corresponding `SettingsCubit.save*()` method in `onChanged`
+- **Text fields** (API keys, URLs, model names, prompt, sample rate): use a shared 500ms debounce timer via text controller listeners
+- **Volume sliders:** save on `Slider.onChangeEnd` (not on every drag tick)
+- **Loop prevention:** `didUpdateWidget` guards controller overwrites with `_setTextIfDifferent()` to avoid save → rebuild → overwrite → save cycles
+
+### Volume Preview Sound
+
+When a volume slider is released (`Slider.onChangeEnd`), the app plays the corresponding sound at the selected volume:
+- Recording start volume → `SoundService.playRecordingStart(volume:)` (Tink)
+- Recording stop volume → `SoundService.playRecordingStop(volume:)` (Pop)
+- Transcription complete volume → `SoundService.playTranscriptionComplete(volume:)` (Glass)
+
+### Theme-Aware Banner Colors
+
+Accessibility permission banners in both `settings_page.dart` and `home_page.dart` use `Theme.of(context).brightness` to select colors:
+- **Light mode:** `Colors.green.shade50` bg / `Colors.green.shade700` icon (granted); `Colors.orange.shade50` / `Colors.orange.shade700` (denied)
+- **Dark mode:** `Colors.green.shade900.withValues(alpha: 0.3)` bg / `Colors.green.shade300` icon (granted); `Colors.orange.shade900.withValues(alpha: 0.3)` / `Colors.orange.shade300` (denied)
 
 ### Sound Platform Channel (macOS native)
 
@@ -305,3 +393,64 @@ Masking strings are added/removed in `SettingsCubit` when API keys change.
 | logging | latest | Dart standard logging (peer dependency of the_logger) |
 | mocktail | 1.0.4 | Test mocking (dev) |
 | bloc_test | 10.0.0 | BLoC testing (dev) |
+
+## 7. Distribution
+
+### DMG Packaging
+
+**Tool:** `create-dmg` (Homebrew shell script — `brew install create-dmg`)
+
+**Build script:** `scripts/build_dmg.sh`
+
+```bash
+#!/bin/bash
+set -euo pipefail
+
+APP_NAME="Duckmouth"
+BUILD_DIR="build/macos/Build/Products/Release"
+DMG_DIR="build/dmg"
+VERSION=$(grep 'version:' pubspec.yaml | head -1 | awk '{print $2}' | cut -d'+' -f1)
+
+# 1. Build release
+fvm flutter build macos --release
+
+# 2. Ad-hoc sign (no Developer ID needed)
+codesign --force --deep -s - "$BUILD_DIR/$APP_NAME.app"
+
+# 3. Create DMG
+mkdir -p "$DMG_DIR"
+create-dmg \
+  --volname "$APP_NAME" \
+  --window-pos 200 120 \
+  --window-size 600 400 \
+  --icon-size 100 \
+  --icon "$APP_NAME.app" 175 190 \
+  --app-drop-link 425 190 \
+  "$DMG_DIR/$APP_NAME-$VERSION.dmg" \
+  "$BUILD_DIR/$APP_NAME.app"
+```
+
+**No code signing or notarization** — the app uses ad-hoc signing only. Users downloading the DMG directly will need to allow it via System Settings → Privacy & Security. Homebrew distribution avoids this by stripping quarantine on install.
+
+### Homebrew Tap
+
+A separate GitHub repository `homebrew-duckmouth` hosts the cask formula:
+
+```ruby
+# Casks/duckmouth.rb
+cask "duckmouth" do
+  version "1.0.0"
+  sha256 "SHA256_OF_DMG"
+
+  url "https://github.com/OWNER/duckmouth/releases/download/v#{version}/Duckmouth-#{version}.dmg"
+  name "Duckmouth"
+  desc "Speech-to-text macOS app with LLM post-processing"
+  homepage "https://github.com/OWNER/duckmouth"
+
+  app "Duckmouth.app"
+end
+```
+
+**Install:** `brew install --cask OWNER/duckmouth/duckmouth`
+
+Homebrew automatically runs `xattr -cr` on cask installs, stripping the quarantine attribute so Gatekeeper doesn't block unsigned apps.

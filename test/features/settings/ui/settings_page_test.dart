@@ -42,7 +42,7 @@ void main() {
   late MockSoundService mockSoundService;
 
   const defaultSttConfig = ApiConfig(
-    baseUrl: 'https://api.openai.com',
+    baseUrl: 'https://api.openai.com/v1',
     apiKey: '',
     model: 'whisper-1',
     providerName: 'openAi',
@@ -89,7 +89,7 @@ void main() {
     when(() => mockModelsClient.fetchModels(
           baseUrl: any(named: 'baseUrl'),
           apiKey: any(named: 'apiKey'),
-        )).thenAnswer((_) async => <String>[]);
+        )).thenAnswer((_) async => const FetchModelsSuccess(['whisper-1']));
 
     // Stub sound service methods
     when(() => mockSoundService.playRecordingStart(volume: any(named: 'volume')))

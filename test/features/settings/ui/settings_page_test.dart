@@ -11,6 +11,7 @@ import 'package:duckmouth/core/api/models_client.dart';
 import 'package:duckmouth/core/services/accessibility_service.dart';
 import 'package:duckmouth/core/services/output_mode.dart';
 import 'package:duckmouth/core/services/sound_config.dart';
+import 'package:duckmouth/core/services/sound_service.dart';
 import 'package:duckmouth/features/hotkey/domain/hotkey_config.dart';
 import 'package:duckmouth/features/post_processing/domain/post_processing_config.dart';
 import 'package:duckmouth/features/recording/domain/audio_format_config.dart';
@@ -33,9 +34,12 @@ class FakeSoundConfig extends Fake implements SoundConfig {}
 
 class FakeAudioFormatConfig extends Fake implements AudioFormatConfig {}
 
+class MockSoundService extends Mock implements SoundService {}
+
 void main() {
   late MockSettingsCubit mockCubit;
   late MockModelsClient mockModelsClient;
+  late MockSoundService mockSoundService;
 
   const defaultSttConfig = ApiConfig(
     baseUrl: 'https://api.openai.com',
@@ -67,6 +71,7 @@ void main() {
   setUp(() {
     mockCubit = MockSettingsCubit();
     mockModelsClient = MockModelsClient();
+    mockSoundService = MockSoundService();
 
     when(() => mockCubit.state).thenReturn(defaultState);
     when(() => mockCubit.stream).thenAnswer((_) => const Stream.empty());
@@ -86,9 +91,20 @@ void main() {
           apiKey: any(named: 'apiKey'),
         )).thenAnswer((_) async => <String>[]);
 
+    // Stub sound service methods
+    when(() => mockSoundService.playRecordingStart(volume: any(named: 'volume')))
+        .thenAnswer((_) async {});
+    when(() => mockSoundService.playRecordingStop(volume: any(named: 'volume')))
+        .thenAnswer((_) async {});
+    when(() => mockSoundService.playTranscriptionComplete(volume: any(named: 'volume')))
+        .thenAnswer((_) async {});
+
     final sl = GetIt.instance;
     if (!sl.isRegistered<ModelsClient>()) {
       sl.registerLazySingleton<ModelsClient>(() => mockModelsClient);
+    }
+    if (!sl.isRegistered<SoundService>()) {
+      sl.registerLazySingleton<SoundService>(() => mockSoundService);
     }
   });
 
@@ -233,6 +249,67 @@ void main() {
 
       // Should have saved exactly once with final value
       verify(() => mockCubit.saveSettings(any())).called(1);
+    });
+  });
+
+  group('M22: Volume preview sound', () {
+    Future<void> dragSliderByLabel(
+      WidgetTester tester,
+      String label,
+    ) async {
+      // Find the slider that is a sibling of the label text within a Row.
+      final labelFinder = find.text(label);
+      await tester.ensureVisible(labelFinder);
+      await tester.pump();
+
+      // Find the Slider widget in the same Row as the label.
+      final row = find.ancestor(of: labelFinder, matching: find.byType(Row));
+      final slider = find.descendant(of: row.first, matching: find.byType(Slider));
+      expect(slider, findsOneWidget);
+
+      // Simulate a drag on the slider (move it to roughly 50%).
+      final renderBox = tester.renderObject<RenderBox>(slider);
+      final center = renderBox.size.center(Offset.zero);
+
+      // Perform a drag gesture — this triggers onChanged and then onChangeEnd.
+      await tester.drag(slider, Offset(-center.dx * 0.5, 0));
+      await tester.pump();
+    }
+
+    testWidgets(
+        'Releasing recording start volume slider plays Tink at selected volume',
+        (tester) async {
+      await pumpPage(tester);
+      await dragSliderByLabel(tester, 'Recording start volume');
+
+      verify(() => mockSoundService.playRecordingStart(
+            volume: any(named: 'volume'),
+          )).called(1);
+      verify(() => mockCubit.saveSoundConfig(any())).called(1);
+    });
+
+    testWidgets(
+        'Releasing recording stop volume slider plays Pop at selected volume',
+        (tester) async {
+      await pumpPage(tester);
+      await dragSliderByLabel(tester, 'Recording stop volume');
+
+      verify(() => mockSoundService.playRecordingStop(
+            volume: any(named: 'volume'),
+          )).called(1);
+      verify(() => mockCubit.saveSoundConfig(any())).called(1);
+    });
+
+    testWidgets(
+        'Releasing transcription complete volume slider plays Glass at selected volume',
+        (tester) async {
+      await pumpPage(tester);
+      await dragSliderByLabel(tester, 'Transcription complete volume');
+
+      verify(() => mockSoundService.playTranscriptionComplete(
+            volume: any(named: 'volume'),
+          )).called(1);
+      verify(() => mockCubit.saveSoundConfig(any())).called(1);
     });
   });
 }

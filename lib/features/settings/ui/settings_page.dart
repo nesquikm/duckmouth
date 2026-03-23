@@ -9,6 +9,7 @@ import 'package:duckmouth/core/di/service_locator.dart';
 import 'package:duckmouth/core/services/accessibility_service.dart';
 import 'package:duckmouth/core/services/output_mode.dart';
 import 'package:duckmouth/core/services/sound_config.dart';
+import 'package:duckmouth/core/services/sound_service.dart';
 import 'package:duckmouth/features/hotkey/domain/hotkey_config.dart';
 import 'package:duckmouth/features/hotkey/ui/hotkey_recorder_dialog.dart';
 import 'package:duckmouth/features/post_processing/domain/post_processing_config.dart'
@@ -631,7 +632,11 @@ class _SettingsFormState extends State<_SettingsForm> {
             enabled: _soundConfig.enabled,
             onChanged: (v) {
               setState(() => _soundConfig = _soundConfig.copyWith(startVolume: v));
+            },
+            onChangeEnd: (v) {
+              setState(() => _soundConfig = _soundConfig.copyWith(startVolume: v));
               _saveSoundConfig();
+              sl<SoundService>().playRecordingStart(volume: v);
             },
           ),
           const SizedBox(height: 8),
@@ -641,7 +646,11 @@ class _SettingsFormState extends State<_SettingsForm> {
             enabled: _soundConfig.enabled,
             onChanged: (v) {
               setState(() => _soundConfig = _soundConfig.copyWith(stopVolume: v));
+            },
+            onChangeEnd: (v) {
+              setState(() => _soundConfig = _soundConfig.copyWith(stopVolume: v));
               _saveSoundConfig();
+              sl<SoundService>().playRecordingStop(volume: v);
             },
           ),
           const SizedBox(height: 8),
@@ -651,7 +660,11 @@ class _SettingsFormState extends State<_SettingsForm> {
             enabled: _soundConfig.enabled,
             onChanged: (v) {
               setState(() => _soundConfig = _soundConfig.copyWith(completeVolume: v));
+            },
+            onChangeEnd: (v) {
+              setState(() => _soundConfig = _soundConfig.copyWith(completeVolume: v));
               _saveSoundConfig();
+              sl<SoundService>().playTranscriptionComplete(volume: v);
             },
           ),
 
@@ -856,12 +869,14 @@ class _VolumeSlider extends StatelessWidget {
     required this.value,
     required this.enabled,
     required this.onChanged,
+    this.onChangeEnd,
   });
 
   final String label;
   final double value;
   final bool enabled;
   final ValueChanged<double> onChanged;
+  final ValueChanged<double>? onChangeEnd;
 
   @override
   Widget build(BuildContext context) {
@@ -876,6 +891,7 @@ class _VolumeSlider extends StatelessWidget {
           child: Slider(
             value: value,
             onChanged: enabled ? onChanged : null,
+            onChangeEnd: enabled ? onChangeEnd : null,
             divisions: 10,
             label: '${(value * 100).round()}%',
           ),

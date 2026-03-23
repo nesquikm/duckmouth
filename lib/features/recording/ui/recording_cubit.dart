@@ -20,6 +20,8 @@ class RecordingCubit extends Cubit<RecordingState> {
   StreamSubscription<Duration>? _durationSubscription;
   AudioFormatConfig _formatConfig = const AudioFormatConfig();
   String? _selectedDeviceId;
+  bool _startInProgress = false;
+  bool _pendingStop = false;
 
   /// Update the audio format configuration for future recordings.
   void updateFormatConfig(AudioFormatConfig config) {
@@ -33,6 +35,8 @@ class RecordingCubit extends Cubit<RecordingState> {
 
   /// Start recording audio from the microphone.
   Future<void> startRecording() async {
+    _pendingStop = false;
+    _startInProgress = true;
     try {
       final hasPermission = await _repository.hasPermission();
       if (!hasPermission) {
@@ -64,11 +68,21 @@ class RecordingCubit extends Cubit<RecordingState> {
     } on Exception catch (e, st) {
       _log.severe('Failed to start recording', e, st);
       _tryEmit(RecordingError('Failed to start recording: $e'));
+    } finally {
+      _startInProgress = false;
+      if (_pendingStop) {
+        _pendingStop = false;
+        await stopRecording();
+      }
     }
   }
 
   /// Stop the current recording.
   Future<void> stopRecording() async {
+    if (_startInProgress) {
+      _pendingStop = true;
+      return;
+    }
     try {
       await _durationSubscription?.cancel();
       _durationSubscription = null;

@@ -872,10 +872,10 @@ The hotkey_manager plugin's native Swift layer expects Carbon key codes (e.g. `4
 - Gate passes
 
 **Acceptance Criteria:**
-- [ ] Rapid push-to-talk does not hang (AC-25.1)
-- [ ] Pending stop fires after start completes (AC-25.2)
-- [ ] Toggle mode handles rapid input (AC-25.3)
-- [ ] Gate passes: `fvm flutter analyze && fvm flutter test`
+- [x] Rapid push-to-talk does not hang (AC-25.1)
+- [x] Pending stop fires after start completes (AC-25.2)
+- [x] Toggle mode handles rapid input (AC-25.3)
+- [x] Gate passes: `fvm flutter analyze && fvm flutter test`
 
 **Gate:** `fvm flutter analyze && fvm flutter test`
 

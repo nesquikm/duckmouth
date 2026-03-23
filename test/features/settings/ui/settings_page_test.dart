@@ -85,7 +85,6 @@ void main() {
         .thenAnswer((_) async {});
     when(() => mockCubit.saveSelectedInputDevice(any()))
         .thenAnswer((_) async {});
-    when(() => mockCubit.selectPreset(any())).thenReturn(null);
     when(() => mockModelsClient.fetchModels(
           baseUrl: any(named: 'baseUrl'),
           apiKey: any(named: 'apiKey'),

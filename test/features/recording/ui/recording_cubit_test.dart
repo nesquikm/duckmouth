@@ -258,6 +258,50 @@ void main() {
           const RecordingComplete('/tmp/recording.m4a'),
         ],
       );
+
+      blocTest<RecordingCubit, RecordingState>(
+        're-entrant startRecording during pending stop is rejected',
+        setUp: () {
+          final startCompleter = Completer<void>();
+          when(() => mockRepo.hasPermission())
+              .thenAnswer((_) async => true);
+          when(() => mockRepo.start(
+                formatConfig: any(named: 'formatConfig'),
+                deviceId: any(named: 'deviceId'),
+              )).thenAnswer((_) => startCompleter.future);
+          when(() => mockRepo.durationStream)
+              .thenAnswer((_) => const Stream<Duration>.empty());
+          when(() => mockRepo.stop())
+              .thenAnswer((_) async => '/tmp/recording.m4a');
+          Future<void>.delayed(const Duration(milliseconds: 50), () {
+            startCompleter.complete();
+          });
+        },
+        build: () => RecordingCubit(repository: mockRepo),
+        act: (cubit) async {
+          // Start recording (delayed by completer)
+          final startFuture = cubit.startRecording();
+          // Stop arrives (deferred via _pendingStop)
+          await cubit.stopRecording();
+          // Re-entrant start (e.g. key repeat) — must NOT clear _pendingStop
+          await cubit.startRecording();
+          // Wait for original start to finish
+          await startFuture;
+          await Future<void>.delayed(Duration.zero);
+        },
+        expect: () => [
+          const RecordingInProgress(Duration.zero),
+          const RecordingComplete('/tmp/recording.m4a'),
+        ],
+        verify: (_) {
+          // start() called only once — re-entrant call was rejected
+          verify(() => mockRepo.start(
+                formatConfig: any(named: 'formatConfig'),
+                deviceId: any(named: 'deviceId'),
+              )).called(1);
+          verify(() => mockRepo.stop()).called(1);
+        },
+      );
     });
 
     group('stopRecording', () {

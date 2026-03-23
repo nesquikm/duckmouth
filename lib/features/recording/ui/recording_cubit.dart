@@ -35,6 +35,7 @@ class RecordingCubit extends Cubit<RecordingState> {
 
   /// Start recording audio from the microphone.
   Future<void> startRecording() async {
+    if (_startInProgress) return; // Reject re-entrant calls (e.g. key repeat)
     _pendingStop = false;
     _startInProgress = true;
     try {
@@ -93,7 +94,7 @@ class RecordingCubit extends Cubit<RecordingState> {
       } else {
         _tryEmit(const RecordingError('No recording data available'));
       }
-    } on Exception catch (e, st) {
+    } catch (e, st) {
       _log.severe('Failed to stop recording', e, st);
       _tryEmit(RecordingError('Failed to stop recording: $e'));
     }

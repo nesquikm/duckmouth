@@ -14,7 +14,7 @@ class RecordingRepositoryImpl implements RecordingRepository {
   RecordingRepositoryImpl({AudioRecorder? recorder})
       : _recorder = recorder ?? AudioRecorder();
 
-  final AudioRecorder _recorder;
+  AudioRecorder _recorder;
   Timer? _durationTimer;
   final StreamController<Duration> _durationController =
       StreamController<Duration>.broadcast();
@@ -67,9 +67,27 @@ class RecordingRepositoryImpl implements RecordingRepository {
     _durationTimer = null;
     _recordingStartTime = null;
 
-    final path = await _recorder.stop();
-    _log.info('Recording stopped: $path');
-    return path;
+    // The record_macos plugin can hang on stop() for very short recordings:
+    // its native delegate callback never fires because AVCaptureAudioFileOutput
+    // is deallocated before AVFoundation calls didFinishRecordingTo.
+    // When that happens, the plugin's internal semaphore is never released,
+    // deadlocking all subsequent recorder calls.
+    //
+    // Swap in a fresh recorder BEFORE awaiting stop so that any concurrent
+    // startRecording() call won't deadlock on the stuck semaphore.
+    final stoppingRecorder = _recorder;
+    _recorder = AudioRecorder();
+
+    try {
+      final path = await stoppingRecorder.stop().timeout(
+        const Duration(seconds: 2),
+      );
+      _log.info('Recording stopped: $path');
+      return path;
+    } on TimeoutException {
+      _log.warning('Recording stop timed out, old recorder abandoned');
+      return null;
+    }
   }
 
   @override

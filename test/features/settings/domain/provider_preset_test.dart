@@ -9,6 +9,7 @@ void main() {
       expect(preset.label, 'OpenAI');
       expect(preset.baseUrl, 'https://api.openai.com');
       expect(preset.model, 'whisper-1');
+      expect(preset.llmModel, 'gpt-4o-mini');
     });
 
     test('Groq preset has correct values', () {
@@ -16,6 +17,7 @@ void main() {
       expect(preset.label, 'Groq');
       expect(preset.baseUrl, 'https://api.groq.com/openai');
       expect(preset.model, 'whisper-large-v3-turbo');
+      expect(preset.llmModel, 'llama-3.3-70b-versatile');
     });
 
     test('Custom preset has empty defaults', () {
@@ -23,6 +25,7 @@ void main() {
       expect(preset.label, 'Custom');
       expect(preset.baseUrl, '');
       expect(preset.model, '');
+      expect(preset.llmModel, '');
     });
 
     test('toApiConfig creates correct config', () {
@@ -53,6 +56,16 @@ void main() {
 
     test('fromName returns custom for unknown name', () {
       expect(ProviderPreset.fromName('unknown'), ProviderPreset.custom);
+    });
+
+    test('llmModel differs from model for non-custom presets', () {
+      expect(ProviderPreset.openAi.llmModel, isNot(ProviderPreset.openAi.model));
+      expect(ProviderPreset.groq.llmModel, isNot(ProviderPreset.groq.model));
+    });
+
+    test('Groq llmModel is llama not whisper', () {
+      expect(ProviderPreset.groq.llmModel, 'llama-3.3-70b-versatile');
+      expect(ProviderPreset.groq.llmModel, isNot(contains('whisper')));
     });
   });
 }

@@ -238,7 +238,7 @@ class _SettingsFormState extends State<_SettingsForm> {
       _ppSelectedPreset = preset;
       if (preset != ProviderPreset.custom) {
         _ppBaseUrlController.text = preset.baseUrl;
-        _ppModelController.text = preset.model;
+        _ppModelController.text = preset.llmModel;
       }
     });
   }
@@ -341,7 +341,7 @@ class _SettingsFormState extends State<_SettingsForm> {
             apiKey: _apiKeyController.text,
             modelType: ModelType.stt,
             controller: _modelController,
-            enabled: isCustom,
+            enabled: true,
           ),
 
           const SizedBox(height: 32),
@@ -688,7 +688,7 @@ class _SettingsFormState extends State<_SettingsForm> {
             modelType: ModelType.llm,
             controller: _ppModelController,
             label: 'LLM Model',
-            enabled: _ppEnabled && isPpCustom,
+            enabled: _ppEnabled,
           ),
 
           const SizedBox(height: 24),
@@ -728,27 +728,32 @@ class _AccessibilityPermissionBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final Color bgColor;
+    final Color iconColor;
     final IconData icon;
     final String message;
     final bool showButton;
 
     switch (status) {
       case AccessibilityStatus.granted:
-        bgColor = Colors.green.shade50;
+        bgColor = isDark ? const Color(0xFF1B3A1B) : Colors.green.shade50;
+        iconColor = isDark ? Colors.green.shade300 : Colors.green.shade700;
         icon = Icons.check_circle;
         message = 'Accessibility permission granted — '
             'direct text insertion enabled.';
         showButton = false;
       case AccessibilityStatus.denied:
-        bgColor = Colors.orange.shade50;
+        bgColor = isDark ? const Color(0xFF3A2A0A) : Colors.orange.shade50;
+        iconColor = isDark ? Colors.orange.shade300 : Colors.orange.shade700;
         icon = Icons.warning_amber_rounded;
         message = 'Accessibility permission required for paste-at-cursor. '
             'Grant access in System Settings \u2192 Privacy & Security '
             '\u2192 Accessibility.';
         showButton = true;
       case AccessibilityStatus.unknown:
-        bgColor = Colors.grey.shade100;
+        bgColor = isDark ? const Color(0xFF2A2A2A) : Colors.grey.shade100;
+        iconColor = isDark ? Colors.grey.shade300 : Colors.grey.shade700;
         icon = Icons.help_outline;
         message = 'Accessibility permission status unknown.';
         showButton = true;
@@ -762,7 +767,7 @@ class _AccessibilityPermissionBanner extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(icon, size: 20),
+          Icon(icon, size: 20, color: iconColor),
           const SizedBox(width: 8),
           Expanded(child: Text(message, style: Theme.of(context).textTheme.bodySmall)),
           if (showButton) ...[

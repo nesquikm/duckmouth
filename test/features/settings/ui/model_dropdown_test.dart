@@ -42,25 +42,7 @@ void main() {
     );
   }
 
-  testWidgets('shows loading indicator while fetching', (tester) async {
-    final completer = Completer<List<String>>();
-    when(() => mockClient.fetchModels(
-          baseUrl: any(named: 'baseUrl'),
-          apiKey: any(named: 'apiKey'),
-        )).thenAnswer((_) => completer.future);
-
-    await tester.pumpWidget(buildWidget());
-    await tester.pump(); // Trigger build after initState
-
-    // Should show a CircularProgressIndicator.
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
-
-    // Complete the future to clean up the pending timer.
-    completer.complete(['whisper-1']);
-    await tester.pumpAndSettle();
-  });
-
-  testWidgets('shows dropdown with models on success', (tester) async {
+  testWidgets('always shows TextField (not locked dropdown)', (tester) async {
     when(() => mockClient.fetchModels(
           baseUrl: any(named: 'baseUrl'),
           apiKey: any(named: 'apiKey'),
@@ -69,10 +51,70 @@ void main() {
     await tester.pumpWidget(buildWidget());
     await tester.pumpAndSettle();
 
-    expect(find.byType(DropdownButtonFormField<String>), findsOneWidget);
+    // Should always show a TextField, never a DropdownButtonFormField.
+    expect(find.byType(TextField), findsOneWidget);
+    expect(find.byType(DropdownButtonFormField<String>), findsNothing);
   });
 
-  testWidgets('falls back to text field on fetch failure', (tester) async {
+  testWidgets('shows loading indicator while fetching', (tester) async {
+    final completer = Completer<List<String>>();
+    when(() => mockClient.fetchModels(
+          baseUrl: any(named: 'baseUrl'),
+          apiKey: any(named: 'apiKey'),
+        )).thenAnswer((_) => completer.future);
+
+    await tester.pumpWidget(buildWidget());
+    await tester.pump();
+
+    // Should show a CircularProgressIndicator.
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    // Should still have a TextField.
+    expect(find.byType(TextField), findsOneWidget);
+
+    completer.complete(['whisper-1']);
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('free-text typing works even after successful model fetch',
+      (tester) async {
+    when(() => mockClient.fetchModels(
+          baseUrl: any(named: 'baseUrl'),
+          apiKey: any(named: 'apiKey'),
+        )).thenAnswer((_) async => ['whisper-1', 'whisper-large-v3-turbo']);
+
+    controller.text = '';
+    await tester.pumpWidget(buildWidget());
+    await tester.pumpAndSettle();
+
+    final textField = find.byType(TextField);
+    expect(textField, findsOneWidget);
+
+    await tester.enterText(textField, 'my-custom-model');
+    expect(controller.text, 'my-custom-model');
+  });
+
+  testWidgets('autocomplete suggestions filter by typed text',
+      (tester) async {
+    when(() => mockClient.fetchModels(
+          baseUrl: any(named: 'baseUrl'),
+          apiKey: any(named: 'apiKey'),
+        )).thenAnswer((_) async => ['whisper-1', 'whisper-large-v3-turbo', 'gpt-4o']);
+
+    controller.text = '';
+    await tester.pumpWidget(buildWidget());
+    await tester.pumpAndSettle();
+
+    // Type "whisper" to filter.
+    await tester.enterText(find.byType(TextField), 'whisper');
+    await tester.pumpAndSettle();
+
+    // Should show whisper models but not gpt-4o.
+    expect(find.text('whisper-1'), findsWidgets);
+    expect(find.text('whisper-large-v3-turbo'), findsOneWidget);
+    expect(find.text('gpt-4o'), findsNothing);
+  });
+
+  testWidgets('shows helper text on fetch failure', (tester) async {
     when(() => mockClient.fetchModels(
           baseUrl: any(named: 'baseUrl'),
           apiKey: any(named: 'apiKey'),
@@ -118,7 +160,6 @@ void main() {
           apiKey: 'test-key',
         )).thenAnswer((_) async => ['whisper-large-v3-turbo']);
 
-    // Build with first URL.
     await tester.pumpWidget(buildWidget());
     await tester.pumpAndSettle();
 
@@ -127,7 +168,6 @@ void main() {
           apiKey: 'test-key',
         )).called(1);
 
-    // Rebuild with new URL.
     await tester.pumpWidget(buildWidget(baseUrl: 'https://api.groq.com/openai'));
     await tester.pumpAndSettle();
 
@@ -160,7 +200,7 @@ void main() {
         )).called(1);
   });
 
-  testWidgets('preserves current model if still in list', (tester) async {
+  testWidgets('preserves current model text', (tester) async {
     controller.text = 'whisper-1';
     when(() => mockClient.fetchModels(
           baseUrl: any(named: 'baseUrl'),
@@ -170,7 +210,6 @@ void main() {
     await tester.pumpWidget(buildWidget());
     await tester.pumpAndSettle();
 
-    // The dropdown should have whisper-1 selected.
     expect(find.text('whisper-1'), findsOneWidget);
   });
 

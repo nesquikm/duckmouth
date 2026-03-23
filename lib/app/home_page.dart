@@ -359,18 +359,25 @@ class _AccessibilityBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(top: 8, bottom: 4),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.orange.shade50,
+        color: isDark ? const Color(0xFF3A2A0A) : Colors.orange.shade50,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.orange.shade200),
+        border: Border.all(
+          color: isDark ? Colors.orange.shade800 : Colors.orange.shade200,
+        ),
       ),
       child: Row(
         children: [
-          Icon(Icons.warning_amber_rounded, color: Colors.orange.shade700, size: 20),
+          Icon(
+            Icons.warning_amber_rounded,
+            color: isDark ? Colors.orange.shade300 : Colors.orange.shade700,
+            size: 20,
+          ),
           const SizedBox(width: 8),
           Expanded(
             child: Text(

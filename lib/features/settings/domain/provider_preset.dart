@@ -6,27 +6,32 @@ enum ProviderPreset {
     label: 'OpenAI',
     baseUrl: 'https://api.openai.com',
     model: 'whisper-1',
+    llmModel: 'gpt-4o-mini',
   ),
   groq(
     label: 'Groq',
     baseUrl: 'https://api.groq.com/openai',
     model: 'whisper-large-v3-turbo',
+    llmModel: 'llama-3.3-70b-versatile',
   ),
   custom(
     label: 'Custom',
     baseUrl: '',
     model: '',
+    llmModel: '',
   );
 
   const ProviderPreset({
     required this.label,
     required this.baseUrl,
     required this.model,
+    required this.llmModel,
   });
 
   final String label;
   final String baseUrl;
   final String model;
+  final String llmModel;
 
   /// Create an [ApiConfig] from this preset, using the given [apiKey].
   ///

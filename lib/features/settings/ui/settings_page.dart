@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:record/record.dart' show AudioRecorder, InputDevice;
@@ -120,6 +122,13 @@ class _SettingsFormState extends State<_SettingsForm> {
   List<InputDevice> _inputDevices = [];
   bool _devicesLoading = true;
 
+  // Debounce timers for text fields
+  Timer? _sttDebounce;
+  Timer? _ppDebounce;
+  Timer? _audioFormatDebounce;
+
+  static const _debounceDuration = Duration(milliseconds: 500);
+
   @override
   void initState() {
     super.initState();
@@ -153,6 +162,18 @@ class _SettingsFormState extends State<_SettingsForm> {
 
     _selectedDeviceId = widget.selectedInputDeviceId;
     _loadInputDevices();
+
+    // Wire text controller listeners for debounced auto-save
+    _baseUrlController.addListener(_debounceSaveSttConfig);
+    _apiKeyController.addListener(_debounceSaveSttConfig);
+    _modelController.addListener(_debounceSaveSttConfig);
+
+    _ppPromptController.addListener(_debounceSavePpConfig);
+    _ppBaseUrlController.addListener(_debounceSavePpConfig);
+    _ppApiKeyController.addListener(_debounceSavePpConfig);
+    _ppModelController.addListener(_debounceSavePpConfig);
+
+    _sampleRateController.addListener(_debounceSaveAudioFormatConfig);
   }
 
   Future<void> _loadInputDevices() async {
@@ -173,13 +194,21 @@ class _SettingsFormState extends State<_SettingsForm> {
     }
   }
 
+  /// Only update a controller's text if the new value differs from current,
+  /// preventing save loops when cubit re-emits state.
+  void _setTextIfDifferent(TextEditingController controller, String value) {
+    if (controller.text != value) {
+      controller.text = value;
+    }
+  }
+
   @override
   void didUpdateWidget(_SettingsForm oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.config != widget.config) {
-      _baseUrlController.text = widget.config.baseUrl;
-      _apiKeyController.text = widget.config.apiKey;
-      _modelController.text = widget.config.model;
+      _setTextIfDifferent(_baseUrlController, widget.config.baseUrl);
+      _setTextIfDifferent(_apiKeyController, widget.config.apiKey);
+      _setTextIfDifferent(_modelController, widget.config.model);
       _selectedPreset = ProviderPreset.fromName(widget.config.providerName);
     }
     if (oldWidget.outputMode != widget.outputMode) {
@@ -188,10 +217,12 @@ class _SettingsFormState extends State<_SettingsForm> {
     if (oldWidget.ppConfig != widget.ppConfig) {
       _ppEnabled = widget.ppConfig.enabled;
       _ppTemplate = _templateForPrompt(widget.ppConfig.prompt);
-      _ppPromptController.text = widget.ppConfig.prompt;
-      _ppBaseUrlController.text = widget.ppConfig.llmConfig.baseUrl;
-      _ppApiKeyController.text = widget.ppConfig.llmConfig.apiKey;
-      _ppModelController.text = widget.ppConfig.llmConfig.model;
+      _setTextIfDifferent(_ppPromptController, widget.ppConfig.prompt);
+      _setTextIfDifferent(
+          _ppBaseUrlController, widget.ppConfig.llmConfig.baseUrl);
+      _setTextIfDifferent(
+          _ppApiKeyController, widget.ppConfig.llmConfig.apiKey);
+      _setTextIfDifferent(_ppModelController, widget.ppConfig.llmConfig.model);
       _ppSelectedPreset =
           ProviderPreset.fromName(widget.ppConfig.llmConfig.providerName);
     }
@@ -203,8 +234,10 @@ class _SettingsFormState extends State<_SettingsForm> {
     }
     if (oldWidget.audioFormatConfig != widget.audioFormatConfig) {
       _audioFormatConfig = widget.audioFormatConfig;
-      _sampleRateController.text =
-          widget.audioFormatConfig.sampleRate.toString();
+      _setTextIfDifferent(
+        _sampleRateController,
+        widget.audioFormatConfig.sampleRate.toString(),
+      );
     }
     if (oldWidget.selectedInputDeviceId != widget.selectedInputDeviceId) {
       _selectedDeviceId = widget.selectedInputDeviceId;
@@ -213,6 +246,9 @@ class _SettingsFormState extends State<_SettingsForm> {
 
   @override
   void dispose() {
+    _sttDebounce?.cancel();
+    _ppDebounce?.cancel();
+    _audioFormatDebounce?.cancel();
     _baseUrlController.dispose();
     _apiKeyController.dispose();
     _modelController.dispose();
@@ -230,6 +266,8 @@ class _SettingsFormState extends State<_SettingsForm> {
       _selectedPreset = preset;
     });
     context.read<SettingsCubit>().selectPreset(preset);
+    // Preset change updates STT config; save immediately.
+    _saveSttConfig();
   }
 
   void _onPpPresetChanged(ProviderPreset? preset) {
@@ -241,16 +279,22 @@ class _SettingsFormState extends State<_SettingsForm> {
         _ppModelController.text = preset.llmModel;
       }
     });
+    _savePpConfig();
   }
 
-  Future<void> _onSave() async {
+  // ── Auto-save helpers ──
+
+  void _saveSttConfig() {
     final config = ApiConfig(
       baseUrl: _baseUrlController.text.trim(),
       apiKey: _apiKeyController.text.trim(),
       model: _modelController.text.trim(),
       providerName: _selectedPreset.name,
     );
+    context.read<SettingsCubit>().saveSettings(config);
+  }
 
+  void _savePpConfig() {
     final ppConfig = PostProcessingConfig(
       enabled: _ppEnabled,
       prompt: _ppPromptController.text.trim(),
@@ -261,23 +305,38 @@ class _SettingsFormState extends State<_SettingsForm> {
         providerName: _ppSelectedPreset.name,
       ),
     );
+    context.read<SettingsCubit>().savePostProcessingConfig(ppConfig);
+  }
 
-    final cubit = context.read<SettingsCubit>();
-    final messenger = ScaffoldMessenger.of(context);
+  void _saveSoundConfig() {
+    context.read<SettingsCubit>().saveSoundConfig(_soundConfig);
+  }
 
-    await cubit.saveSettings(config);
-    await cubit.savePostProcessingConfig(ppConfig);
-    await cubit.saveOutputMode(_outputMode);
-    await cubit.saveHotkeyConfig(_hotkeyConfig);
-    await cubit.saveSoundConfig(_soundConfig);
-    await cubit.saveAudioFormatConfig(_audioFormatConfig);
-    await cubit.saveSelectedInputDevice(_selectedDeviceId);
+  void _saveAudioFormatConfig() {
+    context.read<SettingsCubit>().saveAudioFormatConfig(_audioFormatConfig);
+  }
 
-    if (mounted) {
-      messenger.showSnackBar(
-        const SnackBar(content: Text('Settings saved')),
-      );
-    }
+  // ── Debounced save triggers for text fields ──
+
+  void _debounceSaveSttConfig() {
+    _sttDebounce?.cancel();
+    _sttDebounce = Timer(_debounceDuration, _saveSttConfig);
+  }
+
+  void _debounceSavePpConfig() {
+    _ppDebounce?.cancel();
+    _ppDebounce = Timer(_debounceDuration, _savePpConfig);
+  }
+
+  void _debounceSaveAudioFormatConfig() {
+    _audioFormatDebounce?.cancel();
+    _audioFormatDebounce = Timer(_debounceDuration, () {
+      final rate = int.tryParse(_sampleRateController.text);
+      if (rate != null && rate > 0) {
+        _audioFormatConfig = _audioFormatConfig.copyWith(sampleRate: rate);
+        _saveAudioFormatConfig();
+      }
+    });
   }
 
   /// Returns the matching [PromptTemplate] for the given prompt text,
@@ -374,6 +433,7 @@ class _SettingsFormState extends State<_SettingsForm> {
                   _audioFormatConfig =
                       _audioFormatConfig.copyWith(preset: value);
                 });
+                _saveAudioFormatConfig();
               }
             },
           ),
@@ -404,6 +464,7 @@ class _SettingsFormState extends State<_SettingsForm> {
                     _audioFormatConfig =
                         _audioFormatConfig.copyWith(format: value);
                   });
+                  _saveAudioFormatConfig();
                 }
               },
             ),
@@ -415,13 +476,6 @@ class _SettingsFormState extends State<_SettingsForm> {
                 border: OutlineInputBorder(),
               ),
               keyboardType: TextInputType.number,
-              onChanged: (value) {
-                final rate = int.tryParse(value);
-                if (rate != null && rate > 0) {
-                  _audioFormatConfig =
-                      _audioFormatConfig.copyWith(sampleRate: rate);
-                }
-              },
             ),
           ],
           const SizedBox(height: 8),
@@ -455,7 +509,10 @@ class _SettingsFormState extends State<_SettingsForm> {
                   (d) => DropdownMenuItem(value: d.id, child: Text(d.label)),
                 ),
               ],
-              onChanged: (value) => setState(() => _selectedDeviceId = value),
+              onChanged: (value) {
+                setState(() => _selectedDeviceId = value);
+                context.read<SettingsCubit>().saveSelectedInputDevice(value);
+              },
             ),
 
           const SizedBox(height: 32),
@@ -482,6 +539,7 @@ class _SettingsFormState extends State<_SettingsForm> {
             onChanged: (value) {
               if (value != null) {
                 setState(() => _outputMode = value);
+                context.read<SettingsCubit>().saveOutputMode(value);
               }
             },
           ),
@@ -532,13 +590,15 @@ class _SettingsFormState extends State<_SettingsForm> {
                 .toList(),
             onChanged: (value) {
               if (value != null) {
+                final newConfig = HotkeyConfig(
+                  keyCode: _hotkeyConfig.keyCode,
+                  modifiers: _hotkeyConfig.modifiers,
+                  mode: value,
+                );
                 setState(() {
-                  _hotkeyConfig = HotkeyConfig(
-                    keyCode: _hotkeyConfig.keyCode,
-                    modifiers: _hotkeyConfig.modifiers,
-                    mode: value,
-                  );
+                  _hotkeyConfig = newConfig;
                 });
+                context.read<SettingsCubit>().saveHotkeyConfig(newConfig);
               }
             },
           ),
@@ -559,32 +619,40 @@ class _SettingsFormState extends State<_SettingsForm> {
               'Play sounds for recording and transcription events',
             ),
             value: _soundConfig.enabled,
-            onChanged: (value) =>
-                setState(() => _soundConfig = _soundConfig.copyWith(enabled: value)),
+            onChanged: (value) {
+              setState(() => _soundConfig = _soundConfig.copyWith(enabled: value));
+              _saveSoundConfig();
+            },
           ),
           const SizedBox(height: 12),
           _VolumeSlider(
             label: 'Recording start volume',
             value: _soundConfig.startVolume,
             enabled: _soundConfig.enabled,
-            onChanged: (v) =>
-                setState(() => _soundConfig = _soundConfig.copyWith(startVolume: v)),
+            onChanged: (v) {
+              setState(() => _soundConfig = _soundConfig.copyWith(startVolume: v));
+              _saveSoundConfig();
+            },
           ),
           const SizedBox(height: 8),
           _VolumeSlider(
             label: 'Recording stop volume',
             value: _soundConfig.stopVolume,
             enabled: _soundConfig.enabled,
-            onChanged: (v) =>
-                setState(() => _soundConfig = _soundConfig.copyWith(stopVolume: v)),
+            onChanged: (v) {
+              setState(() => _soundConfig = _soundConfig.copyWith(stopVolume: v));
+              _saveSoundConfig();
+            },
           ),
           const SizedBox(height: 8),
           _VolumeSlider(
             label: 'Transcription complete volume',
             value: _soundConfig.completeVolume,
             enabled: _soundConfig.enabled,
-            onChanged: (v) =>
-                setState(() => _soundConfig = _soundConfig.copyWith(completeVolume: v)),
+            onChanged: (v) {
+              setState(() => _soundConfig = _soundConfig.copyWith(completeVolume: v));
+              _saveSoundConfig();
+            },
           ),
 
           const SizedBox(height: 32),
@@ -603,7 +671,10 @@ class _SettingsFormState extends State<_SettingsForm> {
               'Process transcription results with an LLM',
             ),
             value: _ppEnabled,
-            onChanged: (value) => setState(() => _ppEnabled = value),
+            onChanged: (value) {
+              setState(() => _ppEnabled = value);
+              _savePpConfig();
+            },
           ),
           const SizedBox(height: 16),
           DropdownButtonFormField<PromptTemplate>(
@@ -626,6 +697,7 @@ class _SettingsFormState extends State<_SettingsForm> {
                           _ppPromptController.text = value.prompt;
                         }
                       });
+                      _savePpConfig();
                     }
                   }
                 : null,
@@ -691,14 +763,6 @@ class _SettingsFormState extends State<_SettingsForm> {
             enabled: _ppEnabled,
           ),
 
-          const SizedBox(height: 24),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton(
-              onPressed: _onSave,
-              child: const Text('Save'),
-            ),
-          ),
         ],
       ),
     );
@@ -714,6 +778,7 @@ class _SettingsFormState extends State<_SettingsForm> {
             setState(() {
               _hotkeyConfig = config;
             });
+            context.read<SettingsCubit>().saveHotkeyConfig(config);
           },
         );
       },

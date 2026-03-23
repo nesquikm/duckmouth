@@ -43,7 +43,7 @@ class PostProcessingConfig {
     this.llmConfig = const ApiConfig(
       baseUrl: 'https://api.openai.com',
       apiKey: '',
-      model: 'gpt-4.1-mini',
+      model: 'gpt-5.4-mini',
       providerName: 'openAi',
     ),
   });

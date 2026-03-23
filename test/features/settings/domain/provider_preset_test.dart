@@ -9,7 +9,7 @@ void main() {
       expect(preset.label, 'OpenAI');
       expect(preset.baseUrl, 'https://api.openai.com');
       expect(preset.model, 'whisper-1');
-      expect(preset.llmModel, 'gpt-4.1-mini');
+      expect(preset.llmModel, 'gpt-5.4-mini');
     });
 
     test('Groq preset has correct values', () {

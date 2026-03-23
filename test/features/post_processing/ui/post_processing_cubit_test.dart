@@ -23,7 +23,7 @@ void main() {
     llmConfig: ApiConfig(
       baseUrl: 'https://api.openai.com',
       apiKey: 'key',
-      model: 'gpt-4.1-mini',
+      model: 'gpt-5.4-mini',
       providerName: 'openAi',
     ),
   );

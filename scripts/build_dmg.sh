@@ -19,9 +19,12 @@ if [ "$ARCHS" -lt 2 ]; then
   echo "WARNING: Binary is not universal (expected x86_64 + arm64)"
 fi
 
-# 2. Ad-hoc sign (no Developer ID needed)
+# 2. Ad-hoc sign with entitlements (no Developer ID needed)
+# Sign frameworks first (no entitlements for frameworks), then the main app with entitlements.
+# Avoid --deep, which Apple discourages and which strips entitlements.
 echo "==> Ad-hoc signing..."
-codesign --force --deep -s - "$BUILD_DIR/$APP_NAME.app"
+find "$BUILD_DIR/$APP_NAME.app/Contents/Frameworks" -name "*.framework" -exec codesign --force -s - {} \;
+codesign --force -s - --entitlements macos/Runner/Release.entitlements "$BUILD_DIR/$APP_NAME.app"
 
 # 3. Create DMG
 echo "==> Creating DMG..."

@@ -322,6 +322,15 @@ Duckmouth is a macOS desktop app that captures speech via microphone, transcribe
 - AC-29.3: The recording icon is visible in both light and dark macOS menu bar modes
 - AC-29.4: A second tray icon asset (`tray_icon_recording.png`) with a red dot overlay is used for the recording state
 
+### FR-30: App Version Display
+
+**Description:** Display the app version and build number at the bottom of the settings screen so users can identify which version they're running.
+
+**Acceptance Criteria:**
+- AC-30.1: Settings screen shows version string and build number (e.g., "Version 1.1.0+2") at the bottom
+- AC-30.2: Version is read from package info at runtime (not hardcoded)
+- AC-30.3: Text is styled as secondary/caption text, visually unobtrusive
+
 ## 4. Out of Scope
 
 - Local Whisper inference (API-only for now)
@@ -461,3 +470,6 @@ Duckmouth is a macOS desktop app that captures speech via microphone, transcribe
 | AC-29.2     | `lib/app/system_tray_manager.dart` (`setImage`) | `test/app/system_tray_manager_test.dart` |
 | AC-29.3     | `assets/tray_icon_recording.png` | Manual verification |
 | AC-29.4     | `assets/tray_icon_recording.png` | Manual verification |
+| AC-30.1     | `lib/features/settings/ui/settings_page.dart` | `test/features/settings/ui/settings_page_test.dart` |
+| AC-30.2     | `package_info_plus` via `PackageInfo.fromPlatform()` | `test/features/settings/ui/settings_page_test.dart` |
+| AC-30.3     | `lib/features/settings/ui/settings_page.dart` (bodySmall style) | Visual verification |

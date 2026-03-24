@@ -1004,6 +1004,33 @@ The hotkey_manager plugin's native Swift layer expects Carbon key codes (e.g. `4
 
 ---
 
+## M34: App Version Display
+
+**Goal:** Show app version and build number at the bottom of the settings screen.
+**Prerequisites:** M4 (Settings)
+
+**Tasks:**
+1. Add `package_info_plus` dependency to `pubspec.yaml`
+2. Add version label widget at the bottom of settings page `ListView`
+3. Read version from `PackageInfo.fromPlatform()` on settings page init
+4. Write widget test verifying version is displayed
+
+**Tests:**
+- Settings page shows version string (e.g., "Version 1.1.0+2")
+- Version is read from PackageInfo (mocked via `setMockInitialValues`)
+- Version text uses bodySmall text style
+- Gate passes
+
+**Acceptance Criteria:**
+- [ ] Version + build number shown at bottom of settings (AC-30.1)
+- [ ] Version read from package info at runtime (AC-30.2)
+- [ ] Styled as secondary caption text (AC-30.3)
+- [ ] Gate passes: `fvm flutter analyze && fvm flutter test`
+
+**Gate:** `fvm flutter analyze && fvm flutter test`
+
+---
+
 ## Milestone Dependency Graph
 
 ```
@@ -1031,4 +1058,5 @@ M4 + M21 → M30
 M30 → M31
 M7 → M32
 M2 + M28 → M33
+M4 → M34
 ```

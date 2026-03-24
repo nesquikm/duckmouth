@@ -392,6 +392,7 @@ Masking strings are added/removed in `SettingsCubit` when API keys change.
 | the_logger | ^0.0.20 | Structured logging with console output, masking, sessions, real-time streaming |
 | the_logger_viewer_widget | ^0.0.2 | Embeddable in-app log viewer with filtering, search, session navigation |
 | logging | latest | Dart standard logging (peer dependency of the_logger) |
+| package_info_plus | latest | Read app version and build number at runtime |
 | mocktail | 1.0.4 | Test mocking (dev) |
 | bloc_test | 10.0.0 | BLoC testing (dev) |
 
@@ -597,7 +598,15 @@ A `DropdownButtonFormField<AppThemeMode>` in the settings page, auto-saved on ch
 
 `AppTheme` uses `ColorScheme.fromSeed()` with the duck amber color `0xFFE8A838` extracted from the app icon. Material 3 derives the full palette (primary, secondary, tertiary, surface, error, etc.) for both light and dark brightness variants. This replaces the default Material purple (`0xFF6750A4`).
 
-## 12. Distribution
+## 12. App Version Display
+
+The settings screen displays the app version and build number at the bottom of the page. The version is read at runtime using `package_info_plus` via `PackageInfo.fromPlatform()`, which reads from the built app's `Info.plist`.
+
+**Widget:** A `Text` widget at the end of the settings `ListView`, styled with `Theme.of(context).textTheme.bodySmall` and `0.5` opacity. Format: `"Version {version}+{buildNumber}"` (e.g., "Version 1.1.0+2").
+
+**Testability:** In tests, `PackageInfo` is initialized via `PackageInfo.setMockInitialValues()` from the `package_info_plus_platform_interface` package, which is available in test environments.
+
+## 13. Distribution
 
 ### DMG Packaging
 

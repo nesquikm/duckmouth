@@ -525,6 +525,13 @@ fvm flutter test integration_test/
 - `pasteAtCursor("")` calls `insertTextWithFallback("")` — empty string unchanged
 - `copyToClipboard("hello")` sets clipboard to `"hello"` — no trailing space added
 
+## 28. App Version Display Tests
+
+### Settings page (`test/features/settings/ui/settings_page_test.dart`)
+- Settings page renders version string at the bottom (e.g., "Version 1.1.0+2")
+- Version text uses `bodySmall` text style
+- Version is read from `PackageInfo` (mocked via `PackageInfo.setMockInitialValues()`)
+
 ### Model fetch with new providers (mocked HTTP)
 - xAI `/models` response parsed correctly (model IDs like `grok-4-1-fast-non-reasoning`)
 - Google Gemini `/models` response parsed correctly (model IDs like `gemini-3-flash`)
